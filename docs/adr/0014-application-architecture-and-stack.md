@@ -22,7 +22,7 @@
 | 외부 호출 | `RestClient` + 연결·응답 타임아웃 필수. Spring Framework 7 `@Retryable`·`@ConcurrencyLimit`, 회로 차단은 Resilience4j |
 | 캐시 | Caffeine (로컬). Redis 미도입 |
 | 배치 | `@Scheduled` + ShedLock (JDBC) |
-| 인증 토큰 | 자체 발급 access JWT (ES256, 짧은 만료) + refresh 토큰 (해시 저장·회전·재사용 탐지). Spring Security OAuth2 Resource Server. 비로그인 주체는 설치 단위 익명 토큰으로 식별 (발급·남용 방지 방식은 P08 확정 후. 제안: App Attest·Play Integrity 기기 증명) |
+| 인증 토큰 | 자체 발급 access JWT (ES256, 짧은 만료) + refresh 토큰 (해시 저장·회전·재사용 탐지). Spring Security OAuth2 Resource Server. 비로그인 주체는 설치 단위 익명 토큰으로 식별 (발급 시 App Attest·Play Integrity 기기 증명, ADR-0020) |
 | API | REST/JSON, 헤더 기반 API 버전 (Framework 7), RFC 9457 `ProblemDetail` + `code`, `Idempotency-Key` 헤더, springdoc-openapi |
 | 관측 | Micrometer + `spring-boot-starter-opentelemetry` (OTLP), 구조화 JSON 로그 (필드 허용 목록) |
 | 테스트 | Testcontainers + WireMock (외부 연동) + Modulith 경계 검증 + k6 (부하) |

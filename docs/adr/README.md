@@ -31,3 +31,4 @@
 | [0017](0017-search-interpret-on-server-execute-on-device.md) | 검색 구조: 자연어 해석은 서버, 실행은 단말 | 채택 | 2026-10-25 |
 | [0018](0018-subscription-via-revenuecat.md) | 구독 검증은 RevenueCat으로 연동한다 | 채택 | 2026-10-25 |
 | [0019](0019-server-centric-notification-delivery.md) | 알림은 서버 중심으로 전달한다 | 채택 | 2026-10-25 |
+| [0020](0020-account-and-anonymous-subject-policy.md) | 계정·비로그인 주체 정책 (P07·P08 일부) | 채택 | 2026-10-26 |

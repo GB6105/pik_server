@@ -46,6 +46,7 @@
   - 검색 구조: 자연어 해석은 서버, 실행은 단말 (D-02 해소, [ADR-0017](adr/0017-search-interpret-on-server-execute-on-device.md))
   - 구독 검증 RevenueCat ([ADR-0018](adr/0018-subscription-via-revenuecat.md))
   - 서버 중심 알림 ([ADR-0019](adr/0019-server-centric-notification-delivery.md))
+- 계정·비로그인 주체 정책: 게스트 귀속·계정 병합·로그아웃 (P07 일부), 익명 식별·재설치 체험·탈퇴 최소 기록 (P08 일부) ([ADR-0020](adr/0020-account-and-anonymous-subject-policy.md))
 
 ## 다음 할 일
 - [ ] 첫 구현 FR 순서 확정
@@ -61,7 +62,7 @@
 
 | ID | 결정 사항 | 선택지 | 필요 시점 | 막는 작업 |
 |---|---|---|---|---|
-| D-01 | 미정 정책 P01~P11 확정 | `.claude/docs/open-policies.md` 초안 참고 | 각 FR 구현 전 | FR-B, FR-I, FR-E, FR-N 인수 조건 |
+| D-01 | 미정 정책 P01~P11 확정 (P07·P08 일부 확정, ADR-0020) | `.claude/docs/open-policies.md` 초안 참고 | 각 FR 구현 전 | FR-B, FR-I, FR-E, FR-N 인수 조건 |
 | D-06 | CI 액션 버전 고정 방식 | 메이저 태그(현재) / 커밋 SHA + Dependabot | 저장소 공개·외부 기여 전 | 공급망 보안 강화 |
 | D-07 | 분석 모델 재결정 | Haiku 5.5 유지 / 경로별 Sonnet 5.5·Opus 5.5 상향 (실제 사진 표본 측정 기반, 추론 토큰 포함 비용) | 단계 4 측정 후 | 분석 정확도·비용, P03 |
 | D-08 | Jev 이용 조건 | 직접 API (early access) / Vercel AI Gateway. 데이터 보관·학습·처리 국가 확인 | 검색 구현·동의 안내 확정 전 | FR-S-01·02, FR-O-02 안내 문구 |
@@ -70,7 +71,7 @@
 | D-11 | 응답 시간 목표 (SLO) | 제안: 검색 해석 Basic p95 600ms·Pro p95 1.5초, API p95는 부하 측정 후 | 부하 테스트·알람 설정 전 | 용량 산정, 알람 기준 |
 | D-12 | RevenueCat 요금제·계약 | - | 단계 3 전 | FR-B-03·04 |
 | D-13 | 인프라 비용 선택 | NAT Gateway AZ별 배치 (가용성) / 1개 (비용), RDS 인스턴스 크기 | 배포 환경 구성 전 | 인프라 코드 |
-| D-14 | ADR-0014~0019의 `(제안)` 항목 확인 | 익명 주체 기기 증명, 분석 파이프라인 세부, Pro LLM = Haiku, 웹 탐색 Sonnet 폴백, 동의 거절 시 자연어 검색 비제공, 검색 구현 세부, RevenueCat 즉시 재조회·구매 이전 설정·장애 시 유예 후 Pro 제한, silent push 미도입·장소 알림 권한, SSOT 해석 (FR-B-03·04 = RevenueCat 결과 조회, FR-N-04 = 마지막 보고 권한 상태로 판단) | 각 구현 착수 전 | 해당 FR 구현 |
+| D-14 | ADR-0014~0019의 `(제안)` 항목 확인 | 체험 기기·계정 이중 집계·식별자 HMAC (ADR-0020), 분석 파이프라인 세부, Pro LLM = Haiku, 웹 탐색 Sonnet 폴백, 동의 거절 시 자연어 검색 비제공, 검색 구현 세부, RevenueCat 즉시 재조회·구매 이전 설정·장애 시 유예 후 Pro 제한, silent push 미도입·장소 알림 권한, SSOT 해석 (FR-B-03·04 = RevenueCat 결과 조회, FR-N-04 = 마지막 보고 권한 상태로 판단) | 각 구현 착수 전 | 해당 FR 구현 |
 
 ## 위험·제약
 - 저장소가 공개 상태라 요구사항 원문 (`docs/spec`)·ADR·`.claude/docs`가 공개된다. 사용자가 수용했다 (2026-10-26). 비공개가 필요해지면 이력에서 제거한 뒤 저장소 재생성 또는 Private 전환을 검토한다 (Free 플랜이면 Private 저장소에 Ruleset 미적용).
