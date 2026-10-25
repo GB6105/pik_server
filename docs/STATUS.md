@@ -35,6 +35,7 @@
 - 작업 시작·종료 결정 보고 규칙과 미결 결정 주입 훅 ([ADR-0009](adr/0009-decision-reporting-per-task.md))
 - Spring Boot 4.1.2 + PostgreSQL 18 + Flyway 골격, `.env.example` ([ADR-0010](adr/0010-project-skeleton.md))
 - GitHub Actions CI: `develop` 첫 실행 성공 ([run 40183429153](https://github.com/GB6105/pik_server/actions/runs/40183429153)) ([ADR-0011](adr/0011-ci-github-actions.md))
+- 원격 보호: 기본 브랜치 `develop`, `main`·`develop` PR·`build` 체크 필수 (D-04 해소, [ADR-0013](adr/0013-branch-protection-pr-required.md))
 - `develop` 원격 push
 - Lombok 제한적 사용: 허용 4종 외 `lombok.config`·Gradle task로 빌드 차단 ([ADR-0012](adr/0012-lombok-restricted-usage.md))
 
@@ -50,7 +51,6 @@
 | D-01 | 미정 정책 P01~P11 확정 | `.claude/docs/open-policies.md` 초안 참고 | 각 FR 구현 전 | FR-B, FR-I, FR-E, FR-N 인수 조건 |
 | D-02 | 검색 실행 위치 | 단말 / 서버 / 혼합 | FR-S 구현 전 | FR-S-01~04 (확정 전 인터페이스만) |
 | D-03 | 기술 스택·골격 선택 근거 보완 (Spring Boot, PostgreSQL, JPA, MVC, 좌표) | - | 단계 2 착수 전 | ADR-0003·0010 완결 |
-| D-04 | 원격 기본 브랜치·브랜치 보호 | 기본 브랜치 `develop` 전환 여부, `main`·`develop` 보호 규칙 | 첫 push 전 | PR 기반 병합, `CI / build` 필수 체크 지정 |
 | D-05 | 배포 비밀 값 주입 경로 | AWS SSM / GitHub Actions secrets | 배포 환경 구성 전 | 배포 (CI 빌드·테스트는 무관) |
 | D-06 | CI 액션 버전 고정 방식 | 메이저 태그(현재) / 커밋 SHA + Dependabot | 저장소 공개·외부 기여 전 | 공급망 보안 강화 |
 

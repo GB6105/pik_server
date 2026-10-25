@@ -1,6 +1,6 @@
 # ADR-0008: Git Flow 브랜치 전략
 
-- 상태: 채택
+- 상태: 채택 (병합 방식은 ADR-0013으로 대체)
 - 날짜: 2026-10-25
 - 관련: `.claude/docs/git-flow.md`, `.claude/hooks/guard-protected-branch.sh`
 
