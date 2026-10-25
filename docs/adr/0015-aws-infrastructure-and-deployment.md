@@ -47,5 +47,5 @@
 - 서버 비밀 값: Claude API 키, TypeSafe API 키, RevenueCat secret API 키·웹훅 인증 값, Firebase 서비스 계정, Sign in with Apple 키 (`.p8`)·Key ID·Team ID, Google OAuth client ID, DB 접속 정보. 도입할 때 `.env.example`에 키를 추가한다.
 - Apple·Google 결제 자격 증명은 RevenueCat 대시보드에 등록하므로 서버에 두지 않는다 (ADR-0018).
 - 인프라 코드와 CD 파이프라인은 배포 전 단계에서 작성한다.
-- 출처: 구성은 Claude 설계안이며, 사용자는 이 ADR의 작성 계획을 승인했고 (2026-10-25), 구성 세부는 종료 보고에서 사용자 확인을 받는다. 외부 제품 사실은 이 날짜의 공식 문서·발표 기준이며, 도입할 때 버전별로 다시 확인한다.
+- 출처: 구성은 Claude 설계안이며, 사용자가 종료 보고에서 이 구성을 확인했다 (2026-10-25). 외부 제품 사실은 이 날짜의 공식 문서·발표 기준이며, 도입할 때 버전별로 다시 확인한다.
 - Graviton의 가격 이점은 AWS 공개 가격 기준이다. 실제 비용은 D-13에서 확인한다.
