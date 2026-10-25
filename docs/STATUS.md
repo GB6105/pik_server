@@ -53,6 +53,7 @@
   - 서버 중심 알림 ([ADR-0019](adr/0019-server-centric-notification-delivery.md))
 - 계정·비로그인 주체 정책: 게스트 귀속·계정 병합·로그아웃 (P07 일부), 익명 식별·재설치 체험·탈퇴 최소 기록 (P08 일부) ([ADR-0020](adr/0020-account-and-anonymous-subject-policy.md))
 - 데이터 모델 기반 결정: 사진 식별 키, 묶음 판단 위치, 이용량 차감, 파이프라인 확정, 동의 철회·단위, 원본 삭제 후 메타데이터, 체험 이중 집계 ([ADR-0021](adr/0021-data-model-foundation-decisions.md))
+- 서버 ER 설계안 초안: 37개 테이블, ADR-0014~0020 반영 (`docs/erd/pik.erd.json`). 제안 단계라 ADR 없음, 미결은 D-15~D-18
 
 ## 다음 할 일
 - [ ] 단계 2 착수: Modulith 모듈 골격, `ProblemDetail` 오류 형식, 멱등 기록, JWT 보안 설정, 구조화 로그 (ADR-0014), 익명 주체 발급 (ADR-0020), 첫 Flyway 마이그레이션
@@ -62,6 +63,8 @@
 - [ ] Haiku 5.5·Jev 측정용 실제 사진·검색어 표본 구성 (D-07)
 - [ ] 분석 작업 상태명 확정 (단계 4 구현 시, ADR-0016)
 - [ ] Terraform 인프라 코드·CD 파이프라인 작성 (배포 환경 구성 전, D-13 선행, ADR-0015)
+- [ ] ADR-0020 갱신: 제공자 사용자 ID 해시는 가입할 때 저장, 탈퇴 후 결제 기록에 `type`도 남김 (2026-10-26 사용자 결정, ERD 반영 완료)
+- [ ] ER 설계안 미결 결정 (D-15~D-18) 확인 후 첫 Flyway 마이그레이션에 반영
 
 ## 미결 결정
 > SessionStart 훅이 이 표를 읽어 작업 시작 보고에 사용한다. 해소되면 행을 지우고 완료에 ADR 링크를 남긴다.
@@ -78,6 +81,10 @@
 | D-12 | RevenueCat 요금제·계약 | - | 단계 3 전 | FR-B-03·04 |
 | D-13 | 인프라 비용 선택 | NAT Gateway AZ별 배치 (가용성) / 1개 (비용), RDS 인스턴스 크기 | 배포 환경 구성 전 | 인프라 코드 |
 | D-14 | ADR-0014~0019의 `(제안)` 항목 확인 | Pro LLM = Haiku, 웹 탐색 Sonnet 폴백, 검색 구현 세부, RevenueCat 즉시 재조회·구매 이전 설정·장애 시 유예 후 Pro 제한, silent push 미도입·장소 알림 권한, SSOT 해석 (FR-B-03·04 = RevenueCat 결과 조회, FR-N-04 = 마지막 보고 권한 상태로 판단) | 각 구현 착수 전 | 해당 FR 구현 |
+| D-15 | ER 설계안의 스키마 공통 판단 6가지 (`docs/erd/pik.erd.json` 설계 판단 메모) | 제안대로: principal 상위 타입, `client_ref` 분리, 모듈 간 FK 없음 (ID만 저장), `owner_change_counter`로 `change_seq` 발급, tombstone 삭제, 분석 결과 이력 없음 / 항목별 수정 | 첫 Flyway 마이그레이션 전 | 단계 2 엔티티 구현 |
+| D-16 | ER 설계 중 발견한 SSOT 보고 3건 | 액션 aggregate: 별도 모듈 (추천) / 분석 모듈 안. 비로그인 이벤트 자동 생성: 단말 (추천) / 서버. 정리 상태 동기화 범위·`source_album_ref` 의미: P04·P06·P07과 함께 결정 | 해당 FR 구현 전 | FR-G-02·03, FR-E-01, FR-A-02·04 |
+| D-17 | 검색 해석 호출 제한 (비로그인 포함) 집계 위치 | 인스턴스 메모리 (서버 대수만큼 나뉘어 집계) / DB 카운터 | FR-S 구현 전 | `/search/interpret` 남용 방지 (ADR-0017) |
+| D-18 | 기기별 알림 발송 기록 테이블 필요 여부 | P09 발송 대상 기기 규칙에 따라 결정 | FR-N 서버 발송 구현 전 | FR-N-02~04 (ADR-0019) |
 
 ## 위험·제약
 - 저장소가 공개 상태라 요구사항 원문 (`docs/spec`)·ADR·`.claude/docs`가 공개된다. 사용자가 수용했다 (2026-10-26). 비공개가 필요해지면 이력에서 제거한 뒤 저장소 재생성 또는 Private 전환을 검토한다 (Free 플랜이면 Private 저장소에 Ruleset 미적용).

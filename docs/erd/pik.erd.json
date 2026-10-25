@@ -1,0 +1,5165 @@
+{
+  "$schema": "https://raw.githubusercontent.com/dineug/erd-editor/main/json-schema/schema.json",
+  "version": "3.0.0",
+  "settings": {
+    "originX": 0,
+    "originY": 0,
+    "zoomLevel": 1,
+    "show": 431,
+    "database": 16,
+    "databaseName": "pik",
+    "canvasType": "ERD",
+    "language": 1,
+    "tableNameCase": 4,
+    "columnNameCase": 2,
+    "bracketType": 1,
+    "relationshipDataTypeSync": true,
+    "columnOrder": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      64
+    ],
+    "maxWidthComment": -1,
+    "lockSettings": 63
+  },
+  "doc": {
+    "tableIds": [
+      "03h4468gdyciasr0yxo1ozvva",
+      "03h4468gdyciasr0yy20wi45y",
+      "03h4468gdyciasr0yyd9e43nc",
+      "03h4468ge3qzlp0kxh4t3yjt1",
+      "03h4468ge3qzlp0kxhjodrf5h",
+      "03h4468ge3qzlp0kxi4f3savi",
+      "03h4468ge3qzlp0kxisn9vsc9",
+      "03h4468ge3qzlp0kxj5pbo1ff",
+      "03h4468ge3qzlp0kxjueu7nb9",
+      "03h4468ge3qzlp0kxk9r388k6",
+      "03h4468ge3qzlp0kxktbzseyu",
+      "03h4468ge3qzlp0kxlcf5ld1e",
+      "03h4468ge3qzlp0kxlnjcc3sw",
+      "03h4468ge3qzlp0kxm3uxzm4o",
+      "03h4468ge3qzlp0kxmoxdncoo",
+      "03h4468ge3qzlp0kxngunyby9",
+      "03h4468ge3qzlp0kxnvluhm88",
+      "03h4468ge3qzlp0kxohmn2sdy",
+      "03h4468ge3qzlp0kxoqfcm9ix",
+      "03h4468ge977zqezlhqerbvdc",
+      "03h4468ge977zqezliupy3y6i",
+      "03h4468ge977zqezljub686tt",
+      "03h4468ge977zqezlkfd4d0z8",
+      "03h4468ge977zqezll4ciftac",
+      "03h4468ge977zqezllz96xg0x",
+      "03h4468ge977zqezlmi9acrpo",
+      "03h4468ge977zqezln1403jfq",
+      "03h4468ge977zqezloc297i0d",
+      "03h4468ge977zqezlosz9hyo7",
+      "03h4468ge977zqezlpt9mf2c0",
+      "03h4468ge977zqezlqcrd27lf",
+      "03h4468ge977zqezlrabh72d2",
+      "03h4468geephs5erx656317ly",
+      "03h4468geephs5erx6nws4bod",
+      "03h45zxe8rur98csoh0m99lbi",
+      "03h46ggkrxnffv4hjizyj1crb",
+      "03h46ggksdze9d44y09z2x7zj"
+    ],
+    "relationshipIds": [
+      "03h4468geephs5erx72aplmrf",
+      "03h4468geephs5erx739wskqg",
+      "03h4468geephs5erx75i2y9gh",
+      "03h4468geephs5erx78phw5e4",
+      "03h4468geephs5erx78uhnbm0",
+      "03h4468geephs5erx7b1eltol",
+      "03h4468geephs5erx7dyly3hn",
+      "03h4468geephs5erx7eps6v18",
+      "03h4468geephs5erx7i5mox8a",
+      "03h4468geephs5erx7kflxey2",
+      "03h4468geephs5erx7mcwprbc",
+      "03h4468geephs5erx7ozlmtno",
+      "03h4468geephs5erx7rzfx9pc",
+      "03h4468geephs5erx7tdwjx8n",
+      "03h4468geephs5erx7ulp6n2h",
+      "03h4468geephs5erx7wpku994",
+      "03h4468geephs5erx7z264kto",
+      "03h4468geephs5erx80ic2tpj",
+      "03h4468geephs5erx869e9c9a",
+      "03h4468geephs5erx87a070gr",
+      "03h4468geephs5erx89zfzmue",
+      "03h4468geephs5erx8b9q6xuq",
+      "03h4468geephs5erx8efjo3c5",
+      "03h4468geephs5erx8gzftzbu",
+      "03h4468geephs5erx8ipc9a6g",
+      "03h4468geephs5erx8l6haufw",
+      "03h4468geephs5erx8n6mnfgo",
+      "03h4468geephs5erx8p7xgrqv",
+      "03h4468geephs5erx8rzs3jci",
+      "03h4468geephs5erx8s6uypmy",
+      "03h446e1nx1wkxc2skmnxcang",
+      "03h446e1nx1wkxc2skokbn8dt",
+      "03h446e1nx1wkxc2sktht2fq8",
+      "03h44damn4m3oy7ky89ux8chz",
+      "03h45zxe92nmqnj78d0u2jkfx",
+      "03h46ggksp11c0qxbs1cdwgr6",
+      "03h46ggksp11c0qxbs58bz9m4"
+    ],
+    "indexIds": [
+      "03h4468geephs5erx8xgay3x3",
+      "03h4468geephs5erx93j8iobr",
+      "03h4468geka6y2ntyd5n0ag08",
+      "03h4468geka6y2ntydb0b8uhz",
+      "03h4468geka6y2ntydhfs36mn",
+      "03h4468geka6y2ntydpu7v3mb",
+      "03h4468geka6y2ntydul45n62",
+      "03h4468geka6y2ntye0xepb32",
+      "03h4468geka6y2ntye83tz2rz",
+      "03h4468geka6y2ntyecbd6gme",
+      "03h4468geka6y2ntyej4x04bq",
+      "03h4468geka6y2ntyeootbswh",
+      "03h4468geka6y2ntyetx16mmg",
+      "03h4468geka6y2ntyf2g32t0c",
+      "03h4468geka6y2ntyf8ek1epd",
+      "03h4468geka6y2ntyffx02fed",
+      "03h4468geka6y2ntyfo8fv95i",
+      "03h4468geka6y2ntyfupt7ngc",
+      "03h4468geka6y2ntyg0ypykbs",
+      "03h4468geka6y2ntyg5gwzgdd",
+      "03h4468geka6y2ntygf448zf8",
+      "03h4468geka6y2ntyglu44te5",
+      "03h4468geka6y2ntygtru8bez",
+      "03h4468geka6y2ntygzrefo0a",
+      "03h4468geka6y2ntyh5kum3ch",
+      "03h4468geka6y2ntyhczmgsbt",
+      "03h4468geka6y2ntyhqpplspq",
+      "03h44damna12iwbwjie74u7at",
+      "03h45zpihwpzcki6c94vj1jhe",
+      "03h45zpihwpzcki6c9ti00brw",
+      "03h45zxe92rplendwahkyltv1",
+      "03h46ggksdze9d44xzuzpuwoj"
+    ],
+    "memoIds": [
+      "03h446hedsmnrwp09ht0scm16",
+      "03h446hedsmnrwp09hy0cj3i8",
+      "03h446hedsmnrwp09i1jpzkbj"
+    ],
+    "tableGroupIds": [
+      "03h4468geka6y2ntyhzlqzeyp",
+      "03h4468geka6y2ntyi112qpas",
+      "03h4468geka6y2ntyi3eep9za",
+      "03h4468geka6y2ntyi62mlft7",
+      "03h4468geka6y2ntyi7i4fmex",
+      "03h4468geka6y2ntyi9wujrbv",
+      "03h4468geka6y2ntyiaw7v936"
+    ]
+  },
+  "collections": {
+    "tableEntities": {
+      "03h4468gdyciasr0yxo1ozvva": {
+        "id": "03h4468gdyciasr0yxo1ozvva",
+        "name": "principal",
+        "comment": "소유 주체. 계정과 비로그인 설치를 하나로 표현. 모든 owner_id가 이 id를 참조. 탈퇴 후에도 개인정보 없는 최소 행(status = DELETED)으로 남아 늦은 결과 차단과 탈퇴 기록의 기준이 됨 (공통 소유 범위, FR-A-05, P08)",
+        "columnIds": [
+          "03h4468gdyciasr0yxpnzf0ip",
+          "03h4468gdyciasr0yxqw2iakm",
+          "03h4468gdyciasr0yxtxs2ekw",
+          "03h4468gdyciasr0yxuybqylq",
+          "03h4468gdyciasr0yxx54lusc",
+          "03h4468gdyciasr0yxyqvtgt9"
+        ],
+        "groupId": "03h4468geka6y2ntyhzlqzeyp",
+        "ui": {
+          "x": 643,
+          "y": 3006
+        }
+      },
+      "03h4468gdyciasr0yy20wi45y": {
+        "id": "03h4468gdyciasr0yy20wi45y",
+        "name": "account",
+        "comment": "로그인 계정 (FR-A-01)",
+        "columnIds": [
+          "03h4468gdyciasr0yy31crlpo",
+          "03h4468gdyciasr0yy50j6p1p",
+          "03h4468gdyciasr0yy7zyidyc",
+          "03h4468gdyciasr0yy9duopt8",
+          "03h4468gdyciasr0yyc8f7yb1"
+        ],
+        "groupId": "03h4468geka6y2ntyhzlqzeyp",
+        "ui": {
+          "x": 74,
+          "y": 3006
+        }
+      },
+      "03h4468gdyciasr0yyd9e43nc": {
+        "id": "03h4468gdyciasr0yyd9e43nc",
+        "name": "anonymous_install",
+        "comment": "비로그인 작업 주체. 토큰 발급 시 App Attest·Play Integrity로 정상 앱인지 확인, 재설치 판별은 device_trial_mark (ADR-0020, P08)",
+        "columnIds": [
+          "03h4468gdyciasr0yyeplijvi",
+          "03h4468gdyciasr0yyhf5icv4",
+          "03h4468gdyciasr0yyj2bi13b",
+          "03h4468gdyciasr0yykp82w3i",
+          "03h4468gdyciasr0yyo3n14cn",
+          "03h4468gdyciasr0yypq94emk",
+          "03h4468gdyciasr0yyrc8tg7m"
+        ],
+        "groupId": "03h4468geka6y2ntyhzlqzeyp",
+        "ui": {
+          "x": 2309,
+          "y": 3006
+        }
+      },
+      "03h4468ge3qzlp0kxh4t3yjt1": {
+        "id": "03h4468ge3qzlp0kxh4t3yjt1",
+        "name": "auth_identity",
+        "comment": "Apple·Google 로그인 연결. 제공자별로 별도 계정이며 연결·병합 기능 없음. 탈퇴 시 행 삭제, 재가입 판별은 provider_identity_mark (FR-A-01, ADR-0020)",
+        "columnIds": [
+          "03h4468ge3qzlp0kxh760djmj",
+          "03h4468ge3qzlp0kxh8yw1n8x",
+          "03h4468ge3qzlp0kxha9mssri",
+          "03h4468ge3qzlp0kxhcb9ilb4",
+          "03h4468ge3qzlp0kxhe1n9yfk",
+          "03h4468ge3qzlp0kxhgw07qzv",
+          "03h4468ge3qzlp0kxhhtn0zyp"
+        ],
+        "groupId": "03h4468geka6y2ntyhzlqzeyp",
+        "ui": {
+          "x": 74,
+          "y": 3284
+        }
+      },
+      "03h4468ge3qzlp0kxhjodrf5h": {
+        "id": "03h4468ge3qzlp0kxhjodrf5h",
+        "name": "refresh_token",
+        "comment": "refresh 토큰은 해시로 저장하고 매번 교체. 로그아웃 = family 폐기 (FR-A-01, FR-A-03)",
+        "columnIds": [
+          "03h4468ge3qzlp0kxhlt0hev8",
+          "03h4468ge3qzlp0kxhoekt12w",
+          "03h4468ge3qzlp0kxhpcn51j2",
+          "03h4468ge3qzlp0kxht1ose03",
+          "03h4468ge3qzlp0kxhtzr52eb",
+          "03h4468ge3qzlp0kxhwfne88a",
+          "03h4468ge3qzlp0kxhya1sx44",
+          "03h4468ge3qzlp0kxi06tzhx9",
+          "03h4468ge3qzlp0kxi1h489j3"
+        ],
+        "groupId": "03h4468geka6y2ntyhzlqzeyp",
+        "ui": {
+          "x": 74,
+          "y": 3562
+        }
+      },
+      "03h4468ge3qzlp0kxi4f3savi": {
+        "id": "03h4468ge3qzlp0kxi4f3savi",
+        "name": "device",
+        "comment": "주체별 기기. 같은 설치에서 로그인하면 계정 principal 아래 새 행. 푸시 토큰·권한 상태는 notification_device (FR-A-04)",
+        "columnIds": [
+          "03h4468ge3qzlp0kxi5u5onji",
+          "03h4468ge3qzlp0kxi8ipwlzn",
+          "03h4468ge3qzlp0kxi99xyiv3",
+          "03h4468ge3qzlp0kxiceim55g",
+          "03h46ggksp1aqpotycggmbdjj",
+          "03h4468ge3qzlp0kxiilqryn5",
+          "03h4468ge3qzlp0kxikslwefz",
+          "03h4468ge3qzlp0kxilgxun3b",
+          "03h4468ge3qzlp0kximvpqwc8",
+          "03h4468ge3qzlp0kxip0wkasb"
+        ],
+        "groupId": "03h4468geka6y2ntyhzlqzeyp",
+        "ui": {
+          "x": 1000,
+          "y": 3562
+        }
+      },
+      "03h4468ge3qzlp0kxisn9vsc9": {
+        "id": "03h4468ge3qzlp0kxisn9vsc9",
+        "name": "ai_consent",
+        "comment": "외부 AI 전송 동의 이력, 추가만 함. 현재 상태 = 최신 행. 전송 직전 재확인 (FR-O-02)",
+        "columnIds": [
+          "03h4468ge3qzlp0kxiu7c2iu4",
+          "03h4468ge3qzlp0kxiuu2429c",
+          "03h4468ge3qzlp0kxixwa7se7",
+          "03h4468ge3qzlp0kxj08yn0md",
+          "03h4468ge3qzlp0kxj11rym3y",
+          "03h4468ge3qzlp0kxj3iu2nsf"
+        ],
+        "groupId": "03h4468geka6y2ntyhzlqzeyp",
+        "ui": {
+          "x": 3146,
+          "y": 3284
+        }
+      },
+      "03h4468ge3qzlp0kxj5pbo1ff": {
+        "id": "03h4468ge3qzlp0kxj5pbo1ff",
+        "name": "subscription_entitlement",
+        "comment": "검증된 Pro 권한. RevenueCat 재조회 결과만 반영, 클라이언트 보고값 사용 금지 (FR-B-02~05)",
+        "columnIds": [
+          "03h4468ge3qzlp0kxj6ka7akv",
+          "03h4468ge3qzlp0kxj9rfqnn4",
+          "03h4468ge3qzlp0kxjaygu5r3",
+          "03h4468ge3qzlp0kxjdqljop6",
+          "03h4468ge3qzlp0kxjegt4hm7",
+          "03h4468ge3qzlp0kxjgndn3rk",
+          "03h4468ge3qzlp0kxjjvqaq5j",
+          "03h4468ge3qzlp0kxjlx28wag",
+          "03h4468ge3qzlp0kxjmrly2sg",
+          "03h4468ge3qzlp0kxjp6hrz2i",
+          "03h4468ge3qzlp0kxjri2iafx",
+          "03h4468ge3qzlp0kxjsrdmsum"
+        ],
+        "groupId": "03h4468geka6y2ntyhzlqzeyp",
+        "ui": {
+          "x": 2996,
+          "y": 3936
+        }
+      },
+      "03h4468ge3qzlp0kxjueu7nb9": {
+        "id": "03h4468ge3qzlp0kxjueu7nb9",
+        "name": "revenuecat_event",
+        "comment": "웹훅 inbox. 응답 전에 app_user_id·본문 저장, 계정을 못 찾으면 UNRESOLVED로 두고 배치가 재시도하며 권한은 넓히지 않음. 탈퇴 후에는 payload를 지우고 행은 남김. ix_revenuecat_event_retry는 WHERE status = UNRESOLVED (FR-B-04, ADR-0020)",
+        "columnIds": [
+          "03h4468ge3qzlp0kxjy0szbv2",
+          "03h44damn4kxud9wpdo1p8shr",
+          "03h4468ge3qzlp0kxjzxppv7e",
+          "03h4468ge3qzlp0kxk1yjpiq3",
+          "03h4468ge3qzlp0kxk25x4m75",
+          "03h4468ge3qzlp0kxk56f9slj",
+          "03h4468ge3qzlp0kxk7m6pvoz",
+          "03h44damn4kxud9wpds6qu84f",
+          "03h44damna12iwbwji1ofkj1l",
+          "03h44damna12iwbwji555s7xh",
+          "03h44damna12iwbwjiaauwvsy"
+        ],
+        "groupId": "03h4468geka6y2ntyhzlqzeyp",
+        "ui": {
+          "x": 74,
+          "y": 4334
+        }
+      },
+      "03h4468ge3qzlp0kxk9r388k6": {
+        "id": "03h4468ge3qzlp0kxk9r388k6",
+        "name": "usage_quota",
+        "comment": "체험 100장과 Pro 처리량 한도. 접수 시 행을 잠그고 예약. TRIAL은 device_trial_mark의 기기 단위 이용량과 함께 확인 (FR-B-01, FR-I-01, ADR-0020)",
+        "columnIds": [
+          "03h4468ge3qzlp0kxkbrziwus",
+          "03h4468ge3qzlp0kxkcjsp01s",
+          "03h4468ge3qzlp0kxkfsmwjn7",
+          "03h4468ge3qzlp0kxkgl6kvaq",
+          "03h4468ge3qzlp0kxkjr6hqu2",
+          "03h4468ge3qzlp0kxkkpllh1v",
+          "03h4468ge3qzlp0kxkmvmcq5e",
+          "03h4468ge3qzlp0kxkpd51bsi",
+          "03h4468ge3qzlp0kxkq9as1gx"
+        ],
+        "groupId": "03h4468geka6y2ntyhzlqzeyp",
+        "ui": {
+          "x": 74,
+          "y": 3936
+        }
+      },
+      "03h4468ge3qzlp0kxktbzseyu": {
+        "id": "03h4468ge3qzlp0kxktbzseyu",
+        "name": "usage_reservation",
+        "comment": "사진별 예약. 결과 생성 시 CONSUMED로만 바꾸고 재차감 금지. uk_usage_reservation_trial_photo는 WHERE quota_kind = TRIAL 부분 유니크 (FR-G-01, FR-I-01)",
+        "columnIds": [
+          "03h4468ge3qzlp0kxkuazvdjz",
+          "03h4468ge3qzlp0kxkw3vc1jr",
+          "03h4468ge3qzlp0kxkye45tss",
+          "03h4468ge3qzlp0kxl161tcky",
+          "03h4468ge3qzlp0kxl231a1t9",
+          "03h4468ge3qzlp0kxl57mkayr",
+          "03h46ggksp1aqpotyclxuf8xo",
+          "03h4468ge3qzlp0kxl5u05qf2",
+          "03h4468ge3qzlp0kxl95defew",
+          "03h4468ge3qzlp0kxla741zzl"
+        ],
+        "groupId": "03h4468geka6y2ntyhzlqzeyp",
+        "ui": {
+          "x": 1430,
+          "y": 3936
+        }
+      },
+      "03h4468ge3qzlp0kxlcf5ld1e": {
+        "id": "03h4468ge3qzlp0kxlcf5ld1e",
+        "name": "trial_click",
+        "comment": "액션·이벤트 3회 클릭 집계. 중복·실패 집계 기준은 P01 (FR-B-01)",
+        "columnIds": [
+          "03h4468ge3qzlp0kxldxmq81d",
+          "03h4468ge3qzlp0kxlglq5g0y",
+          "03h4468ge3qzlp0kxli2dy4fu",
+          "03h4468ge3qzlp0kxljsgwhi1",
+          "03h4468ge3qzlp0kxlllqha3c"
+        ],
+        "groupId": "03h4468geka6y2ntyhzlqzeyp",
+        "ui": {
+          "x": 3635,
+          "y": 3006
+        }
+      },
+      "03h4468ge3qzlp0kxlnjcc3sw": {
+        "id": "03h4468ge3qzlp0kxlnjcc3sw",
+        "name": "account_deletion",
+        "comment": "탈퇴 진행 기록. 지워질 account가 아니라 남아 있는 principal을 가리켜, account 행을 지운 뒤에도 이 기록과 deletion_task가 남음. deletion_task가 전부 끝나야 COMPLETED (FR-A-05, data-retention)",
+        "columnIds": [
+          "03h4468ge3qzlp0kxlph5p912",
+          "03h4468ge3qzlp0kxlsmvbrf5",
+          "03h4468ge3qzlp0kxlv133w6n",
+          "03h4468ge3qzlp0kxlwr0meon",
+          "03h4468ge3qzlp0kxlz06xnhr",
+          "03h4468ge3qzlp0kxm06ixais",
+          "03h4468ge3qzlp0kxm1id25si"
+        ],
+        "groupId": "03h4468geka6y2ntyhzlqzeyp",
+        "ui": {
+          "x": 2210,
+          "y": 4334
+        }
+      },
+      "03h4468ge3qzlp0kxm3uxzm4o": {
+        "id": "03h4468ge3qzlp0kxm3uxzm4o",
+        "name": "deletion_task",
+        "comment": "저장소별 삭제 작업. 배치가 미완료분을 재시도 (FR-A-05, data-retention)",
+        "columnIds": [
+          "03h4468ge3qzlp0kxm63eskds",
+          "03h4468ge3qzlp0kxm8da7r27",
+          "03h4468ge3qzlp0kxm9uc5u76",
+          "03h4468ge3qzlp0kxmbw8f8f6",
+          "03h4468ge3qzlp0kxme3r4c5s",
+          "03h4468ge3qzlp0kxmfqhcdfz",
+          "03h4468ge3qzlp0kxmhup1siq",
+          "03h4468ge3qzlp0kxmja7vncn",
+          "03h4468ge3qzlp0kxmlemsqvg",
+          "03h4468ge3qzlp0kxmn1s2hb8"
+        ],
+        "groupId": "03h4468geka6y2ntyhzlqzeyp",
+        "ui": {
+          "x": 4026,
+          "y": 4334
+        }
+      },
+      "03h4468ge3qzlp0kxmoxdncoo": {
+        "id": "03h4468ge3qzlp0kxmoxdncoo",
+        "name": "photo",
+        "comment": "사진별 Pik 정보 aggregate root. 원본은 서버에 없음 (FR-L-05, FR-A-02·04, FR-G-01)",
+        "columnIds": [
+          "03h4468ge3qzlp0kxmqyb4oka",
+          "03h4468ge3qzlp0kxmssx2mpj",
+          "03h4468ge3qzlp0kxmwdguygi",
+          "03h4468ge3qzlp0kxmxh4j4lx",
+          "03h4468ge3qzlp0kxmzwpk7vm",
+          "03h4468ge3qzlp0kxn24nx8my",
+          "03h4468ge3qzlp0kxn2vu1fqi",
+          "03h4468ge3qzlp0kxn4s55ogh",
+          "03h4468ge3qzlp0kxn6wiid7g",
+          "03h4468ge3qzlp0kxn8u390ud",
+          "03h4468ge3qzlp0kxnc8daqvi",
+          "03h4468ge3qzlp0kxncxdrysk",
+          "03h4468ge3qzlp0kxnffh0xkr"
+        ],
+        "groupId": "03h4468geka6y2ntyi112qpas",
+        "ui": {
+          "x": 74,
+          "y": 1348
+        }
+      },
+      "03h4468ge3qzlp0kxngunyby9": {
+        "id": "03h4468ge3qzlp0kxngunyby9",
+        "name": "photo_device_link",
+        "comment": "기기마다 다른 OS 사진 ID. 확인되지 않은 연결은 UNRESOLVED (FR-A-04, P07)",
+        "columnIds": [
+          "03h4468ge3qzlp0kxniv2cq4u",
+          "03h4468ge3qzlp0kxnkk1wc0u",
+          "03h4468ge3qzlp0kxno883cdf",
+          "03h4468ge3qzlp0kxnpoyzvq3",
+          "03h4468ge3qzlp0kxnr7z3d02",
+          "03h4468ge3qzlp0kxnsclcpf6"
+        ],
+        "groupId": "03h4468geka6y2ntyi112qpas",
+        "ui": {
+          "x": 810,
+          "y": 998
+        }
+      },
+      "03h4468ge3qzlp0kxnvluhm88": {
+        "id": "03h4468ge3qzlp0kxnvluhm88",
+        "name": "tag",
+        "comment": "태그. uk_tag_owner_name은 WHERE deleted_at IS NULL. 같은 owner의 같은 이름은 기존 태그로 수렴 (FR-L-05, P10)",
+        "columnIds": [
+          "03h4468ge3qzlp0kxnxd7d3zn",
+          "03h4468ge3qzlp0kxnyblhqi8",
+          "03h4468ge3qzlp0kxo0dhj1bj",
+          "03h4468ge3qzlp0kxo396e15i",
+          "03h4468ge3qzlp0kxo4he1mby",
+          "03h4468ge3qzlp0kxo65f8qm4",
+          "03h4468ge3qzlp0kxo93xgx6a",
+          "03h4468ge3qzlp0kxobhoth6c",
+          "03h4468ge3qzlp0kxodxfk26u",
+          "03h4468ge3qzlp0kxofb4rrqd"
+        ],
+        "groupId": "03h4468geka6y2ntyi112qpas",
+        "ui": {
+          "x": 1696,
+          "y": 998
+        }
+      },
+      "03h4468ge3qzlp0kxohmn2sdy": {
+        "id": "03h4468ge3qzlp0kxohmn2sdy",
+        "name": "photo_tag",
+        "comment": "태그 관계. 해제 = 행 삭제 + photo.change_seq 증가 (FR-L-05)",
+        "columnIds": [
+          "03h4468ge3qzlp0kxoj2krt6t",
+          "03h4468ge3qzlp0kxolab5pov",
+          "03h4468ge3qzlp0kxomjw7op7",
+          "03h4468ge3qzlp0kxopki4q6l"
+        ],
+        "groupId": "03h4468geka6y2ntyi112qpas",
+        "ui": {
+          "x": 74,
+          "y": 998
+        }
+      },
+      "03h4468ge3qzlp0kxoqfcm9ix": {
+        "id": "03h4468ge3qzlp0kxoqfcm9ix",
+        "name": "organize_state",
+        "comment": "정리 상태 동기화 (FR-A-02·04). 정리 세션·임시 선택·되돌리기는 단말 전용",
+        "columnIds": [
+          "03h4468ge3qzlp0kxosj92zk7",
+          "03h4468ge3qzlp0kxotunlozh",
+          "03h4468ge3qzlp0kxoxd7zweq",
+          "03h4468ge3qzlp0kxoykktfam",
+          "03h4468ge3qzlp0kxp0vos8d3",
+          "03h4468ge3qzlp0kxp1ohv2sk",
+          "03h4468ge3qzlp0kxp438iy90",
+          "03h4468ge3qzlp0kxp79fdsl5",
+          "03h4468ge3qzlp0kxp7y7i398",
+          "03h4468ge3qzlp0kxpax1lw1n",
+          "03h4468ge977zqezlhm8lu5eh",
+          "03h4468ge977zqezlhphvi7bu"
+        ],
+        "groupId": "03h4468geka6y2ntyi3eep9za",
+        "ui": {
+          "x": 2874,
+          "y": 998
+        }
+      },
+      "03h4468ge977zqezlhqerbvdc": {
+        "id": "03h4468ge977zqezlhqerbvdc",
+        "name": "analysis_job",
+        "comment": "분석 작업 큐. ix_analysis_job_ready는 WHERE status = READY 부분 인덱스이며 owner_id 선두 규칙의 예외. SKIP LOCKED 폴링. 결과 저장 직전 사진 버전·작업 버전·principal 상태 대조 (FR-I-01·03·06, FR-G-01)",
+        "columnIds": [
+          "03h4468ge977zqezlht52p33h",
+          "03h4468ge977zqezlhu49kpu8",
+          "03h4468ge977zqezlhvteit1r",
+          "03h4468ge977zqezlhyfww2ig",
+          "03h4468ge977zqezli03mytnc",
+          "03h4468ge977zqezli3hld6f0",
+          "03h4468ge977zqezli4c408gc",
+          "03h4468ge977zqezli5q3gso3",
+          "03h4468ge977zqezli7i5vn9y",
+          "03h4468ge977zqezliak6wzv6",
+          "03h4468ge977zqezlibne61mu",
+          "03h4468ge977zqezlielqzn7y",
+          "03h4468ge977zqezlih699cc5",
+          "03h4468ge977zqezlihboxcs2",
+          "03h4468ge977zqezlikssg79u",
+          "03h4468ge977zqezlim9j9qu0",
+          "03h4468ge977zqezliok7bthx",
+          "03h4468ge977zqezliqy45m72",
+          "03h4468ge977zqezlis5lqr4c"
+        ],
+        "groupId": "03h4468geka6y2ntyi62mlft7",
+        "ui": {
+          "x": 74,
+          "y": 2364
+        }
+      },
+      "03h4468ge977zqezliupy3y6i": {
+        "id": "03h4468ge977zqezliupy3y6i",
+        "name": "analysis_result",
+        "comment": "재분석 시 덮어씀, 이력 테이블 없음 (FR-I-02·03·04, data-retention)",
+        "columnIds": [
+          "03h4468ge977zqezliv83sei0",
+          "03h4468ge977zqezliy8hdjvu",
+          "03h4468ge977zqezliz6izgwq",
+          "03h4468ge977zqezlj17dmzyt",
+          "03h4468ge977zqezlj3tu2is6",
+          "03h4468ge977zqezlj5lo67so",
+          "03h4468ge977zqezlj7ofrv5n",
+          "03h4468ge977zqezljas47k69",
+          "03h4468ge977zqezljcdt7h1e",
+          "03h4468ge977zqezljdgrm5gi",
+          "03h4468ge977zqezljg62mlqx",
+          "03h4468ge977zqezlji9fvj46",
+          "03h4468ge977zqezljk8zzdrp",
+          "03h4468ge977zqezljm5evysj",
+          "03h4468ge977zqezljnsj6r5d",
+          "03h4468ge977zqezljq3tny61",
+          "03h4468ge977zqezljruq9rcq"
+        ],
+        "groupId": "03h4468geka6y2ntyi62mlft7",
+        "ui": {
+          "x": 2490,
+          "y": 1846
+        }
+      },
+      "03h4468ge977zqezljub686tt": {
+        "id": "03h4468ge977zqezljub686tt",
+        "name": "photo_group",
+        "comment": "유사 사진 묶음 (FR-I-02, FR-S-03)",
+        "columnIds": [
+          "03h4468ge977zqezljvkdhdo8",
+          "03h4468ge977zqezljwsruv8r",
+          "03h4468ge977zqezljz4r65sx",
+          "03h4468ge977zqezlk169v9yf",
+          "03h4468ge977zqezlk41p99ol",
+          "03h4468ge977zqezlk5eo78ex",
+          "03h4468ge977zqezlk7gf8j80",
+          "03h4468ge977zqezlk97n8r8u",
+          "03h4468ge977zqezlkb4ynxzk",
+          "03h4468ge977zqezlkdej9qsf"
+        ],
+        "groupId": "03h4468geka6y2ntyi62mlft7",
+        "ui": {
+          "x": 1679,
+          "y": 1846
+        }
+      },
+      "03h4468ge977zqezlkfd4d0z8": {
+        "id": "03h4468ge977zqezlkfd4d0z8",
+        "name": "photo_group_member",
+        "comment": "한 사진은 한 묶음에만 속함 (FR-I-02)",
+        "columnIds": [
+          "03h4468ge977zqezlkgfnt6js",
+          "03h4468ge977zqezlkihkuzrg",
+          "03h4468ge977zqezlkkbsif9h",
+          "03h4468ge977zqezlkmdyjhva"
+        ],
+        "groupId": "03h4468geka6y2ntyi62mlft7",
+        "ui": {
+          "x": 74,
+          "y": 1846
+        }
+      },
+      "03h4468ge977zqezll4ciftac": {
+        "id": "03h4468ge977zqezll4ciftac",
+        "name": "photo_action",
+        "comment": "[SSOT 저장 단위 표에 없음] 사진별 액션. 실제 전화·복사·구매는 수행하지 않음 (FR-G-02·04)",
+        "columnIds": [
+          "03h4468ge977zqezll6uv0ne5",
+          "03h4468ge977zqezll9b253re",
+          "03h4468ge977zqezllb05x0p6",
+          "03h4468ge977zqezlldeli936",
+          "03h4468ge977zqezllfi07x8w",
+          "03h4468ge977zqezllgvk9xhi",
+          "03h4468ge977zqezllhz3gj2n",
+          "03h4468ge977zqezlllou9buc",
+          "03h4468ge977zqezlln3mfluv",
+          "03h4468ge977zqezllpfv59y4",
+          "03h4468ge977zqezllrc6ndtj",
+          "03h4468ge977zqezllrw6we6v",
+          "03h4468ge977zqezllvari1vx",
+          "03h4468ge977zqezllw5da26o"
+        ],
+        "groupId": "03h4468geka6y2ntyi7i4fmex",
+        "ui": {
+          "x": 1466,
+          "y": 5808
+        }
+      },
+      "03h4468ge977zqezllz96xg0x": {
+        "id": "03h4468ge977zqezllz96xg0x",
+        "name": "web_link_candidate",
+        "comment": "웹페이지 후보. 후보가 여러 개면 임의로 확정하지 않음 (FR-X-06)",
+        "columnIds": [
+          "03h4468ge977zqezlm1fabamm",
+          "03h4468ge977zqezlm1ku6if5",
+          "03h4468ge977zqezlm4ego4d1",
+          "03h4468ge977zqezlm7bdeiij",
+          "03h4468ge977zqezlm7v1o9fd",
+          "03h4468ge977zqezlma7mqam6",
+          "03h4468ge977zqezlmd6munag",
+          "03h4468ge977zqezlme7jjfn9",
+          "03h4468ge977zqezlmfzuxhxi"
+        ],
+        "groupId": "03h4468geka6y2ntyi7i4fmex",
+        "ui": {
+          "x": 74,
+          "y": 5808
+        }
+      },
+      "03h4468ge977zqezlmi9acrpo": {
+        "id": "03h4468ge977zqezlmi9acrpo",
+        "name": "translation",
+        "comment": "번역 결과. 같은 원문·언어는 다시 호출하지 않음 (FR-X-05)",
+        "columnIds": [
+          "03h4468ge977zqezlmjs8najs",
+          "03h4468ge977zqezlmlm7o1hl",
+          "03h4468ge977zqezlmolgut43",
+          "03h4468ge977zqezlmr1xf2vk",
+          "03h4468ge977zqezlmredymeq",
+          "03h4468ge977zqezlmux3b5rs",
+          "03h4468ge977zqezlmwlxyxa7",
+          "03h4468ge977zqezlmyvmlrcl",
+          "03h4468ge977zqezlmz8hc4eo"
+        ],
+        "groupId": "03h4468geka6y2ntyi7i4fmex",
+        "ui": {
+          "x": 820,
+          "y": 5808
+        }
+      },
+      "03h4468ge977zqezln1403jfq": {
+        "id": "03h4468ge977zqezln1403jfq",
+        "name": "event",
+        "comment": "COMPLETED·HIDDEN은 삭제가 아닌 상태, 늦은 분석으로 되살리지 않음. uk_event_origin_job은 WHERE origin_job_id IS NOT NULL (FR-E-01~04, FR-G-03)",
+        "columnIds": [
+          "03h4468ge977zqezln3jpwmc8",
+          "03h4468ge977zqezln5v3uxs0",
+          "03h4468ge977zqezln8fhurip",
+          "03h4468ge977zqezln9gx2ljy",
+          "03h4468ge977zqezlnc6pgx94",
+          "03h4468ge977zqezlnd9xz3ti",
+          "03h4468ge977zqezlnfh0scva",
+          "03h4468ge977zqezlngz120j4",
+          "03h4468ge977zqezlnjxt6h35",
+          "03h4468ge977zqezlnkykd134",
+          "03h4468ge977zqezlnoctxovo",
+          "03h4468ge977zqezlnprs7y23",
+          "03h4468ge977zqezlnsl5xrg6",
+          "03h4468ge977zqezlnu2pvzib",
+          "03h4468ge977zqezlnvr7adz6",
+          "03h4468ge977zqezlnxvbjsda",
+          "03h4468ge977zqezlnyo5l1bq",
+          "03h4468ge977zqezlo1fk83nl",
+          "03h4468ge977zqezlo426ito6",
+          "03h4468ge977zqezlo68sdjog",
+          "03h4468ge977zqezlo7twtlqk",
+          "03h4468ge977zqezlo95etuzg"
+        ],
+        "groupId": "03h4468geka6y2ntyi9wujrbv",
+        "ui": {
+          "x": 74,
+          "y": 5094
+        }
+      },
+      "03h4468ge977zqezloc297i0d": {
+        "id": "03h4468ge977zqezloc297i0d",
+        "name": "event_photo",
+        "comment": "사용자가 제외한 사진은 EXCLUDED로 남겨 자동 재연결 차단 (FR-G-03, FR-E-03)",
+        "columnIds": [
+          "03h4468ge977zqezlodcjh963",
+          "03h4468ge977zqezloes1h95l",
+          "03h4468ge977zqezloheojar0",
+          "03h4468ge977zqezlojfswd4w",
+          "03h4468ge977zqezlolb9nj9x",
+          "03h4468ge977zqezlomqal0um",
+          "03h4468ge977zqezlopj03t6r",
+          "03h4468ge977zqezlorn8ubot"
+        ],
+        "groupId": "03h4468geka6y2ntyi9wujrbv",
+        "ui": {
+          "x": 74,
+          "y": 4792
+        }
+      },
+      "03h4468ge977zqezlosz9hyo7": {
+        "id": "03h4468ge977zqezlosz9hyo7",
+        "name": "notification_schedule",
+        "comment": "로그인 계정의 알림 예약. worker가 fire_at에 SKIP LOCKED로 가져와 버전을 다시 확인하고 FCM으로 발송. EVENT_PLACE는 구역 진입 시 서버가 확인 (ADR-0019, FR-N-02·03·04)",
+        "columnIds": [
+          "03h4468ge977zqezlovyajhgw",
+          "03h45zpihltkk2192523hg3t2",
+          "03h4468ge977zqezloyys8afz",
+          "03h4468ge977zqezlox7az9g5",
+          "03h45zpihltkk2192552wbzrz",
+          "03h4468ge977zqezlp463t1is",
+          "03h4468ge977zqezlp1jlobe9",
+          "03h45zpihltkk219258rp700t",
+          "03h4468ge977zqezlp2rijoeg",
+          "03h4468ge977zqezlp6g8jvje",
+          "03h45zpihr6blrfhig9twata9",
+          "03h45zpihr6blrfhige6p5628",
+          "03h45zpihr6blrfhightjwimg",
+          "03h45zpihr6blrfhiglu46ce5",
+          "03h4468ge977zqezlp8u0exf8",
+          "03h45zpihr6blrfhigopttvrq",
+          "03h45zpihr6blrfhigspgfd6e"
+        ],
+        "groupId": "03h4468geka6y2ntyi9wujrbv",
+        "ui": {
+          "x": 1500,
+          "y": 4792
+        }
+      },
+      "03h4468ge977zqezlpt9mf2c0": {
+        "id": "03h4468ge977zqezlpt9mf2c0",
+        "name": "idempotency_record",
+        "comment": "변경 요청 재전송 중복 방지. 처리 중인 키가 다시 오면 CONFLICT (공통 규칙, api-contract)",
+        "columnIds": [
+          "03h4468ge977zqezlpv0n6k04",
+          "03h4468ge977zqezlpwhvasgx",
+          "03h4468ge977zqezlpynmgmmf",
+          "03h4468ge977zqezlq0hxdys6",
+          "03h4468ge977zqezlq2q2p6lp",
+          "03h4468ge977zqezlq5duco1z",
+          "03h4468ge977zqezlq5y13f3p",
+          "03h4468ge977zqezlq9ewtbfi",
+          "03h4468ge977zqezlqaixpvhr"
+        ],
+        "groupId": "03h4468geka6y2ntyiaw7v936",
+        "ui": {
+          "x": 1739,
+          "y": 102
+        }
+      },
+      "03h4468ge977zqezlqcrd27lf": {
+        "id": "03h4468ge977zqezlqcrd27lf",
+        "name": "external_call",
+        "comment": "외부 작업 4단계 기록. UNKNOWN은 재대조 배치가 처리 (consistency-rules, FR-I-03)",
+        "columnIds": [
+          "03h4468ge977zqezlqe2goqgz",
+          "03h4468ge977zqezlqgzw4air",
+          "03h4468ge977zqezlqhxdswnf",
+          "03h4468ge977zqezlql50ym1j",
+          "03h4468ge977zqezlqlj4hbq0",
+          "03h4468ge977zqezlqov97k8n",
+          "03h4468ge977zqezlqqy34efz",
+          "03h4468ge977zqezlqt5lph08",
+          "03h4468ge977zqezlquo2rb69",
+          "03h4468ge977zqezlqwdxu9ky",
+          "03h4468ge977zqezlqyevlz4q",
+          "03h4468ge977zqezlqzrzxurw",
+          "03h4468ge977zqezlr1a93wbl",
+          "03h4468ge977zqezlr4y5vm6c",
+          "03h4468ge977zqezlr6kq5tjc",
+          "03h4468ge977zqezlr7t23agw"
+        ],
+        "groupId": "03h4468geka6y2ntyiaw7v936",
+        "ui": {
+          "x": 1300,
+          "y": 428
+        }
+      },
+      "03h4468ge977zqezlrabh72d2": {
+        "id": "03h4468ge977zqezlrabh72d2",
+        "name": "owner_change_counter",
+        "comment": "owner별 change_seq 발급. DB 시퀀스는 커밋 순서와 번호 순서가 어긋나 Pull이 변경을 놓칠 수 있음 (FR-A-02)",
+        "columnIds": [
+          "03h4468ge977zqezlrcfublt8",
+          "03h4468geephs5erx61iyru2k"
+        ],
+        "groupId": "03h4468geka6y2ntyiaw7v936",
+        "ui": {
+          "x": 74,
+          "y": 102
+        }
+      },
+      "03h4468geephs5erx656317ly": {
+        "id": "03h4468geephs5erx656317ly",
+        "name": "event_publication",
+        "comment": "Spring Modulith JDBC event publication registry (내부 이벤트 outbox). DDL은 Modulith 제공 스크립트 사용",
+        "columnIds": [
+          "03h4468geephs5erx65tepfdr",
+          "03h4468geephs5erx67irjads",
+          "03h4468geephs5erx6b5xkxw0",
+          "03h4468geephs5erx6cktdrum",
+          "03h4468geephs5erx6dy6o1ba",
+          "03h4468geephs5erx6gl4ars7",
+          "03h4468geephs5erx6hukefst",
+          "03h4468geephs5erx6jc5rg8b",
+          "03h4468geephs5erx6lo66oo1"
+        ],
+        "groupId": "03h4468geka6y2ntyiaw7v936",
+        "ui": {
+          "x": 74,
+          "y": 428
+        }
+      },
+      "03h4468geephs5erx6nws4bod": {
+        "id": "03h4468geephs5erx6nws4bod",
+        "name": "shedlock",
+        "comment": "배치 단일 실행 잠금 (ShedLock JDBC)",
+        "columnIds": [
+          "03h4468geephs5erx6pz8dl89",
+          "03h4468geephs5erx6rn1axf6",
+          "03h4468geephs5erx6uw2x6ad",
+          "03h4468geephs5erx6w8l5evo"
+        ],
+        "groupId": "03h4468geka6y2ntyiaw7v936",
+        "ui": {
+          "x": 1190,
+          "y": 102
+        }
+      },
+      "03h45zxe8rur98csoh0m99lbi": {
+        "id": "03h45zxe8rur98csoh0m99lbi",
+        "name": "notification_device",
+        "comment": "알림 발송용 기기 상태(단말 보고값). 로그인 계정의 기기만 행을 가지며 로그아웃·기기 해제 시 삭제. 발송 대상 기기 규칙은 P09 (ADR-0019, FR-N-03·04)",
+        "columnIds": [
+          "03h45zxe8rur98csoh3a2lhcw",
+          "03h45zxe8rur98csoh6zm6jgk",
+          "03h45zxe8rur98csohb0n231w",
+          "03h45zxe8rur98csohgftfjqr",
+          "03h45zxe8xapjz6nhwfei6hoi",
+          "03h45zxe8xapjz6nhwi7eaus7",
+          "03h45zxe8xapjz6nhwmyiua02",
+          "03h45zxe8xapjz6nhwpqrb01p",
+          "03h45zxe8xapjz6nhwufpbylz",
+          "03h45zxe8xapjz6nhwy8q9on6",
+          "03h45zxe8xapjz6nhx2ywaqcf",
+          "03h45zxe8xapjz6nhx61w5e9j",
+          "03h45zxe92rplendwadsssdh6"
+        ],
+        "groupId": "03h4468geka6y2ntyi9wujrbv",
+        "ui": {
+          "x": 1500,
+          "y": 5310
+        }
+      },
+      "03h46ggkrxnffv4hjizyj1crb": {
+        "id": "03h46ggkrxnffv4hjizyj1crb",
+        "name": "device_trial_mark",
+        "comment": "재설치 체험 차단용 기기 판별 기록 (ADR-0020). 탈퇴 후에도 남고 원본 식별자 없이 HMAC만 저장. 기기·계정 이용량 중 하나라도 소진하면 체험 없음. uk_device_trial_mark_key는 WHERE device_key_hmac IS NOT NULL (FR-B-01, P08)",
+        "columnIds": [
+          "03h46ggkrxnffv4hjj4ssm18h",
+          "03h46ggks30n8gsin8mdrlc2f",
+          "03h46ggks30n8gsin8psp7e9e",
+          "03h46ggks30n8gsin8uksber0",
+          "03h46ggks8ij6t1ezl8lkhrhm",
+          "03h46ggks8ij6t1ezlcypq0jj",
+          "03h46ggks8ij6t1ezlf9ls4dl",
+          "03h46ggks8ij6t1ezljcwosbp",
+          "03h46ggks8ij6t1ezlncrcoju",
+          "03h46ggksdze9d44xznn1sg1x",
+          "03h46ggksdze9d44xzqcbalwc"
+        ],
+        "groupId": "03h4468geka6y2ntyhzlqzeyp",
+        "ui": {
+          "x": 2076,
+          "y": 3562
+        }
+      },
+      "03h46ggksdze9d44y09z2x7zj": {
+        "id": "03h46ggksdze9d44y09z2x7zj",
+        "name": "provider_identity_mark",
+        "comment": "재가입 판별용 제공자 사용자 ID 해시 (ADR-0020). 가입할 때 저장하고 계정과 FK 없이 탈퇴 후에도 남음. 행이 있는데 활성 auth_identity가 없으면 재가입이라 체험 없음 (FR-A-05, FR-B-01, P08)",
+        "columnIds": [
+          "03h46ggksjkasekzaug8jqveg",
+          "03h46ggksjkasekzaukci06tb",
+          "03h46ggksjkasekzaupc5rak2",
+          "03h46ggksjkasekzaurjq8g8z"
+        ],
+        "groupId": "03h4468geka6y2ntyhzlqzeyp",
+        "ui": {
+          "x": 1460,
+          "y": 3284
+        }
+      }
+    },
+    "tableColumnEntities": {
+      "03h4468gdyciasr0yxpnzf0ip": {
+        "id": "03h4468gdyciasr0yxpnzf0ip",
+        "tableId": "03h4468gdyciasr0yxo1ozvva",
+        "name": "id",
+        "comment": "UUIDv7",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468gdyciasr0yxqw2iakm": {
+        "id": "03h4468gdyciasr0yxqw2iakm",
+        "tableId": "03h4468gdyciasr0yxo1ozvva",
+        "name": "kind",
+        "comment": "ACCOUNT / ANONYMOUS",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468gdyciasr0yxtxs2ekw": {
+        "id": "03h4468gdyciasr0yxtxs2ekw",
+        "tableId": "03h4468gdyciasr0yxo1ozvva",
+        "name": "status",
+        "comment": "ACTIVE / DELETING / DELETED. DELETING이면 신규 분석·동기화 차단",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468gdyciasr0yxuybqylq": {
+        "id": "03h4468gdyciasr0yxuybqylq",
+        "tableId": "03h4468gdyciasr0yxo1ozvva",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468gdyciasr0yxx54lusc": {
+        "id": "03h4468gdyciasr0yxx54lusc",
+        "tableId": "03h4468gdyciasr0yxo1ozvva",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468gdyciasr0yxyqvtgt9": {
+        "id": "03h4468gdyciasr0yxyqvtgt9",
+        "tableId": "03h4468gdyciasr0yxo1ozvva",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468gdyciasr0yy31crlpo": {
+        "id": "03h4468gdyciasr0yy31crlpo",
+        "tableId": "03h4468gdyciasr0yy20wi45y",
+        "name": "principal_id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468gdyciasr0yy50j6p1p": {
+        "id": "03h4468gdyciasr0yy50j6p1p",
+        "tableId": "03h4468gdyciasr0yy20wi45y",
+        "name": "last_login_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468gdyciasr0yy7zyidyc": {
+        "id": "03h4468gdyciasr0yy7zyidyc",
+        "tableId": "03h4468gdyciasr0yy20wi45y",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468gdyciasr0yy9duopt8": {
+        "id": "03h4468gdyciasr0yy9duopt8",
+        "tableId": "03h4468gdyciasr0yy20wi45y",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468gdyciasr0yyc8f7yb1": {
+        "id": "03h4468gdyciasr0yyc8f7yb1",
+        "tableId": "03h4468gdyciasr0yy20wi45y",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468gdyciasr0yyeplijvi": {
+        "id": "03h4468gdyciasr0yyeplijvi",
+        "tableId": "03h4468gdyciasr0yyd9e43nc",
+        "name": "principal_id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468gdyciasr0yyhf5icv4": {
+        "id": "03h4468gdyciasr0yyhf5icv4",
+        "tableId": "03h4468gdyciasr0yyd9e43nc",
+        "name": "token_hash",
+        "comment": "설치 단위 익명 토큰의 해시",
+        "dataType": "text",
+        "options": 12
+      },
+      "03h4468gdyciasr0yyj2bi13b": {
+        "id": "03h4468gdyciasr0yyj2bi13b",
+        "tableId": "03h4468gdyciasr0yyd9e43nc",
+        "name": "platform",
+        "comment": "IOS / ANDROID",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468gdyciasr0yykp82w3i": {
+        "id": "03h4468gdyciasr0yykp82w3i",
+        "tableId": "03h4468gdyciasr0yyd9e43nc",
+        "name": "attestation_kind",
+        "comment": "APP_ATTEST / PLAY_INTEGRITY",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468gdyciasr0yyo3n14cn": {
+        "id": "03h4468gdyciasr0yyo3n14cn",
+        "tableId": "03h4468gdyciasr0yyd9e43nc",
+        "name": "attested_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468gdyciasr0yypq94emk": {
+        "id": "03h4468gdyciasr0yypq94emk",
+        "tableId": "03h4468gdyciasr0yyd9e43nc",
+        "name": "last_seen_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468gdyciasr0yyrc8tg7m": {
+        "id": "03h4468gdyciasr0yyrc8tg7m",
+        "tableId": "03h4468gdyciasr0yyd9e43nc",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxh760djmj": {
+        "id": "03h4468ge3qzlp0kxh760djmj",
+        "tableId": "03h4468ge3qzlp0kxh4t3yjt1",
+        "name": "id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxh8yw1n8x": {
+        "id": "03h4468ge3qzlp0kxh8yw1n8x",
+        "tableId": "03h4468ge3qzlp0kxh4t3yjt1",
+        "name": "account_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxha9mssri": {
+        "id": "03h4468ge3qzlp0kxha9mssri",
+        "tableId": "03h4468ge3qzlp0kxh4t3yjt1",
+        "name": "provider",
+        "comment": "APPLE / GOOGLE",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxhcb9ilb4": {
+        "id": "03h4468ge3qzlp0kxhcb9ilb4",
+        "tableId": "03h4468ge3qzlp0kxh4t3yjt1",
+        "name": "provider_subject",
+        "comment": "제공자 sub",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxhe1n9yfk": {
+        "id": "03h4468ge3qzlp0kxhe1n9yfk",
+        "tableId": "03h4468ge3qzlp0kxh4t3yjt1",
+        "name": "provider_refresh_token_enc",
+        "comment": "Apple 탈퇴 시 토큰 철회용, 암호화 저장",
+        "dataType": "bytea",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxhgw07qzv": {
+        "id": "03h4468ge3qzlp0kxhgw07qzv",
+        "tableId": "03h4468ge3qzlp0kxh4t3yjt1",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxhhtn0zyp": {
+        "id": "03h4468ge3qzlp0kxhhtn0zyp",
+        "tableId": "03h4468ge3qzlp0kxh4t3yjt1",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxhlt0hev8": {
+        "id": "03h4468ge3qzlp0kxhlt0hev8",
+        "tableId": "03h4468ge3qzlp0kxhjodrf5h",
+        "name": "id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxhoekt12w": {
+        "id": "03h4468ge3qzlp0kxhoekt12w",
+        "tableId": "03h4468ge3qzlp0kxhjodrf5h",
+        "name": "account_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxhpcn51j2": {
+        "id": "03h4468ge3qzlp0kxhpcn51j2",
+        "tableId": "03h4468ge3qzlp0kxhjodrf5h",
+        "name": "device_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxht1ose03": {
+        "id": "03h4468ge3qzlp0kxht1ose03",
+        "tableId": "03h4468ge3qzlp0kxhjodrf5h",
+        "name": "family_id",
+        "comment": "교체 체인. 재사용 탐지 시 family 전체 폐기",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxhtzr52eb": {
+        "id": "03h4468ge3qzlp0kxhtzr52eb",
+        "tableId": "03h4468ge3qzlp0kxhjodrf5h",
+        "name": "token_hash",
+        "dataType": "text",
+        "options": 12
+      },
+      "03h4468ge3qzlp0kxhwfne88a": {
+        "id": "03h4468ge3qzlp0kxhwfne88a",
+        "tableId": "03h4468ge3qzlp0kxhjodrf5h",
+        "name": "status",
+        "comment": "ACTIVE / ROTATED / REVOKED",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxhya1sx44": {
+        "id": "03h4468ge3qzlp0kxhya1sx44",
+        "tableId": "03h4468ge3qzlp0kxhjodrf5h",
+        "name": "expires_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxi06tzhx9": {
+        "id": "03h4468ge3qzlp0kxi06tzhx9",
+        "tableId": "03h4468ge3qzlp0kxhjodrf5h",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxi1h489j3": {
+        "id": "03h4468ge3qzlp0kxi1h489j3",
+        "tableId": "03h4468ge3qzlp0kxhjodrf5h",
+        "name": "revoked_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxi5u5onji": {
+        "id": "03h4468ge3qzlp0kxi5u5onji",
+        "tableId": "03h4468ge3qzlp0kxi4f3savi",
+        "name": "id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxi8ipwlzn": {
+        "id": "03h4468ge3qzlp0kxi8ipwlzn",
+        "tableId": "03h4468ge3qzlp0kxi4f3savi",
+        "name": "principal_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxi99xyiv3": {
+        "id": "03h4468ge3qzlp0kxi99xyiv3",
+        "tableId": "03h4468ge3qzlp0kxi4f3savi",
+        "name": "install_id",
+        "comment": "앱 설치 식별자",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxiceim55g": {
+        "id": "03h4468ge3qzlp0kxiceim55g",
+        "tableId": "03h4468ge3qzlp0kxi4f3savi",
+        "name": "platform",
+        "comment": "IOS / ANDROID",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxiilqryn5": {
+        "id": "03h4468ge3qzlp0kxiilqryn5",
+        "tableId": "03h4468ge3qzlp0kxi4f3savi",
+        "name": "app_version",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxikslwefz": {
+        "id": "03h4468ge3qzlp0kxikslwefz",
+        "tableId": "03h4468ge3qzlp0kxi4f3savi",
+        "name": "last_seen_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxilgxun3b": {
+        "id": "03h4468ge3qzlp0kxilgxun3b",
+        "tableId": "03h4468ge3qzlp0kxi4f3savi",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kximvpqwc8": {
+        "id": "03h4468ge3qzlp0kximvpqwc8",
+        "tableId": "03h4468ge3qzlp0kxi4f3savi",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxip0wkasb": {
+        "id": "03h4468ge3qzlp0kxip0wkasb",
+        "tableId": "03h4468ge3qzlp0kxi4f3savi",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h46ggksp1aqpotycggmbdjj": {
+        "id": "03h46ggksp1aqpotycggmbdjj",
+        "tableId": "03h4468ge3qzlp0kxi4f3savi",
+        "name": "trial_mark_id",
+        "comment": "같은 설치의 비로그인·계정 행이 같은 기록을 가리킴",
+        "dataType": "uuid",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxiu7c2iu4": {
+        "id": "03h4468ge3qzlp0kxiu7c2iu4",
+        "tableId": "03h4468ge3qzlp0kxisn9vsc9",
+        "name": "id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxiuu2429c": {
+        "id": "03h4468ge3qzlp0kxiuu2429c",
+        "tableId": "03h4468ge3qzlp0kxisn9vsc9",
+        "name": "principal_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxixwa7se7": {
+        "id": "03h4468ge3qzlp0kxixwa7se7",
+        "tableId": "03h4468ge3qzlp0kxisn9vsc9",
+        "name": "device_id",
+        "dataType": "uuid",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxj08yn0md": {
+        "id": "03h4468ge3qzlp0kxj08yn0md",
+        "tableId": "03h4468ge3qzlp0kxisn9vsc9",
+        "name": "decision",
+        "comment": "GRANTED / DENIED / WITHDRAWN",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxj11rym3y": {
+        "id": "03h4468ge3qzlp0kxj11rym3y",
+        "tableId": "03h4468ge3qzlp0kxisn9vsc9",
+        "name": "notice_version",
+        "comment": "동의 안내 문구 버전",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxj3iu2nsf": {
+        "id": "03h4468ge3qzlp0kxj3iu2nsf",
+        "tableId": "03h4468ge3qzlp0kxisn9vsc9",
+        "name": "decided_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxj6ka7akv": {
+        "id": "03h4468ge3qzlp0kxj6ka7akv",
+        "tableId": "03h4468ge3qzlp0kxj5pbo1ff",
+        "name": "account_id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxj9rfqnn4": {
+        "id": "03h4468ge3qzlp0kxj9rfqnn4",
+        "tableId": "03h4468ge3qzlp0kxj5pbo1ff",
+        "name": "entitlement",
+        "comment": "pro",
+        "dataType": "text",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxjaygu5r3": {
+        "id": "03h4468ge3qzlp0kxjaygu5r3",
+        "tableId": "03h4468ge3qzlp0kxj5pbo1ff",
+        "name": "status",
+        "comment": "RevenueCat 기준 상태 (ACTIVE / GRACE / BILLING_RETRY / EXPIRED 등)",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxjdqljop6": {
+        "id": "03h4468ge3qzlp0kxjdqljop6",
+        "tableId": "03h4468ge3qzlp0kxj5pbo1ff",
+        "name": "product_id",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxjegt4hm7": {
+        "id": "03h4468ge3qzlp0kxjegt4hm7",
+        "tableId": "03h4468ge3qzlp0kxj5pbo1ff",
+        "name": "period",
+        "comment": "MONTHLY / ANNUAL",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxjgndn3rk": {
+        "id": "03h4468ge3qzlp0kxjgndn3rk",
+        "tableId": "03h4468ge3qzlp0kxj5pbo1ff",
+        "name": "store",
+        "comment": "APP_STORE / PLAY_STORE",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxjjvqaq5j": {
+        "id": "03h4468ge3qzlp0kxjjvqaq5j",
+        "tableId": "03h4468ge3qzlp0kxj5pbo1ff",
+        "name": "expires_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxjlx28wag": {
+        "id": "03h4468ge3qzlp0kxjlx28wag",
+        "tableId": "03h4468ge3qzlp0kxj5pbo1ff",
+        "name": "will_renew",
+        "comment": "자동 갱신 취소와 실제 만료를 구분",
+        "dataType": "boolean",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxjmrly2sg": {
+        "id": "03h4468ge3qzlp0kxjmrly2sg",
+        "tableId": "03h4468ge3qzlp0kxj5pbo1ff",
+        "name": "verified_at",
+        "comment": "RevenueCat REST 재조회 시각",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxjp6hrz2i": {
+        "id": "03h4468ge3qzlp0kxjp6hrz2i",
+        "tableId": "03h4468ge3qzlp0kxj5pbo1ff",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxjri2iafx": {
+        "id": "03h4468ge3qzlp0kxjri2iafx",
+        "tableId": "03h4468ge3qzlp0kxj5pbo1ff",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxjsrdmsum": {
+        "id": "03h4468ge3qzlp0kxjsrdmsum",
+        "tableId": "03h4468ge3qzlp0kxj5pbo1ff",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxjy0szbv2": {
+        "id": "03h4468ge3qzlp0kxjy0szbv2",
+        "tableId": "03h4468ge3qzlp0kxjueu7nb9",
+        "name": "event_id",
+        "comment": "RevenueCat 이벤트 ID, 중복 수신 차단",
+        "dataType": "text",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxjzxppv7e": {
+        "id": "03h4468ge3qzlp0kxjzxppv7e",
+        "tableId": "03h4468ge3qzlp0kxjueu7nb9",
+        "name": "account_id",
+        "comment": "app_user_id로 찾은 계정. 못 찾았거나 계정이 삭제되면 null (ON DELETE SET NULL)",
+        "dataType": "uuid",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxk1yjpiq3": {
+        "id": "03h4468ge3qzlp0kxk1yjpiq3",
+        "tableId": "03h4468ge3qzlp0kxjueu7nb9",
+        "name": "type",
+        "comment": "탈퇴 후에도 남김 (사용자 결정, 2026-10-26)",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxk25x4m75": {
+        "id": "03h4468ge3qzlp0kxk25x4m75",
+        "tableId": "03h4468ge3qzlp0kxjueu7nb9",
+        "name": "status",
+        "comment": "RECEIVED / APPLIED / IGNORED / UNRESOLVED",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxk56f9slj": {
+        "id": "03h4468ge3qzlp0kxk56f9slj",
+        "tableId": "03h4468ge3qzlp0kxjueu7nb9",
+        "name": "received_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxk7m6pvoz": {
+        "id": "03h4468ge3qzlp0kxk7m6pvoz",
+        "tableId": "03h4468ge3qzlp0kxjueu7nb9",
+        "name": "processed_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h44damn4kxud9wpdo1p8shr": {
+        "id": "03h44damn4kxud9wpdo1p8shr",
+        "tableId": "03h4468ge3qzlp0kxjueu7nb9",
+        "name": "app_user_id",
+        "comment": "웹훅의 RevenueCat app_user_id 원문(= 계정 principal.id 예정). 계정 조회 재시도와 REST 재조회 기준",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h44damn4kxud9wpds6qu84f": {
+        "id": "03h44damn4kxud9wpds6qu84f",
+        "tableId": "03h4468ge3qzlp0kxjueu7nb9",
+        "name": "payload",
+        "comment": "재처리용 웹훅 본문(aliases, transferred_from/to 포함). 응답 전에 저장, 해결 후 P08 기한에 비우고 탈퇴 시 즉시 지움",
+        "dataType": "jsonb",
+        "options": 0
+      },
+      "03h44damna12iwbwji1ofkj1l": {
+        "id": "03h44damna12iwbwji1ofkj1l",
+        "tableId": "03h4468ge3qzlp0kxjueu7nb9",
+        "name": "attempt_count",
+        "comment": "계정 조회·반영 재시도 횟수",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h44damna12iwbwji555s7xh": {
+        "id": "03h44damna12iwbwji555s7xh",
+        "tableId": "03h4468ge3qzlp0kxjueu7nb9",
+        "name": "next_attempt_at",
+        "comment": "UNRESOLVED 재처리 예정 시각",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h44damna12iwbwjiaauwvsy": {
+        "id": "03h44damna12iwbwjiaauwvsy",
+        "tableId": "03h4468ge3qzlp0kxjueu7nb9",
+        "name": "last_error_code",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxkbrziwus": {
+        "id": "03h4468ge3qzlp0kxkbrziwus",
+        "tableId": "03h4468ge3qzlp0kxk9r388k6",
+        "name": "principal_id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxkcjsp01s": {
+        "id": "03h4468ge3qzlp0kxkcjsp01s",
+        "tableId": "03h4468ge3qzlp0kxk9r388k6",
+        "name": "quota_kind",
+        "comment": "TRIAL / PRO_INITIAL / PRO_DAILY",
+        "dataType": "text",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxkfsmwjn7": {
+        "id": "03h4468ge3qzlp0kxkfsmwjn7",
+        "tableId": "03h4468ge3qzlp0kxk9r388k6",
+        "name": "period_key",
+        "comment": "TRIAL은 고정값, PRO_DAILY는 날짜",
+        "dataType": "text",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxkgl6kvaq": {
+        "id": "03h4468ge3qzlp0kxkgl6kvaq",
+        "tableId": "03h4468ge3qzlp0kxk9r388k6",
+        "name": "limit_count",
+        "comment": "생성 시 설정값(P01·P03)을 기록",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxkjr6hqu2": {
+        "id": "03h4468ge3qzlp0kxkjr6hqu2",
+        "tableId": "03h4468ge3qzlp0kxk9r388k6",
+        "name": "reserved_count",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxkkpllh1v": {
+        "id": "03h4468ge3qzlp0kxkkpllh1v",
+        "tableId": "03h4468ge3qzlp0kxk9r388k6",
+        "name": "consumed_count",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxkmvmcq5e": {
+        "id": "03h4468ge3qzlp0kxkmvmcq5e",
+        "tableId": "03h4468ge3qzlp0kxk9r388k6",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxkpd51bsi": {
+        "id": "03h4468ge3qzlp0kxkpd51bsi",
+        "tableId": "03h4468ge3qzlp0kxk9r388k6",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxkq9as1gx": {
+        "id": "03h4468ge3qzlp0kxkq9as1gx",
+        "tableId": "03h4468ge3qzlp0kxk9r388k6",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxkuazvdjz": {
+        "id": "03h4468ge3qzlp0kxkuazvdjz",
+        "tableId": "03h4468ge3qzlp0kxktbzseyu",
+        "name": "id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxkw3vc1jr": {
+        "id": "03h4468ge3qzlp0kxkw3vc1jr",
+        "tableId": "03h4468ge3qzlp0kxktbzseyu",
+        "name": "principal_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxkye45tss": {
+        "id": "03h4468ge3qzlp0kxkye45tss",
+        "tableId": "03h4468ge3qzlp0kxktbzseyu",
+        "name": "quota_kind",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxl161tcky": {
+        "id": "03h4468ge3qzlp0kxl161tcky",
+        "tableId": "03h4468ge3qzlp0kxktbzseyu",
+        "name": "period_key",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxl231a1t9": {
+        "id": "03h4468ge3qzlp0kxl231a1t9",
+        "tableId": "03h4468ge3qzlp0kxktbzseyu",
+        "name": "photo_id",
+        "comment": "photo.id, 모듈 간 ID 참조",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxl57mkayr": {
+        "id": "03h4468ge3qzlp0kxl57mkayr",
+        "tableId": "03h4468ge3qzlp0kxktbzseyu",
+        "name": "job_id",
+        "comment": "analysis_job.id, 모듈 간 ID 참조",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxl5u05qf2": {
+        "id": "03h4468ge3qzlp0kxl5u05qf2",
+        "tableId": "03h4468ge3qzlp0kxktbzseyu",
+        "name": "status",
+        "comment": "RESERVED / CONSUMED / RELEASED",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxl95defew": {
+        "id": "03h4468ge3qzlp0kxl95defew",
+        "tableId": "03h4468ge3qzlp0kxktbzseyu",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxla741zzl": {
+        "id": "03h4468ge3qzlp0kxla741zzl",
+        "tableId": "03h4468ge3qzlp0kxktbzseyu",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h46ggksp1aqpotyclxuf8xo": {
+        "id": "03h46ggksp1aqpotyclxuf8xo",
+        "tableId": "03h4468ge3qzlp0kxktbzseyu",
+        "name": "trial_mark_id",
+        "comment": "TRIAL 예약에서 같은 트랜잭션으로 함께 차감한 device_trial_mark.id",
+        "dataType": "uuid",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxldxmq81d": {
+        "id": "03h4468ge3qzlp0kxldxmq81d",
+        "tableId": "03h4468ge3qzlp0kxlcf5ld1e",
+        "name": "principal_id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxlglq5g0y": {
+        "id": "03h4468ge3qzlp0kxlglq5g0y",
+        "tableId": "03h4468ge3qzlp0kxlcf5ld1e",
+        "name": "client_click_id",
+        "comment": "단말 생성. 재전송은 1회로 집계",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxli2dy4fu": {
+        "id": "03h4468ge3qzlp0kxli2dy4fu",
+        "tableId": "03h4468ge3qzlp0kxlcf5ld1e",
+        "name": "target_type",
+        "comment": "ACTION / EVENT",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxljsgwhi1": {
+        "id": "03h4468ge3qzlp0kxljsgwhi1",
+        "tableId": "03h4468ge3qzlp0kxlcf5ld1e",
+        "name": "target_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxlllqha3c": {
+        "id": "03h4468ge3qzlp0kxlllqha3c",
+        "tableId": "03h4468ge3qzlp0kxlcf5ld1e",
+        "name": "clicked_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxlph5p912": {
+        "id": "03h4468ge3qzlp0kxlph5p912",
+        "tableId": "03h4468ge3qzlp0kxlnjcc3sw",
+        "name": "id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxlsmvbrf5": {
+        "id": "03h4468ge3qzlp0kxlsmvbrf5",
+        "tableId": "03h4468ge3qzlp0kxlnjcc3sw",
+        "name": "principal_id",
+        "comment": "탈퇴한 계정의 principal.id. principal은 탈퇴 후에도 최소 행으로 남으므로 account 삭제를 막지 않음",
+        "dataType": "uuid",
+        "options": 12
+      },
+      "03h4468ge3qzlp0kxlv133w6n": {
+        "id": "03h4468ge3qzlp0kxlv133w6n",
+        "tableId": "03h4468ge3qzlp0kxlnjcc3sw",
+        "name": "status",
+        "comment": "REQUESTED / IN_PROGRESS / COMPLETED",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxlwr0meon": {
+        "id": "03h4468ge3qzlp0kxlwr0meon",
+        "tableId": "03h4468ge3qzlp0kxlnjcc3sw",
+        "name": "requested_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxlz06xnhr": {
+        "id": "03h4468ge3qzlp0kxlz06xnhr",
+        "tableId": "03h4468ge3qzlp0kxlnjcc3sw",
+        "name": "completed_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxm06ixais": {
+        "id": "03h4468ge3qzlp0kxm06ixais",
+        "tableId": "03h4468ge3qzlp0kxlnjcc3sw",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxm1id25si": {
+        "id": "03h4468ge3qzlp0kxm1id25si",
+        "tableId": "03h4468ge3qzlp0kxlnjcc3sw",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxm63eskds": {
+        "id": "03h4468ge3qzlp0kxm63eskds",
+        "tableId": "03h4468ge3qzlp0kxm3uxzm4o",
+        "name": "id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxm8da7r27": {
+        "id": "03h4468ge3qzlp0kxm8da7r27",
+        "tableId": "03h4468ge3qzlp0kxm3uxzm4o",
+        "name": "deletion_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxm9uc5u76": {
+        "id": "03h4468ge3qzlp0kxm9uc5u76",
+        "tableId": "03h4468ge3qzlp0kxm3uxzm4o",
+        "name": "target",
+        "comment": "DB / S3_TEMP / REVENUECAT / APPLE_REVOKE",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxmbw8f8f6": {
+        "id": "03h4468ge3qzlp0kxmbw8f8f6",
+        "tableId": "03h4468ge3qzlp0kxm3uxzm4o",
+        "name": "status",
+        "comment": "PENDING / DONE / FAILED",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxme3r4c5s": {
+        "id": "03h4468ge3qzlp0kxme3r4c5s",
+        "tableId": "03h4468ge3qzlp0kxm3uxzm4o",
+        "name": "attempt_count",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxmfqhcdfz": {
+        "id": "03h4468ge3qzlp0kxmfqhcdfz",
+        "tableId": "03h4468ge3qzlp0kxm3uxzm4o",
+        "name": "next_attempt_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxmhup1siq": {
+        "id": "03h4468ge3qzlp0kxmhup1siq",
+        "tableId": "03h4468ge3qzlp0kxm3uxzm4o",
+        "name": "last_error_code",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxmja7vncn": {
+        "id": "03h4468ge3qzlp0kxmja7vncn",
+        "tableId": "03h4468ge3qzlp0kxm3uxzm4o",
+        "name": "completed_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxmlemsqvg": {
+        "id": "03h4468ge3qzlp0kxmlemsqvg",
+        "tableId": "03h4468ge3qzlp0kxm3uxzm4o",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxmn1s2hb8": {
+        "id": "03h4468ge3qzlp0kxmn1s2hb8",
+        "tableId": "03h4468ge3qzlp0kxm3uxzm4o",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxmqyb4oka": {
+        "id": "03h4468ge3qzlp0kxmqyb4oka",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "name": "id",
+        "comment": "서버 PK (UUIDv7)",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxmssx2mpj": {
+        "id": "03h4468ge3qzlp0kxmssx2mpj",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "name": "owner_id",
+        "comment": "principal.id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxmwdguygi": {
+        "id": "03h4468ge3qzlp0kxmwdguygi",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "name": "client_ref",
+        "comment": "단말 photoId",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxmxh4j4lx": {
+        "id": "03h4468ge3qzlp0kxmxh4j4lx",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "name": "content_version",
+        "comment": "OS 원본 버전. 늦은 분석 결과 대조 기준",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxmzwpk7vm": {
+        "id": "03h4468ge3qzlp0kxmzwpk7vm",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "name": "os_taken_at",
+        "comment": "OS 촬영 시각",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxn24nx8my": {
+        "id": "03h4468ge3qzlp0kxn24nx8my",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "name": "os_modified_at",
+        "comment": "OS 수정 시각",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxn2vu1fqi": {
+        "id": "03h4468ge3qzlp0kxn2vu1fqi",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "name": "availability",
+        "comment": "AVAILABLE / ORIGINAL_DELETED / INACCESSIBLE (P11)",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxn4s55ogh": {
+        "id": "03h4468ge3qzlp0kxn4s55ogh",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "name": "memo",
+        "comment": "길이 제한 P10",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxn6wiid7g": {
+        "id": "03h4468ge3qzlp0kxn6wiid7g",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "name": "change_seq",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxn8u390ud": {
+        "id": "03h4468ge3qzlp0kxn8u390ud",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxnc8daqvi": {
+        "id": "03h4468ge3qzlp0kxnc8daqvi",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxncxdrysk": {
+        "id": "03h4468ge3qzlp0kxncxdrysk",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "name": "version",
+        "comment": "Pik 정보 버전 = 클라이언트가 보내는 데이터 버전",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxnffh0xkr": {
+        "id": "03h4468ge3qzlp0kxnffh0xkr",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "name": "deleted_at",
+        "comment": "tombstone",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxniv2cq4u": {
+        "id": "03h4468ge3qzlp0kxniv2cq4u",
+        "tableId": "03h4468ge3qzlp0kxngunyby9",
+        "name": "photo_id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxnkk1wc0u": {
+        "id": "03h4468ge3qzlp0kxnkk1wc0u",
+        "tableId": "03h4468ge3qzlp0kxngunyby9",
+        "name": "device_id",
+        "comment": "device.id, 모듈 간 ID 참조",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxno883cdf": {
+        "id": "03h4468ge3qzlp0kxno883cdf",
+        "tableId": "03h4468ge3qzlp0kxngunyby9",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxnpoyzvq3": {
+        "id": "03h4468ge3qzlp0kxnpoyzvq3",
+        "tableId": "03h4468ge3qzlp0kxngunyby9",
+        "name": "os_local_id",
+        "comment": "기기별 OS 사진 식별자",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxnr7z3d02": {
+        "id": "03h4468ge3qzlp0kxnr7z3d02",
+        "tableId": "03h4468ge3qzlp0kxngunyby9",
+        "name": "status",
+        "comment": "LINKED / UNRESOLVED",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxnsclcpf6": {
+        "id": "03h4468ge3qzlp0kxnsclcpf6",
+        "tableId": "03h4468ge3qzlp0kxngunyby9",
+        "name": "linked_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxnxd7d3zn": {
+        "id": "03h4468ge3qzlp0kxnxd7d3zn",
+        "tableId": "03h4468ge3qzlp0kxnvluhm88",
+        "name": "id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxnyblhqi8": {
+        "id": "03h4468ge3qzlp0kxnyblhqi8",
+        "tableId": "03h4468ge3qzlp0kxnvluhm88",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxo0dhj1bj": {
+        "id": "03h4468ge3qzlp0kxo0dhj1bj",
+        "tableId": "03h4468ge3qzlp0kxnvluhm88",
+        "name": "client_ref",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxo396e15i": {
+        "id": "03h4468ge3qzlp0kxo396e15i",
+        "tableId": "03h4468ge3qzlp0kxnvluhm88",
+        "name": "name",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxo4he1mby": {
+        "id": "03h4468ge3qzlp0kxo4he1mby",
+        "tableId": "03h4468ge3qzlp0kxnvluhm88",
+        "name": "normalized_name",
+        "comment": "정규화 규칙 P10",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxo65f8qm4": {
+        "id": "03h4468ge3qzlp0kxo65f8qm4",
+        "tableId": "03h4468ge3qzlp0kxnvluhm88",
+        "name": "change_seq",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxo93xgx6a": {
+        "id": "03h4468ge3qzlp0kxo93xgx6a",
+        "tableId": "03h4468ge3qzlp0kxnvluhm88",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxobhoth6c": {
+        "id": "03h4468ge3qzlp0kxobhoth6c",
+        "tableId": "03h4468ge3qzlp0kxnvluhm88",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxodxfk26u": {
+        "id": "03h4468ge3qzlp0kxodxfk26u",
+        "tableId": "03h4468ge3qzlp0kxnvluhm88",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxofb4rrqd": {
+        "id": "03h4468ge3qzlp0kxofb4rrqd",
+        "tableId": "03h4468ge3qzlp0kxnvluhm88",
+        "name": "deleted_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxoj2krt6t": {
+        "id": "03h4468ge3qzlp0kxoj2krt6t",
+        "tableId": "03h4468ge3qzlp0kxohmn2sdy",
+        "name": "photo_id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxolab5pov": {
+        "id": "03h4468ge3qzlp0kxolab5pov",
+        "tableId": "03h4468ge3qzlp0kxohmn2sdy",
+        "name": "tag_id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxomjw7op7": {
+        "id": "03h4468ge3qzlp0kxomjw7op7",
+        "tableId": "03h4468ge3qzlp0kxohmn2sdy",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxopki4q6l": {
+        "id": "03h4468ge3qzlp0kxopki4q6l",
+        "tableId": "03h4468ge3qzlp0kxohmn2sdy",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxosj92zk7": {
+        "id": "03h4468ge3qzlp0kxosj92zk7",
+        "tableId": "03h4468ge3qzlp0kxoqfcm9ix",
+        "name": "id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge3qzlp0kxotunlozh": {
+        "id": "03h4468ge3qzlp0kxotunlozh",
+        "tableId": "03h4468ge3qzlp0kxoqfcm9ix",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxoxd7zweq": {
+        "id": "03h4468ge3qzlp0kxoxd7zweq",
+        "tableId": "03h4468ge3qzlp0kxoqfcm9ix",
+        "name": "photo_id",
+        "comment": "photo.id, 모듈 간 ID 참조",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxoykktfam": {
+        "id": "03h4468ge3qzlp0kxoykktfam",
+        "tableId": "03h4468ge3qzlp0kxoqfcm9ix",
+        "name": "source_album_ref",
+        "comment": "원본 앨범 식별. 기기 간 의미는 P06·P07 확정 필요",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxp0vos8d3": {
+        "id": "03h4468ge3qzlp0kxp0vos8d3",
+        "tableId": "03h4468ge3qzlp0kxoqfcm9ix",
+        "name": "status",
+        "comment": "PENDING / COMPLETED",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxp1ohv2sk": {
+        "id": "03h4468ge3qzlp0kxp1ohv2sk",
+        "tableId": "03h4468ge3qzlp0kxoqfcm9ix",
+        "name": "organizable_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxp438iy90": {
+        "id": "03h4468ge3qzlp0kxp438iy90",
+        "tableId": "03h4468ge3qzlp0kxoqfcm9ix",
+        "name": "completed_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge3qzlp0kxp79fdsl5": {
+        "id": "03h4468ge3qzlp0kxp79fdsl5",
+        "tableId": "03h4468ge3qzlp0kxoqfcm9ix",
+        "name": "change_seq",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxp7y7i398": {
+        "id": "03h4468ge3qzlp0kxp7y7i398",
+        "tableId": "03h4468ge3qzlp0kxoqfcm9ix",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge3qzlp0kxpax1lw1n": {
+        "id": "03h4468ge3qzlp0kxpax1lw1n",
+        "tableId": "03h4468ge3qzlp0kxoqfcm9ix",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge977zqezlhm8lu5eh": {
+        "id": "03h4468ge977zqezlhm8lu5eh",
+        "tableId": "03h4468ge3qzlp0kxoqfcm9ix",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge977zqezlhphvi7bu": {
+        "id": "03h4468ge977zqezlhphvi7bu",
+        "tableId": "03h4468ge3qzlp0kxoqfcm9ix",
+        "name": "deleted_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge977zqezlht52p33h": {
+        "id": "03h4468ge977zqezlht52p33h",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge977zqezlhu49kpu8": {
+        "id": "03h4468ge977zqezlhu49kpu8",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge977zqezlhvteit1r": {
+        "id": "03h4468ge977zqezlhvteit1r",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "photo_id",
+        "comment": "photo.id, 모듈 간 ID 참조",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge977zqezlhyfww2ig": {
+        "id": "03h4468ge977zqezlhyfww2ig",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "photo_version",
+        "comment": "접수 시 photo.content_version",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezli03mytnc": {
+        "id": "03h4468ge977zqezli03mytnc",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "cause",
+        "comment": "NEW / MODIFIED / RETRY / PRO_BACKLOG",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezli3hld6f0": {
+        "id": "03h4468ge977zqezli3hld6f0",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "priority",
+        "comment": "최근 추가 > 정리 중 > Pro 처리량",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h4468ge977zqezli4c408gc": {
+        "id": "03h4468ge977zqezli4c408gc",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "quota_kind",
+        "comment": "TRIAL / PRO_INITIAL / PRO_DAILY",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezli5q3gso3": {
+        "id": "03h4468ge977zqezli5q3gso3",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "status",
+        "comment": "PENDING / AWAITING_UPLOAD / READY / RUNNING / NEEDS_CHECK / SUCCEEDED / FAILED / CANCELLED / INELIGIBLE",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezli7i5vn9y": {
+        "id": "03h4468ge977zqezli7i5vn9y",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "attempt_count",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h4468ge977zqezliak6wzv6": {
+        "id": "03h4468ge977zqezliak6wzv6",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "next_attempt_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge977zqezlibne61mu": {
+        "id": "03h4468ge977zqezlibne61mu",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "locked_until",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge977zqezlielqzn7y": {
+        "id": "03h4468ge977zqezlielqzn7y",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "upload_object_key",
+        "comment": "S3 임시 객체 키",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge977zqezlih699cc5": {
+        "id": "03h4468ge977zqezlih699cc5",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "upload_expires_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge977zqezlihboxcs2": {
+        "id": "03h4468ge977zqezlihboxcs2",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "template_version",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge977zqezlikssg79u": {
+        "id": "03h4468ge977zqezlikssg79u",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "model_id",
+        "comment": "설정값. 시작은 Haiku 5.5",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge977zqezlim9j9qu0": {
+        "id": "03h4468ge977zqezlim9j9qu0",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "failure_code",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge977zqezliok7bthx": {
+        "id": "03h4468ge977zqezliok7bthx",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge977zqezliqy45m72": {
+        "id": "03h4468ge977zqezliqy45m72",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge977zqezlis5lqr4c": {
+        "id": "03h4468ge977zqezlis5lqr4c",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge977zqezliv83sei0": {
+        "id": "03h4468ge977zqezliv83sei0",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "photo_id",
+        "comment": "사진당 현재 결과 1건",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge977zqezliy8hdjvu": {
+        "id": "03h4468ge977zqezliy8hdjvu",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge977zqezliz6izgwq": {
+        "id": "03h4468ge977zqezliz6izgwq",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "job_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge977zqezlj17dmzyt": {
+        "id": "03h4468ge977zqezlj17dmzyt",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "photo_version",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlj3tu2is6": {
+        "id": "03h4468ge977zqezlj3tu2is6",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "source",
+        "comment": "DIRECT / REUSED",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlj5lo67so": {
+        "id": "03h4468ge977zqezlj5lo67so",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "source_photo_id",
+        "comment": "REUSED일 때 대표 사진",
+        "dataType": "uuid",
+        "options": 0
+      },
+      "03h4468ge977zqezlj7ofrv5n": {
+        "id": "03h4468ge977zqezlj7ofrv5n",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "template_version",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge977zqezljas47k69": {
+        "id": "03h4468ge977zqezljas47k69",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "model_id",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge977zqezljcdt7h1e": {
+        "id": "03h4468ge977zqezljcdt7h1e",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "content",
+        "comment": "요소·관계·의도·시간/장소. 값마다 READ / ESTIMATED / ABSENT",
+        "dataType": "jsonb",
+        "options": 8
+      },
+      "03h4468ge977zqezljdgrm5gi": {
+        "id": "03h4468ge977zqezljdgrm5gi",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "ocr_text",
+        "comment": "현재 값만 보관, 이력 없음",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge977zqezljg62mlqx": {
+        "id": "03h4468ge977zqezljg62mlqx",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "user_info_version",
+        "comment": "반영한 photo.version",
+        "dataType": "bigint",
+        "options": 0
+      },
+      "03h4468ge977zqezlji9fvj46": {
+        "id": "03h4468ge977zqezlji9fvj46",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "analyzed_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge977zqezljk8zzdrp": {
+        "id": "03h4468ge977zqezljk8zzdrp",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "change_seq",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge977zqezljm5evysj": {
+        "id": "03h4468ge977zqezljm5evysj",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge977zqezljnsj6r5d": {
+        "id": "03h4468ge977zqezljnsj6r5d",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge977zqezljq3tny61": {
+        "id": "03h4468ge977zqezljq3tny61",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge977zqezljruq9rcq": {
+        "id": "03h4468ge977zqezljruq9rcq",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "deleted_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge977zqezljvkdhdo8": {
+        "id": "03h4468ge977zqezljvkdhdo8",
+        "tableId": "03h4468ge977zqezljub686tt",
+        "name": "id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge977zqezljwsruv8r": {
+        "id": "03h4468ge977zqezljwsruv8r",
+        "tableId": "03h4468ge977zqezljub686tt",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge977zqezljz4r65sx": {
+        "id": "03h4468ge977zqezljz4r65sx",
+        "tableId": "03h4468ge977zqezljub686tt",
+        "name": "representative_photo_id",
+        "comment": "photo.id, 모듈 간 ID 참조",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge977zqezlk169v9yf": {
+        "id": "03h4468ge977zqezlk169v9yf",
+        "tableId": "03h4468ge977zqezljub686tt",
+        "name": "member_count",
+        "comment": "대표 포함 총 수",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h4468ge977zqezlk41p99ol": {
+        "id": "03h4468ge977zqezlk41p99ol",
+        "tableId": "03h4468ge977zqezljub686tt",
+        "name": "rule_version",
+        "comment": "P05",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge977zqezlk5eo78ex": {
+        "id": "03h4468ge977zqezlk5eo78ex",
+        "tableId": "03h4468ge977zqezljub686tt",
+        "name": "change_seq",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge977zqezlk7gf8j80": {
+        "id": "03h4468ge977zqezlk7gf8j80",
+        "tableId": "03h4468ge977zqezljub686tt",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge977zqezlk97n8r8u": {
+        "id": "03h4468ge977zqezlk97n8r8u",
+        "tableId": "03h4468ge977zqezljub686tt",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge977zqezlkb4ynxzk": {
+        "id": "03h4468ge977zqezlkb4ynxzk",
+        "tableId": "03h4468ge977zqezljub686tt",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge977zqezlkdej9qsf": {
+        "id": "03h4468ge977zqezlkdej9qsf",
+        "tableId": "03h4468ge977zqezljub686tt",
+        "name": "deleted_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge977zqezlkgfnt6js": {
+        "id": "03h4468ge977zqezlkgfnt6js",
+        "tableId": "03h4468ge977zqezlkfd4d0z8",
+        "name": "group_id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge977zqezlkihkuzrg": {
+        "id": "03h4468ge977zqezlkihkuzrg",
+        "tableId": "03h4468ge977zqezlkfd4d0z8",
+        "name": "photo_id",
+        "comment": "photo.id, 모듈 간 ID 참조",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge977zqezlkkbsif9h": {
+        "id": "03h4468ge977zqezlkkbsif9h",
+        "tableId": "03h4468ge977zqezlkfd4d0z8",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge977zqezlkmdyjhva": {
+        "id": "03h4468ge977zqezlkmdyjhva",
+        "tableId": "03h4468ge977zqezlkfd4d0z8",
+        "name": "role",
+        "comment": "REPRESENTATIVE / MEMBER",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezll6uv0ne5": {
+        "id": "03h4468ge977zqezll6uv0ne5",
+        "tableId": "03h4468ge977zqezll4ciftac",
+        "name": "id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge977zqezll9b253re": {
+        "id": "03h4468ge977zqezll9b253re",
+        "tableId": "03h4468ge977zqezll4ciftac",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge977zqezllb05x0p6": {
+        "id": "03h4468ge977zqezllb05x0p6",
+        "tableId": "03h4468ge977zqezll4ciftac",
+        "name": "photo_id",
+        "comment": "photo.id, 모듈 간 ID 참조",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge977zqezlldeli936": {
+        "id": "03h4468ge977zqezlldeli936",
+        "tableId": "03h4468ge977zqezll4ciftac",
+        "name": "type",
+        "comment": "COPY_TEXT / COPY_ACCOUNT / CALL / MAP / CALENDAR / TRANSLATE / WEB",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezllfi07x8w": {
+        "id": "03h4468ge977zqezllfi07x8w",
+        "tableId": "03h4468ge977zqezll4ciftac",
+        "name": "target_key",
+        "comment": "정규화한 대상 값의 해시",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezllgvk9xhi": {
+        "id": "03h4468ge977zqezllgvk9xhi",
+        "tableId": "03h4468ge977zqezll4ciftac",
+        "name": "title",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge977zqezllhz3gj2n": {
+        "id": "03h4468ge977zqezllhz3gj2n",
+        "tableId": "03h4468ge977zqezll4ciftac",
+        "name": "payload",
+        "comment": "실행 데이터. 장소 후보(FR-X-03) 포함",
+        "dataType": "jsonb",
+        "options": 0
+      },
+      "03h4468ge977zqezlllou9buc": {
+        "id": "03h4468ge977zqezlllou9buc",
+        "tableId": "03h4468ge977zqezll4ciftac",
+        "name": "status",
+        "comment": "READY / LINK_SEARCHING / NEEDS_CHECK / FAILED",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlln3mfluv": {
+        "id": "03h4468ge977zqezlln3mfluv",
+        "tableId": "03h4468ge977zqezll4ciftac",
+        "name": "generation_version",
+        "comment": "생성에 쓴 analysis_result.version. 더 오래된 생성 결과로 덮어쓰기 금지",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge977zqezllpfv59y4": {
+        "id": "03h4468ge977zqezllpfv59y4",
+        "tableId": "03h4468ge977zqezll4ciftac",
+        "name": "change_seq",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge977zqezllrc6ndtj": {
+        "id": "03h4468ge977zqezllrc6ndtj",
+        "tableId": "03h4468ge977zqezll4ciftac",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge977zqezllrw6we6v": {
+        "id": "03h4468ge977zqezllrw6we6v",
+        "tableId": "03h4468ge977zqezll4ciftac",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge977zqezllvari1vx": {
+        "id": "03h4468ge977zqezllvari1vx",
+        "tableId": "03h4468ge977zqezll4ciftac",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge977zqezllw5da26o": {
+        "id": "03h4468ge977zqezllw5da26o",
+        "tableId": "03h4468ge977zqezll4ciftac",
+        "name": "deleted_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge977zqezlm1fabamm": {
+        "id": "03h4468ge977zqezlm1fabamm",
+        "tableId": "03h4468ge977zqezllz96xg0x",
+        "name": "id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge977zqezlm1ku6if5": {
+        "id": "03h4468ge977zqezlm1ku6if5",
+        "tableId": "03h4468ge977zqezllz96xg0x",
+        "name": "action_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge977zqezlm4ego4d1": {
+        "id": "03h4468ge977zqezlm4ego4d1",
+        "tableId": "03h4468ge977zqezllz96xg0x",
+        "name": "url",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlm7bdeiij": {
+        "id": "03h4468ge977zqezlm7bdeiij",
+        "tableId": "03h4468ge977zqezllz96xg0x",
+        "name": "domain",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlm7v1o9fd": {
+        "id": "03h4468ge977zqezlm7v1o9fd",
+        "tableId": "03h4468ge977zqezllz96xg0x",
+        "name": "title",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge977zqezlma7mqam6": {
+        "id": "03h4468ge977zqezlma7mqam6",
+        "tableId": "03h4468ge977zqezllz96xg0x",
+        "name": "kind",
+        "comment": "SALES / BOOKING",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge977zqezlmd6munag": {
+        "id": "03h4468ge977zqezlmd6munag",
+        "tableId": "03h4468ge977zqezllz96xg0x",
+        "name": "verified",
+        "comment": "실제 상세페이지 검증 여부",
+        "dataType": "boolean",
+        "options": 8
+      },
+      "03h4468ge977zqezlme7jjfn9": {
+        "id": "03h4468ge977zqezlme7jjfn9",
+        "tableId": "03h4468ge977zqezllz96xg0x",
+        "name": "rank",
+        "dataType": "int",
+        "options": 0
+      },
+      "03h4468ge977zqezlmfzuxhxi": {
+        "id": "03h4468ge977zqezlmfzuxhxi",
+        "tableId": "03h4468ge977zqezllz96xg0x",
+        "name": "found_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge977zqezlmjs8najs": {
+        "id": "03h4468ge977zqezlmjs8najs",
+        "tableId": "03h4468ge977zqezlmi9acrpo",
+        "name": "id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge977zqezlmlm7o1hl": {
+        "id": "03h4468ge977zqezlmlm7o1hl",
+        "tableId": "03h4468ge977zqezlmi9acrpo",
+        "name": "action_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge977zqezlmolgut43": {
+        "id": "03h4468ge977zqezlmolgut43",
+        "tableId": "03h4468ge977zqezlmi9acrpo",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge977zqezlmr1xf2vk": {
+        "id": "03h4468ge977zqezlmr1xf2vk",
+        "tableId": "03h4468ge977zqezlmi9acrpo",
+        "name": "source_text_hash",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlmredymeq": {
+        "id": "03h4468ge977zqezlmredymeq",
+        "tableId": "03h4468ge977zqezlmi9acrpo",
+        "name": "target_lang",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlmux3b5rs": {
+        "id": "03h4468ge977zqezlmux3b5rs",
+        "tableId": "03h4468ge977zqezlmi9acrpo",
+        "name": "translated_text",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge977zqezlmwlxyxa7": {
+        "id": "03h4468ge977zqezlmwlxyxa7",
+        "tableId": "03h4468ge977zqezlmi9acrpo",
+        "name": "status",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlmyvmlrcl": {
+        "id": "03h4468ge977zqezlmyvmlrcl",
+        "tableId": "03h4468ge977zqezlmi9acrpo",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge977zqezlmz8hc4eo": {
+        "id": "03h4468ge977zqezlmz8hc4eo",
+        "tableId": "03h4468ge977zqezlmi9acrpo",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge977zqezln3jpwmc8": {
+        "id": "03h4468ge977zqezln3jpwmc8",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge977zqezln5v3uxs0": {
+        "id": "03h4468ge977zqezln5v3uxs0",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge977zqezln8fhurip": {
+        "id": "03h4468ge977zqezln8fhurip",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "client_ref",
+        "comment": "단말 생성 ID. 서버가 만든 이벤트는 id와 같은 값",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge977zqezln9gx2ljy": {
+        "id": "03h4468ge977zqezln9gx2ljy",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "origin_job_id",
+        "comment": "자동 생성한 analysis_job.id, 모듈 간 ID 참조",
+        "dataType": "uuid",
+        "options": 0
+      },
+      "03h4468ge977zqezlnc6pgx94": {
+        "id": "03h4468ge977zqezlnc6pgx94",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "name",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlnd9xz3ti": {
+        "id": "03h4468ge977zqezlnd9xz3ti",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "intent",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge977zqezlnfh0scva": {
+        "id": "03h4468ge977zqezlnfh0scva",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "start_date",
+        "dataType": "date",
+        "options": 0
+      },
+      "03h4468ge977zqezlngz120j4": {
+        "id": "03h4468ge977zqezlngz120j4",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "start_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge977zqezlnjxt6h35": {
+        "id": "03h4468ge977zqezlnjxt6h35",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "date_confirmed",
+        "dataType": "boolean",
+        "options": 8
+      },
+      "03h4468ge977zqezlnkykd134": {
+        "id": "03h4468ge977zqezlnkykd134",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "time_confirmed",
+        "dataType": "boolean",
+        "options": 8
+      },
+      "03h4468ge977zqezlnoctxovo": {
+        "id": "03h4468ge977zqezlnoctxovo",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "place_text",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge977zqezlnprs7y23": {
+        "id": "03h4468ge977zqezlnprs7y23",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "place_confirmed",
+        "dataType": "boolean",
+        "options": 8
+      },
+      "03h4468ge977zqezlnsl5xrg6": {
+        "id": "03h4468ge977zqezlnsl5xrg6",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "status",
+        "comment": "ACTIVE / COMPLETED / HIDDEN",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlnu2pvzib": {
+        "id": "03h4468ge977zqezlnu2pvzib",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "user_locked_fields",
+        "comment": "사용자가 고친 필드. 자동 분석이 덮어쓰지 않음",
+        "dataType": "jsonb",
+        "options": 0
+      },
+      "03h4468ge977zqezlnvr7adz6": {
+        "id": "03h4468ge977zqezlnvr7adz6",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "notification_version",
+        "comment": "올리면 같은 트랜잭션에서 notification_schedule을 다시 계산",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h4468ge977zqezlnxvbjsda": {
+        "id": "03h4468ge977zqezlnxvbjsda",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "completed_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge977zqezlnyo5l1bq": {
+        "id": "03h4468ge977zqezlnyo5l1bq",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "hidden_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge977zqezlo1fk83nl": {
+        "id": "03h4468ge977zqezlo1fk83nl",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "change_seq",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge977zqezlo426ito6": {
+        "id": "03h4468ge977zqezlo426ito6",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge977zqezlo68sdjog": {
+        "id": "03h4468ge977zqezlo68sdjog",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge977zqezlo7twtlqk": {
+        "id": "03h4468ge977zqezlo7twtlqk",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge977zqezlo95etuzg": {
+        "id": "03h4468ge977zqezlo95etuzg",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "deleted_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge977zqezlodcjh963": {
+        "id": "03h4468ge977zqezlodcjh963",
+        "tableId": "03h4468ge977zqezloc297i0d",
+        "name": "event_id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge977zqezloes1h95l": {
+        "id": "03h4468ge977zqezloes1h95l",
+        "tableId": "03h4468ge977zqezloc297i0d",
+        "name": "photo_id",
+        "comment": "photo.id, 모듈 간 ID 참조",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge977zqezloheojar0": {
+        "id": "03h4468ge977zqezloheojar0",
+        "tableId": "03h4468ge977zqezloc297i0d",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge977zqezlojfswd4w": {
+        "id": "03h4468ge977zqezlojfswd4w",
+        "tableId": "03h4468ge977zqezloc297i0d",
+        "name": "link_source",
+        "comment": "AUTO / USER",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlolb9nj9x": {
+        "id": "03h4468ge977zqezlolb9nj9x",
+        "tableId": "03h4468ge977zqezloc297i0d",
+        "name": "status",
+        "comment": "LINKED / EXCLUDED",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlomqal0um": {
+        "id": "03h4468ge977zqezlomqal0um",
+        "tableId": "03h4468ge977zqezloc297i0d",
+        "name": "source_job_id",
+        "comment": "analysis_job.id, 모듈 간 ID 참조",
+        "dataType": "uuid",
+        "options": 0
+      },
+      "03h4468ge977zqezlopj03t6r": {
+        "id": "03h4468ge977zqezlopj03t6r",
+        "tableId": "03h4468ge977zqezloc297i0d",
+        "name": "linked_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge977zqezlorn8ubot": {
+        "id": "03h4468ge977zqezlorn8ubot",
+        "tableId": "03h4468ge977zqezloc297i0d",
+        "name": "excluded_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge977zqezlovyajhgw": {
+        "id": "03h4468ge977zqezlovyajhgw",
+        "tableId": "03h4468ge977zqezlosz9hyo7",
+        "name": "id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge977zqezlox7az9g5": {
+        "id": "03h4468ge977zqezlox7az9g5",
+        "tableId": "03h4468ge977zqezlosz9hyo7",
+        "name": "event_id",
+        "comment": "EVENT_TIME·EVENT_PLACE만",
+        "dataType": "uuid",
+        "options": 0
+      },
+      "03h4468ge977zqezloyys8afz": {
+        "id": "03h4468ge977zqezloyys8afz",
+        "tableId": "03h4468ge977zqezlosz9hyo7",
+        "name": "kind",
+        "comment": "EVENT_TIME / EVENT_PLACE / ORGANIZE / PERMISSION_CALENDAR / PERMISSION_LOCATION",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlp1jlobe9": {
+        "id": "03h4468ge977zqezlp1jlobe9",
+        "tableId": "03h4468ge977zqezlosz9hyo7",
+        "name": "fire_at",
+        "comment": "서버 발송 시각. EVENT_PLACE는 NULL",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge977zqezlp2rijoeg": {
+        "id": "03h4468ge977zqezlp2rijoeg",
+        "tableId": "03h4468ge977zqezlosz9hyo7",
+        "name": "geofence",
+        "comment": "EVENT_PLACE만. 반경 P09",
+        "dataType": "jsonb",
+        "options": 0
+      },
+      "03h4468ge977zqezlp463t1is": {
+        "id": "03h4468ge977zqezlp463t1is",
+        "tableId": "03h4468ge977zqezlosz9hyo7",
+        "name": "notification_version",
+        "comment": "EVENT_*: event.notification_version, ORGANIZE: 독려 단계(P09), PERMISSION_*: 요청 회차",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h4468ge977zqezlp6g8jvje": {
+        "id": "03h4468ge977zqezlp6g8jvje",
+        "tableId": "03h4468ge977zqezlosz9hyo7",
+        "name": "status",
+        "comment": "PLANNED / SENDING / SENT / CANCELLED / EXPIRED / FAILED. ix_notification_schedule_due는 WHERE status = PLANNED",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlp8u0exf8": {
+        "id": "03h4468ge977zqezlp8u0exf8",
+        "tableId": "03h4468ge977zqezlosz9hyo7",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h45zpihltkk2192523hg3t2": {
+        "id": "03h45zpihltkk2192523hg3t2",
+        "tableId": "03h4468ge977zqezlosz9hyo7",
+        "name": "owner_id",
+        "comment": "uk_notification_schedule_target은 NULLS NOT DISTINCT",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h45zpihltkk2192552wbzrz": {
+        "id": "03h45zpihltkk2192552wbzrz",
+        "tableId": "03h4468ge977zqezlosz9hyo7",
+        "name": "device_id",
+        "comment": "PERMISSION_*만. device.id, 모듈 간 ID 참조",
+        "dataType": "uuid",
+        "options": 0
+      },
+      "03h45zpihltkk219258rp700t": {
+        "id": "03h45zpihltkk219258rp700t",
+        "tableId": "03h4468ge977zqezlosz9hyo7",
+        "name": "expires_at",
+        "comment": "FCM 메시지 유효 기간의 끝. EVENT_TIME은 이벤트 시작 시각",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h45zpihr6blrfhig9twata9": {
+        "id": "03h45zpihr6blrfhig9twata9",
+        "tableId": "03h4468ge977zqezlosz9hyo7",
+        "name": "attempt_count",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h45zpihr6blrfhige6p5628": {
+        "id": "03h45zpihr6blrfhige6p5628",
+        "tableId": "03h4468ge977zqezlosz9hyo7",
+        "name": "locked_until",
+        "comment": "SENDING 점유가 풀리는 시각. FCM 호출은 DB 트랜잭션 밖에서 함",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h45zpihr6blrfhightjwimg": {
+        "id": "03h45zpihr6blrfhightjwimg",
+        "tableId": "03h4468ge977zqezlosz9hyo7",
+        "name": "sent_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h45zpihr6blrfhiglu46ce5": {
+        "id": "03h45zpihr6blrfhiglu46ce5",
+        "tableId": "03h4468ge977zqezlosz9hyo7",
+        "name": "last_error_code",
+        "comment": "UNREGISTERED이면 notification_device.push_token을 지움",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h45zpihr6blrfhigopttvrq": {
+        "id": "03h45zpihr6blrfhigopttvrq",
+        "tableId": "03h4468ge977zqezlosz9hyo7",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h45zpihr6blrfhigspgfd6e": {
+        "id": "03h45zpihr6blrfhigspgfd6e",
+        "tableId": "03h4468ge977zqezlosz9hyo7",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468ge977zqezlpv0n6k04": {
+        "id": "03h4468ge977zqezlpv0n6k04",
+        "tableId": "03h4468ge977zqezlpt9mf2c0",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge977zqezlpwhvasgx": {
+        "id": "03h4468ge977zqezlpwhvasgx",
+        "tableId": "03h4468ge977zqezlpt9mf2c0",
+        "name": "idempotency_key",
+        "comment": "단말 작업 식별자",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge977zqezlpynmgmmf": {
+        "id": "03h4468ge977zqezlpynmgmmf",
+        "tableId": "03h4468ge977zqezlpt9mf2c0",
+        "name": "operation",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlq0hxdys6": {
+        "id": "03h4468ge977zqezlq0hxdys6",
+        "tableId": "03h4468ge977zqezlpt9mf2c0",
+        "name": "request_hash",
+        "comment": "같은 키에 다른 본문이면 거부",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlq2q2p6lp": {
+        "id": "03h4468ge977zqezlq2q2p6lp",
+        "tableId": "03h4468ge977zqezlpt9mf2c0",
+        "name": "status",
+        "comment": "IN_PROGRESS / COMPLETED",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlq5duco1z": {
+        "id": "03h4468ge977zqezlq5duco1z",
+        "tableId": "03h4468ge977zqezlpt9mf2c0",
+        "name": "response_code",
+        "dataType": "int",
+        "options": 0
+      },
+      "03h4468ge977zqezlq5y13f3p": {
+        "id": "03h4468ge977zqezlq5y13f3p",
+        "tableId": "03h4468ge977zqezlpt9mf2c0",
+        "name": "response_body",
+        "dataType": "jsonb",
+        "options": 0
+      },
+      "03h4468ge977zqezlq9ewtbfi": {
+        "id": "03h4468ge977zqezlq9ewtbfi",
+        "tableId": "03h4468ge977zqezlpt9mf2c0",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge977zqezlqaixpvhr": {
+        "id": "03h4468ge977zqezlqaixpvhr",
+        "tableId": "03h4468ge977zqezlpt9mf2c0",
+        "name": "expires_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge977zqezlqe2goqgz": {
+        "id": "03h4468ge977zqezlqe2goqgz",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468ge977zqezlqgzw4air": {
+        "id": "03h4468ge977zqezlqgzw4air",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge977zqezlqhxdswnf": {
+        "id": "03h4468ge977zqezlqhxdswnf",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "purpose",
+        "comment": "ANALYSIS / WEB_SEARCH / TRANSLATION / PLACE",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlql50ym1j": {
+        "id": "03h4468ge977zqezlql50ym1j",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "subject_type",
+        "comment": "ANALYSIS_JOB / PHOTO_ACTION / TRANSLATION",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlqlj4hbq0": {
+        "id": "03h4468ge977zqezlqlj4hbq0",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "subject_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h4468ge977zqezlqov97k8n": {
+        "id": "03h4468ge977zqezlqov97k8n",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "request_key",
+        "comment": "같은 의도의 중복 과금 차단. Batches custom_id",
+        "dataType": "text",
+        "options": 12
+      },
+      "03h4468ge977zqezlqqy34efz": {
+        "id": "03h4468ge977zqezlqqy34efz",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "status",
+        "comment": "INTENDED / SENT / CONFIRMED / UNKNOWN / FAILED",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlqt5lph08": {
+        "id": "03h4468ge977zqezlqt5lph08",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "provider",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468ge977zqezlquo2rb69": {
+        "id": "03h4468ge977zqezlquo2rb69",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "provider_request_id",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge977zqezlqwdxu9ky": {
+        "id": "03h4468ge977zqezlqwdxu9ky",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "batch_id",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge977zqezlqyevlz4q": {
+        "id": "03h4468ge977zqezlqyevlz4q",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "input_tokens",
+        "dataType": "int",
+        "options": 0
+      },
+      "03h4468ge977zqezlqzrzxurw": {
+        "id": "03h4468ge977zqezlqzrzxurw",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "output_tokens",
+        "dataType": "int",
+        "options": 0
+      },
+      "03h4468ge977zqezlr1a93wbl": {
+        "id": "03h4468ge977zqezlr1a93wbl",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "failure_code",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468ge977zqezlr4y5vm6c": {
+        "id": "03h4468ge977zqezlr4y5vm6c",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "intended_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468ge977zqezlr6kq5tjc": {
+        "id": "03h4468ge977zqezlr6kq5tjc",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "sent_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge977zqezlr7t23agw": {
+        "id": "03h4468ge977zqezlr7t23agw",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "confirmed_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468ge977zqezlrcfublt8": {
+        "id": "03h4468ge977zqezlrcfublt8",
+        "tableId": "03h4468ge977zqezlrabh72d2",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468geephs5erx61iyru2k": {
+        "id": "03h4468geephs5erx61iyru2k",
+        "tableId": "03h4468ge977zqezlrabh72d2",
+        "name": "last_seq",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h4468geephs5erx65tepfdr": {
+        "id": "03h4468geephs5erx65tepfdr",
+        "tableId": "03h4468geephs5erx656317ly",
+        "name": "id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h4468geephs5erx67irjads": {
+        "id": "03h4468geephs5erx67irjads",
+        "tableId": "03h4468geephs5erx656317ly",
+        "name": "listener_id",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468geephs5erx6b5xkxw0": {
+        "id": "03h4468geephs5erx6b5xkxw0",
+        "tableId": "03h4468geephs5erx656317ly",
+        "name": "event_type",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468geephs5erx6cktdrum": {
+        "id": "03h4468geephs5erx6cktdrum",
+        "tableId": "03h4468geephs5erx656317ly",
+        "name": "serialized_event",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h4468geephs5erx6dy6o1ba": {
+        "id": "03h4468geephs5erx6dy6o1ba",
+        "tableId": "03h4468geephs5erx656317ly",
+        "name": "publication_date",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468geephs5erx6gl4ars7": {
+        "id": "03h4468geephs5erx6gl4ars7",
+        "tableId": "03h4468geephs5erx656317ly",
+        "name": "completion_date",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468geephs5erx6hukefst": {
+        "id": "03h4468geephs5erx6hukefst",
+        "tableId": "03h4468geephs5erx656317ly",
+        "name": "status",
+        "comment": "Modulith 2.x 컬럼, 버전 확인 필요",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h4468geephs5erx6jc5rg8b": {
+        "id": "03h4468geephs5erx6jc5rg8b",
+        "tableId": "03h4468geephs5erx656317ly",
+        "name": "completion_attempts",
+        "comment": "Modulith 2.x 컬럼, 버전 확인 필요",
+        "dataType": "int",
+        "options": 0
+      },
+      "03h4468geephs5erx6lo66oo1": {
+        "id": "03h4468geephs5erx6lo66oo1",
+        "tableId": "03h4468geephs5erx656317ly",
+        "name": "last_resubmission_date",
+        "comment": "Modulith 2.x 컬럼, 버전 확인 필요",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h4468geephs5erx6pz8dl89": {
+        "id": "03h4468geephs5erx6pz8dl89",
+        "tableId": "03h4468geephs5erx6nws4bod",
+        "name": "name",
+        "dataType": "varchar(64)",
+        "options": 2
+      },
+      "03h4468geephs5erx6rn1axf6": {
+        "id": "03h4468geephs5erx6rn1axf6",
+        "tableId": "03h4468geephs5erx6nws4bod",
+        "name": "lock_until",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468geephs5erx6uw2x6ad": {
+        "id": "03h4468geephs5erx6uw2x6ad",
+        "tableId": "03h4468geephs5erx6nws4bod",
+        "name": "locked_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h4468geephs5erx6w8l5evo": {
+        "id": "03h4468geephs5erx6w8l5evo",
+        "tableId": "03h4468geephs5erx6nws4bod",
+        "name": "locked_by",
+        "dataType": "varchar(255)",
+        "options": 8
+      },
+      "03h45zxe8rur98csoh3a2lhcw": {
+        "id": "03h45zxe8rur98csoh3a2lhcw",
+        "tableId": "03h45zxe8rur98csoh0m99lbi",
+        "name": "device_id",
+        "comment": "device.id, 모듈 간 ID 참조",
+        "dataType": "uuid",
+        "options": 10
+      },
+      "03h45zxe8rur98csoh6zm6jgk": {
+        "id": "03h45zxe8rur98csoh6zm6jgk",
+        "tableId": "03h45zxe8rur98csoh0m99lbi",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h45zxe8rur98csohb0n231w": {
+        "id": "03h45zxe8rur98csohb0n231w",
+        "tableId": "03h45zxe8rur98csoh0m99lbi",
+        "name": "push_token",
+        "comment": "FCM 등록 토큰. 미등록 응답을 받으면 NULL로 지움",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h45zxe8rur98csohgftfjqr": {
+        "id": "03h45zxe8rur98csohgftfjqr",
+        "tableId": "03h45zxe8rur98csoh0m99lbi",
+        "name": "push_token_updated_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h45zxe8xapjz6nhwfei6hoi": {
+        "id": "03h45zxe8xapjz6nhwfei6hoi",
+        "tableId": "03h45zxe8rur98csoh0m99lbi",
+        "name": "calendar_permission",
+        "comment": "NOT_DETERMINED / DENIED / GRANTED",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h45zxe8xapjz6nhwi7eaus7": {
+        "id": "03h45zxe8xapjz6nhwi7eaus7",
+        "tableId": "03h45zxe8rur98csoh0m99lbi",
+        "name": "location_permission",
+        "comment": "NOT_DETERMINED / DENIED / WHEN_IN_USE / ALWAYS. ALWAYS일 때만 장소 알림을 서버에서 확인",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h45zxe8xapjz6nhwmyiua02": {
+        "id": "03h45zxe8xapjz6nhwmyiua02",
+        "tableId": "03h45zxe8rur98csoh0m99lbi",
+        "name": "permission_reported_at",
+        "comment": "FR-N-04는 이 마지막 보고값으로 판단 (ADR-0019의 SSOT 차이)",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h45zxe8xapjz6nhwpqrb01p": {
+        "id": "03h45zxe8xapjz6nhwpqrb01p",
+        "tableId": "03h45zxe8rur98csoh0m99lbi",
+        "name": "organize_remaining_count",
+        "comment": "단말이 보고한 남은 정리 대상 수 (FR-N-03)",
+        "dataType": "int",
+        "options": 0
+      },
+      "03h45zxe8xapjz6nhwufpbylz": {
+        "id": "03h45zxe8xapjz6nhwufpbylz",
+        "tableId": "03h45zxe8rur98csoh0m99lbi",
+        "name": "last_organized_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h45zxe8xapjz6nhwy8q9on6": {
+        "id": "03h45zxe8xapjz6nhwy8q9on6",
+        "tableId": "03h45zxe8rur98csoh0m99lbi",
+        "name": "last_active_at",
+        "comment": "단말이 보고한 마지막 이용 시점",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h45zxe8xapjz6nhx2ywaqcf": {
+        "id": "03h45zxe8xapjz6nhx2ywaqcf",
+        "tableId": "03h45zxe8rur98csoh0m99lbi",
+        "name": "organize_reported_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h45zxe8xapjz6nhx61w5e9j": {
+        "id": "03h45zxe8xapjz6nhx61w5e9j",
+        "tableId": "03h45zxe8rur98csoh0m99lbi",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h45zxe92rplendwadsssdh6": {
+        "id": "03h45zxe92rplendwadsssdh6",
+        "tableId": "03h45zxe8rur98csoh0m99lbi",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h46ggkrxnffv4hjj4ssm18h": {
+        "id": "03h46ggkrxnffv4hjj4ssm18h",
+        "tableId": "03h46ggkrxnffv4hjizyj1crb",
+        "name": "id",
+        "dataType": "uuid",
+        "options": 10
+      },
+      "03h46ggks30n8gsin8mdrlc2f": {
+        "id": "03h46ggks30n8gsin8mdrlc2f",
+        "tableId": "03h46ggkrxnffv4hjizyj1crb",
+        "name": "platform",
+        "comment": "IOS / ANDROID",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h46ggks30n8gsin8psp7e9e": {
+        "id": "03h46ggks30n8gsin8psp7e9e",
+        "tableId": "03h46ggkrxnffv4hjizyj1crb",
+        "name": "device_key_hmac",
+        "comment": "ANDROID만. HMAC(ANDROID_ID). iOS는 식별자가 없어 NULL",
+        "dataType": "bytea",
+        "options": 0
+      },
+      "03h46ggks30n8gsin8uksber0": {
+        "id": "03h46ggks30n8gsin8uksber0",
+        "tableId": "03h46ggkrxnffv4hjizyj1crb",
+        "name": "key_version",
+        "comment": "device_key_hmac에 쓴 HMAC 키 버전",
+        "dataType": "int",
+        "options": 0
+      },
+      "03h46ggks8ij6t1ezl8lkhrhm": {
+        "id": "03h46ggks8ij6t1ezl8lkhrhm",
+        "tableId": "03h46ggkrxnffv4hjizyj1crb",
+        "name": "device_check_state",
+        "comment": "iOS만. DeviceCheck 비트에 기록한 상태: TRIAL_STARTED / TRIAL_EXHAUSTED",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h46ggks8ij6t1ezlcypq0jj": {
+        "id": "03h46ggks8ij6t1ezlcypq0jj",
+        "tableId": "03h46ggkrxnffv4hjizyj1crb",
+        "name": "reserved_count",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h46ggks8ij6t1ezlf9ls4dl": {
+        "id": "03h46ggks8ij6t1ezlf9ls4dl",
+        "tableId": "03h46ggkrxnffv4hjizyj1crb",
+        "name": "consumed_count",
+        "comment": "기기 단위 체험 이용량. 집계 기준은 P01",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h46ggks8ij6t1ezljcwosbp": {
+        "id": "03h46ggks8ij6t1ezljcwosbp",
+        "tableId": "03h46ggkrxnffv4hjizyj1crb",
+        "name": "exhausted_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h46ggks8ij6t1ezlncrcoju": {
+        "id": "03h46ggks8ij6t1ezlncrcoju",
+        "tableId": "03h46ggkrxnffv4hjizyj1crb",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h46ggksdze9d44xznn1sg1x": {
+        "id": "03h46ggksdze9d44xznn1sg1x",
+        "tableId": "03h46ggkrxnffv4hjizyj1crb",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h46ggksdze9d44xzqcbalwc": {
+        "id": "03h46ggksdze9d44xzqcbalwc",
+        "tableId": "03h46ggkrxnffv4hjizyj1crb",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h46ggksjkasekzaug8jqveg": {
+        "id": "03h46ggksjkasekzaug8jqveg",
+        "tableId": "03h46ggksdze9d44y09z2x7zj",
+        "name": "provider",
+        "comment": "APPLE / GOOGLE",
+        "dataType": "text",
+        "options": 10
+      },
+      "03h46ggksjkasekzaukci06tb": {
+        "id": "03h46ggksjkasekzaukci06tb",
+        "tableId": "03h46ggksdze9d44y09z2x7zj",
+        "name": "key_version",
+        "comment": "subject_hmac에 쓴 HMAC 키 버전",
+        "dataType": "int",
+        "options": 10
+      },
+      "03h46ggksjkasekzaupc5rak2": {
+        "id": "03h46ggksjkasekzaupc5rak2",
+        "tableId": "03h46ggksdze9d44y09z2x7zj",
+        "name": "subject_hmac",
+        "comment": "HMAC(제공자 sub)",
+        "dataType": "bytea",
+        "options": 10
+      },
+      "03h46ggksjkasekzaurjq8g8z": {
+        "id": "03h46ggksjkasekzaurjq8g8z",
+        "tableId": "03h46ggksdze9d44y09z2x7zj",
+        "name": "first_registered_at",
+        "dataType": "timestamptz",
+        "options": 8
+      }
+    },
+    "relationshipEntities": {
+      "03h4468geephs5erx72aplmrf": {
+        "id": "03h4468geephs5erx72aplmrf",
+        "relationshipType": 16,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468gdyciasr0yy20wi45y",
+          "columnIds": [
+            "03h4468gdyciasr0yy31crlpo"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxh4t3yjt1",
+          "columnIds": [
+            "03h4468ge3qzlp0kxh8yw1n8x"
+          ]
+        }
+      },
+      "03h4468geephs5erx739wskqg": {
+        "id": "03h4468geephs5erx739wskqg",
+        "relationshipType": 16,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468gdyciasr0yy20wi45y",
+          "columnIds": [
+            "03h4468gdyciasr0yy31crlpo"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxhjodrf5h",
+          "columnIds": [
+            "03h4468ge3qzlp0kxhoekt12w"
+          ]
+        }
+      },
+      "03h4468geephs5erx75i2y9gh": {
+        "id": "03h4468geephs5erx75i2y9gh",
+        "relationshipType": 16,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge3qzlp0kxi4f3savi",
+          "columnIds": [
+            "03h4468ge3qzlp0kxi5u5onji"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxhjodrf5h",
+          "columnIds": [
+            "03h4468ge3qzlp0kxhpcn51j2"
+          ]
+        }
+      },
+      "03h4468geephs5erx78phw5e4": {
+        "id": "03h4468geephs5erx78phw5e4",
+        "relationshipType": 16,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468gdyciasr0yxo1ozvva",
+          "columnIds": [
+            "03h4468gdyciasr0yxpnzf0ip"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxi4f3savi",
+          "columnIds": [
+            "03h4468ge3qzlp0kxi8ipwlzn"
+          ]
+        }
+      },
+      "03h4468geephs5erx78uhnbm0": {
+        "id": "03h4468geephs5erx78uhnbm0",
+        "relationshipType": 16,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468gdyciasr0yxo1ozvva",
+          "columnIds": [
+            "03h4468gdyciasr0yxpnzf0ip"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxisn9vsc9",
+          "columnIds": [
+            "03h4468ge3qzlp0kxiuu2429c"
+          ]
+        }
+      },
+      "03h4468geephs5erx7b1eltol": {
+        "id": "03h4468geephs5erx7b1eltol",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge3qzlp0kxi4f3savi",
+          "columnIds": [
+            "03h4468ge3qzlp0kxi5u5onji"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxisn9vsc9",
+          "columnIds": [
+            "03h4468ge3qzlp0kxixwa7se7"
+          ]
+        }
+      },
+      "03h4468geephs5erx7dyly3hn": {
+        "id": "03h4468geephs5erx7dyly3hn",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468gdyciasr0yy20wi45y",
+          "columnIds": [
+            "03h4468gdyciasr0yy31crlpo"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxj5pbo1ff",
+          "columnIds": [
+            "03h4468ge3qzlp0kxj6ka7akv"
+          ]
+        }
+      },
+      "03h4468geephs5erx7eps6v18": {
+        "id": "03h4468geephs5erx7eps6v18",
+        "relationshipType": 4,
+        "onDelete": 8,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468gdyciasr0yy20wi45y",
+          "columnIds": [
+            "03h4468gdyciasr0yy31crlpo"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxjueu7nb9",
+          "columnIds": [
+            "03h4468ge3qzlp0kxjzxppv7e"
+          ]
+        }
+      },
+      "03h4468geephs5erx7i5mox8a": {
+        "id": "03h4468geephs5erx7i5mox8a",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468gdyciasr0yxo1ozvva",
+          "columnIds": [
+            "03h4468gdyciasr0yxpnzf0ip"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxk9r388k6",
+          "columnIds": [
+            "03h4468ge3qzlp0kxkbrziwus"
+          ]
+        }
+      },
+      "03h4468geephs5erx7kflxey2": {
+        "id": "03h4468geephs5erx7kflxey2",
+        "relationshipType": 16,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge3qzlp0kxk9r388k6",
+          "columnIds": [
+            "03h4468ge3qzlp0kxkbrziwus",
+            "03h4468ge3qzlp0kxkcjsp01s",
+            "03h4468ge3qzlp0kxkfsmwjn7"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxktbzseyu",
+          "columnIds": [
+            "03h4468ge3qzlp0kxkw3vc1jr",
+            "03h4468ge3qzlp0kxkye45tss",
+            "03h4468ge3qzlp0kxl161tcky"
+          ]
+        }
+      },
+      "03h4468geephs5erx7mcwprbc": {
+        "id": "03h4468geephs5erx7mcwprbc",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468gdyciasr0yxo1ozvva",
+          "columnIds": [
+            "03h4468gdyciasr0yxpnzf0ip"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxlcf5ld1e",
+          "columnIds": [
+            "03h4468ge3qzlp0kxldxmq81d"
+          ]
+        }
+      },
+      "03h4468geephs5erx7ozlmtno": {
+        "id": "03h4468geephs5erx7ozlmtno",
+        "relationshipType": 16,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge3qzlp0kxlnjcc3sw",
+          "columnIds": [
+            "03h4468ge3qzlp0kxlph5p912"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxm3uxzm4o",
+          "columnIds": [
+            "03h4468ge3qzlp0kxm8da7r27"
+          ]
+        }
+      },
+      "03h4468geephs5erx7rzfx9pc": {
+        "id": "03h4468geephs5erx7rzfx9pc",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+          "columnIds": [
+            "03h4468ge3qzlp0kxmqyb4oka"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxngunyby9",
+          "columnIds": [
+            "03h4468ge3qzlp0kxniv2cq4u"
+          ]
+        }
+      },
+      "03h4468geephs5erx7tdwjx8n": {
+        "id": "03h4468geephs5erx7tdwjx8n",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge3qzlp0kxi4f3savi",
+          "columnIds": [
+            "03h4468ge3qzlp0kxi5u5onji"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxngunyby9",
+          "columnIds": [
+            "03h4468ge3qzlp0kxnkk1wc0u"
+          ]
+        }
+      },
+      "03h4468geephs5erx7ulp6n2h": {
+        "id": "03h4468geephs5erx7ulp6n2h",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+          "columnIds": [
+            "03h4468ge3qzlp0kxmqyb4oka"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxohmn2sdy",
+          "columnIds": [
+            "03h4468ge3qzlp0kxoj2krt6t"
+          ]
+        }
+      },
+      "03h4468geephs5erx7wpku994": {
+        "id": "03h4468geephs5erx7wpku994",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge3qzlp0kxnvluhm88",
+          "columnIds": [
+            "03h4468ge3qzlp0kxnxd7d3zn"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxohmn2sdy",
+          "columnIds": [
+            "03h4468ge3qzlp0kxolab5pov"
+          ]
+        }
+      },
+      "03h4468geephs5erx7z264kto": {
+        "id": "03h4468geephs5erx7z264kto",
+        "relationshipType": 16,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+          "columnIds": [
+            "03h4468ge3qzlp0kxmqyb4oka"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxoqfcm9ix",
+          "columnIds": [
+            "03h4468ge3qzlp0kxoxd7zweq"
+          ]
+        }
+      },
+      "03h4468geephs5erx80ic2tpj": {
+        "id": "03h4468geephs5erx80ic2tpj",
+        "relationshipType": 16,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+          "columnIds": [
+            "03h4468ge3qzlp0kxmqyb4oka"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge977zqezlhqerbvdc",
+          "columnIds": [
+            "03h4468ge977zqezlhvteit1r"
+          ]
+        }
+      },
+      "03h4468geephs5erx869e9c9a": {
+        "id": "03h4468geephs5erx869e9c9a",
+        "relationshipType": 16,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge977zqezlhqerbvdc",
+          "columnIds": [
+            "03h4468ge977zqezlht52p33h"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge977zqezliupy3y6i",
+          "columnIds": [
+            "03h4468ge977zqezliz6izgwq"
+          ]
+        }
+      },
+      "03h4468geephs5erx87a070gr": {
+        "id": "03h4468geephs5erx87a070gr",
+        "relationshipType": 16,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+          "columnIds": [
+            "03h4468ge3qzlp0kxmqyb4oka"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge977zqezljub686tt",
+          "columnIds": [
+            "03h4468ge977zqezljz4r65sx"
+          ]
+        }
+      },
+      "03h4468geephs5erx89zfzmue": {
+        "id": "03h4468geephs5erx89zfzmue",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge977zqezljub686tt",
+          "columnIds": [
+            "03h4468ge977zqezljvkdhdo8"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge977zqezlkfd4d0z8",
+          "columnIds": [
+            "03h4468ge977zqezlkgfnt6js"
+          ]
+        }
+      },
+      "03h4468geephs5erx8b9q6xuq": {
+        "id": "03h4468geephs5erx8b9q6xuq",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+          "columnIds": [
+            "03h4468ge3qzlp0kxmqyb4oka"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge977zqezlkfd4d0z8",
+          "columnIds": [
+            "03h4468ge977zqezlkihkuzrg"
+          ]
+        }
+      },
+      "03h4468geephs5erx8efjo3c5": {
+        "id": "03h4468geephs5erx8efjo3c5",
+        "relationshipType": 16,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge977zqezlhqerbvdc",
+          "columnIds": [
+            "03h4468ge977zqezlht52p33h"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxktbzseyu",
+          "columnIds": [
+            "03h4468ge3qzlp0kxl57mkayr"
+          ]
+        }
+      },
+      "03h4468geephs5erx8gzftzbu": {
+        "id": "03h4468geephs5erx8gzftzbu",
+        "relationshipType": 16,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+          "columnIds": [
+            "03h4468ge3qzlp0kxmqyb4oka"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge977zqezll4ciftac",
+          "columnIds": [
+            "03h4468ge977zqezllb05x0p6"
+          ]
+        }
+      },
+      "03h4468geephs5erx8ipc9a6g": {
+        "id": "03h4468geephs5erx8ipc9a6g",
+        "relationshipType": 16,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge977zqezll4ciftac",
+          "columnIds": [
+            "03h4468ge977zqezll6uv0ne5"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge977zqezllz96xg0x",
+          "columnIds": [
+            "03h4468ge977zqezlm1ku6if5"
+          ]
+        }
+      },
+      "03h4468geephs5erx8l6haufw": {
+        "id": "03h4468geephs5erx8l6haufw",
+        "relationshipType": 16,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge977zqezll4ciftac",
+          "columnIds": [
+            "03h4468ge977zqezll6uv0ne5"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge977zqezlmi9acrpo",
+          "columnIds": [
+            "03h4468ge977zqezlmlm7o1hl"
+          ]
+        }
+      },
+      "03h4468geephs5erx8n6mnfgo": {
+        "id": "03h4468geephs5erx8n6mnfgo",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge977zqezlhqerbvdc",
+          "columnIds": [
+            "03h4468ge977zqezlht52p33h"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge977zqezln1403jfq",
+          "columnIds": [
+            "03h4468ge977zqezln9gx2ljy"
+          ]
+        }
+      },
+      "03h4468geephs5erx8p7xgrqv": {
+        "id": "03h4468geephs5erx8p7xgrqv",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge977zqezln1403jfq",
+          "columnIds": [
+            "03h4468ge977zqezln3jpwmc8"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge977zqezloc297i0d",
+          "columnIds": [
+            "03h4468ge977zqezlodcjh963"
+          ]
+        }
+      },
+      "03h4468geephs5erx8rzs3jci": {
+        "id": "03h4468geephs5erx8rzs3jci",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+          "columnIds": [
+            "03h4468ge3qzlp0kxmqyb4oka"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge977zqezloc297i0d",
+          "columnIds": [
+            "03h4468ge977zqezloes1h95l"
+          ]
+        }
+      },
+      "03h4468geephs5erx8s6uypmy": {
+        "id": "03h4468geephs5erx8s6uypmy",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge977zqezln1403jfq",
+          "columnIds": [
+            "03h4468ge977zqezln3jpwmc8"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge977zqezlosz9hyo7",
+          "columnIds": [
+            "03h4468ge977zqezlox7az9g5"
+          ]
+        }
+      },
+      "03h446e1nx1wkxc2skmnxcang": {
+        "id": "03h446e1nx1wkxc2skmnxcang",
+        "relationshipType": 2,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468gdyciasr0yxo1ozvva",
+          "columnIds": [
+            "03h4468gdyciasr0yxpnzf0ip"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468gdyciasr0yy20wi45y",
+          "columnIds": [
+            "03h4468gdyciasr0yy31crlpo"
+          ]
+        }
+      },
+      "03h446e1nx1wkxc2skokbn8dt": {
+        "id": "03h446e1nx1wkxc2skokbn8dt",
+        "relationshipType": 2,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468gdyciasr0yxo1ozvva",
+          "columnIds": [
+            "03h4468gdyciasr0yxpnzf0ip"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468gdyciasr0yyd9e43nc",
+          "columnIds": [
+            "03h4468gdyciasr0yyeplijvi"
+          ]
+        }
+      },
+      "03h446e1nx1wkxc2sktht2fq8": {
+        "id": "03h446e1nx1wkxc2sktht2fq8",
+        "relationshipType": 2,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+          "columnIds": [
+            "03h4468ge3qzlp0kxmqyb4oka"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge977zqezliupy3y6i",
+          "columnIds": [
+            "03h4468ge977zqezliv83sei0"
+          ]
+        }
+      },
+      "03h44damn4m3oy7ky89ux8chz": {
+        "id": "03h44damn4m3oy7ky89ux8chz",
+        "relationshipType": 2,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468gdyciasr0yxo1ozvva",
+          "columnIds": [
+            "03h4468gdyciasr0yxpnzf0ip"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxlnjcc3sw",
+          "columnIds": [
+            "03h4468ge3qzlp0kxlsmvbrf5"
+          ]
+        }
+      },
+      "03h45zxe92nmqnj78d0u2jkfx": {
+        "id": "03h45zxe92nmqnj78d0u2jkfx",
+        "relationshipType": 2,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge3qzlp0kxi4f3savi",
+          "columnIds": [
+            "03h4468ge3qzlp0kxi5u5onji"
+          ]
+        },
+        "end": {
+          "tableId": "03h45zxe8rur98csoh0m99lbi",
+          "columnIds": [
+            "03h45zxe8rur98csoh3a2lhcw"
+          ]
+        }
+      },
+      "03h46ggksp11c0qxbs1cdwgr6": {
+        "id": "03h46ggksp11c0qxbs1cdwgr6",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h46ggkrxnffv4hjizyj1crb",
+          "columnIds": [
+            "03h46ggkrxnffv4hjj4ssm18h"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxi4f3savi",
+          "columnIds": [
+            "03h46ggksp1aqpotycggmbdjj"
+          ]
+        }
+      },
+      "03h46ggksp11c0qxbs58bz9m4": {
+        "id": "03h46ggksp11c0qxbs58bz9m4",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h46ggkrxnffv4hjizyj1crb",
+          "columnIds": [
+            "03h46ggkrxnffv4hjj4ssm18h"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge3qzlp0kxktbzseyu",
+          "columnIds": [
+            "03h46ggksp1aqpotyclxuf8xo"
+          ]
+        }
+      }
+    },
+    "indexEntities": {
+      "03h4468geephs5erx8xgay3x3": {
+        "id": "03h4468geephs5erx8xgay3x3",
+        "name": "uk_auth_identity_provider_subject",
+        "tableId": "03h4468ge3qzlp0kxh4t3yjt1",
+        "indexColumnIds": [
+          "03h4468geephs5erx8ycrkbft",
+          "03h4468geephs5erx90lms1ox"
+        ],
+        "unique": true
+      },
+      "03h4468geephs5erx93j8iobr": {
+        "id": "03h4468geephs5erx93j8iobr",
+        "name": "ix_refresh_token_account_family",
+        "tableId": "03h4468ge3qzlp0kxhjodrf5h",
+        "indexColumnIds": [
+          "03h4468geephs5erx94o04j6r",
+          "03h4468geka6y2ntyd3nfw62a"
+        ],
+        "unique": false
+      },
+      "03h4468geka6y2ntyd5n0ag08": {
+        "id": "03h4468geka6y2ntyd5n0ag08",
+        "name": "uk_device_principal_install",
+        "tableId": "03h4468ge3qzlp0kxi4f3savi",
+        "indexColumnIds": [
+          "03h4468geka6y2ntyd7kfjdo6",
+          "03h4468geka6y2ntyd9hvrd2s"
+        ],
+        "unique": true
+      },
+      "03h4468geka6y2ntydb0b8uhz": {
+        "id": "03h4468geka6y2ntydb0b8uhz",
+        "name": "ix_ai_consent_principal_decided",
+        "tableId": "03h4468ge3qzlp0kxisn9vsc9",
+        "indexColumnIds": [
+          "03h4468geka6y2ntyddie6mp5",
+          "03h4468geka6y2ntydgdqh7rg"
+        ],
+        "unique": false
+      },
+      "03h4468geka6y2ntydhfs36mn": {
+        "id": "03h4468geka6y2ntydhfs36mn",
+        "name": "uk_usage_reservation_trial_photo",
+        "tableId": "03h4468ge3qzlp0kxktbzseyu",
+        "indexColumnIds": [
+          "03h4468geka6y2ntydjaoyula",
+          "03h4468geka6y2ntydkywbh98",
+          "03h4468geka6y2ntydmfjvyxb"
+        ],
+        "unique": true
+      },
+      "03h4468geka6y2ntydpu7v3mb": {
+        "id": "03h4468geka6y2ntydpu7v3mb",
+        "name": "uk_deletion_task_target",
+        "tableId": "03h4468ge3qzlp0kxm3uxzm4o",
+        "indexColumnIds": [
+          "03h4468geka6y2ntydrb9q1er",
+          "03h4468geka6y2ntydsqq14sd"
+        ],
+        "unique": true
+      },
+      "03h4468geka6y2ntydul45n62": {
+        "id": "03h4468geka6y2ntydul45n62",
+        "name": "uk_photo_owner_client_ref",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "indexColumnIds": [
+          "03h4468geka6y2ntydy3a97tc",
+          "03h4468geka6y2ntye06jgnkn"
+        ],
+        "unique": true
+      },
+      "03h4468geka6y2ntye0xepb32": {
+        "id": "03h4468geka6y2ntye0xepb32",
+        "name": "ix_photo_owner_change_seq",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "indexColumnIds": [
+          "03h4468geka6y2ntye3bisxw5",
+          "03h4468geka6y2ntye552rk18"
+        ],
+        "unique": false
+      },
+      "03h4468geka6y2ntye83tz2rz": {
+        "id": "03h4468geka6y2ntye83tz2rz",
+        "name": "uk_photo_device_link_os_id",
+        "tableId": "03h4468ge3qzlp0kxngunyby9",
+        "indexColumnIds": [
+          "03h4468geka6y2ntye87z52wr",
+          "03h4468geka6y2ntyec0v49xm"
+        ],
+        "unique": true
+      },
+      "03h4468geka6y2ntyecbd6gme": {
+        "id": "03h4468geka6y2ntyecbd6gme",
+        "name": "uk_tag_owner_client_ref",
+        "tableId": "03h4468ge3qzlp0kxnvluhm88",
+        "indexColumnIds": [
+          "03h4468geka6y2ntyefkcirxd",
+          "03h4468geka6y2ntyeg2ynxtp"
+        ],
+        "unique": true
+      },
+      "03h4468geka6y2ntyej4x04bq": {
+        "id": "03h4468geka6y2ntyej4x04bq",
+        "name": "uk_tag_owner_name",
+        "tableId": "03h4468ge3qzlp0kxnvluhm88",
+        "indexColumnIds": [
+          "03h4468geka6y2ntyelpmcyxt",
+          "03h4468geka6y2ntyenhy2v9r"
+        ],
+        "unique": true
+      },
+      "03h4468geka6y2ntyeootbswh": {
+        "id": "03h4468geka6y2ntyeootbswh",
+        "name": "ix_tag_owner_change_seq",
+        "tableId": "03h4468ge3qzlp0kxnvluhm88",
+        "indexColumnIds": [
+          "03h4468geka6y2ntyer4amey3",
+          "03h4468geka6y2ntyetaw81c8"
+        ],
+        "unique": false
+      },
+      "03h4468geka6y2ntyetx16mmg": {
+        "id": "03h4468geka6y2ntyetx16mmg",
+        "name": "uk_organize_state_photo_album",
+        "tableId": "03h4468ge3qzlp0kxoqfcm9ix",
+        "indexColumnIds": [
+          "03h4468geka6y2ntyevw82iue",
+          "03h4468geka6y2ntyeygs03vu",
+          "03h4468geka6y2ntyezwh2zy0"
+        ],
+        "unique": true
+      },
+      "03h4468geka6y2ntyf2g32t0c": {
+        "id": "03h4468geka6y2ntyf2g32t0c",
+        "name": "ix_organize_state_owner_change_seq",
+        "tableId": "03h4468ge3qzlp0kxoqfcm9ix",
+        "indexColumnIds": [
+          "03h4468geka6y2ntyf5exg188",
+          "03h4468geka6y2ntyf70vsfl1"
+        ],
+        "unique": false
+      },
+      "03h4468geka6y2ntyf8ek1epd": {
+        "id": "03h4468geka6y2ntyf8ek1epd",
+        "name": "uk_analysis_job_photo_version",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "indexColumnIds": [
+          "03h4468geka6y2ntyf9q48hhu",
+          "03h4468geka6y2ntyfbli9rqj",
+          "03h4468geka6y2ntyfdmsnvbh"
+        ],
+        "unique": true
+      },
+      "03h4468geka6y2ntyffx02fed": {
+        "id": "03h4468geka6y2ntyffx02fed",
+        "name": "ix_analysis_job_ready",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "indexColumnIds": [
+          "03h4468geka6y2ntyfj59uxjy",
+          "03h4468geka6y2ntyfk5dkx0w",
+          "03h4468geka6y2ntyfn7eelf4"
+        ],
+        "unique": false
+      },
+      "03h4468geka6y2ntyfo8fv95i": {
+        "id": "03h4468geka6y2ntyfo8fv95i",
+        "name": "ix_analysis_result_owner_change_seq",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "indexColumnIds": [
+          "03h4468geka6y2ntyfqggd3eq",
+          "03h4468geka6y2ntyfsjnk78w"
+        ],
+        "unique": false
+      },
+      "03h4468geka6y2ntyfupt7ngc": {
+        "id": "03h4468geka6y2ntyfupt7ngc",
+        "name": "ix_photo_group_owner_change_seq",
+        "tableId": "03h4468ge977zqezljub686tt",
+        "indexColumnIds": [
+          "03h4468geka6y2ntyfwvzs68u",
+          "03h4468geka6y2ntyfywm9s95"
+        ],
+        "unique": false
+      },
+      "03h4468geka6y2ntyg0ypykbs": {
+        "id": "03h4468geka6y2ntyg0ypykbs",
+        "name": "uk_group_member_photo",
+        "tableId": "03h4468ge977zqezlkfd4d0z8",
+        "indexColumnIds": [
+          "03h4468geka6y2ntyg1h9s0cl",
+          "03h4468geka6y2ntyg4svhcgd"
+        ],
+        "unique": true
+      },
+      "03h4468geka6y2ntyg5gwzgdd": {
+        "id": "03h4468geka6y2ntyg5gwzgdd",
+        "name": "uk_photo_action_target",
+        "tableId": "03h4468ge977zqezll4ciftac",
+        "indexColumnIds": [
+          "03h4468geka6y2ntyg7rfpxol",
+          "03h4468geka6y2ntygad9td1j",
+          "03h4468geka6y2ntygbxt1d0e",
+          "03h4468geka6y2ntygexxhfen"
+        ],
+        "unique": true
+      },
+      "03h4468geka6y2ntygf448zf8": {
+        "id": "03h4468geka6y2ntygf448zf8",
+        "name": "ix_photo_action_owner_change_seq",
+        "tableId": "03h4468ge977zqezll4ciftac",
+        "indexColumnIds": [
+          "03h4468geka6y2ntygisdwxzs",
+          "03h4468geka6y2ntygjdv7hyi"
+        ],
+        "unique": false
+      },
+      "03h4468geka6y2ntyglu44te5": {
+        "id": "03h4468geka6y2ntyglu44te5",
+        "name": "uk_translation_source_lang",
+        "tableId": "03h4468ge977zqezlmi9acrpo",
+        "indexColumnIds": [
+          "03h4468geka6y2ntygn7x3yc4",
+          "03h4468geka6y2ntygqgjphcm",
+          "03h4468geka6y2ntygqyvf5cr"
+        ],
+        "unique": true
+      },
+      "03h4468geka6y2ntygtru8bez": {
+        "id": "03h4468geka6y2ntygtru8bez",
+        "name": "uk_event_owner_client_ref",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "indexColumnIds": [
+          "03h4468geka6y2ntygvwgd63b",
+          "03h4468geka6y2ntygyqcsii8"
+        ],
+        "unique": true
+      },
+      "03h4468geka6y2ntygzrefo0a": {
+        "id": "03h4468geka6y2ntygzrefo0a",
+        "name": "uk_event_origin_job",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "indexColumnIds": [
+          "03h4468geka6y2ntyh29x6hpl",
+          "03h4468geka6y2ntyh4n6geib"
+        ],
+        "unique": true
+      },
+      "03h4468geka6y2ntyh5kum3ch": {
+        "id": "03h4468geka6y2ntyh5kum3ch",
+        "name": "ix_event_owner_status_date",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "indexColumnIds": [
+          "03h4468geka6y2ntyh6vs1bku",
+          "03h4468geka6y2ntyh8oxps2f",
+          "03h4468geka6y2ntyhatxa3wz"
+        ],
+        "unique": false
+      },
+      "03h4468geka6y2ntyhczmgsbt": {
+        "id": "03h4468geka6y2ntyhczmgsbt",
+        "name": "ix_event_owner_change_seq",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "indexColumnIds": [
+          "03h4468geka6y2ntyhg96ue3k",
+          "03h4468geka6y2ntyhhb16edc"
+        ],
+        "unique": false
+      },
+      "03h4468geka6y2ntyhqpplspq": {
+        "id": "03h4468geka6y2ntyhqpplspq",
+        "name": "ix_external_call_subject",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "indexColumnIds": [
+          "03h4468geka6y2ntyhtunu9ls",
+          "03h4468geka6y2ntyhvxwz6yv",
+          "03h4468geka6y2ntyhwy6rcqa"
+        ],
+        "unique": false
+      },
+      "03h44damna12iwbwjie74u7at": {
+        "id": "03h44damna12iwbwjie74u7at",
+        "name": "ix_revenuecat_event_retry",
+        "tableId": "03h4468ge3qzlp0kxjueu7nb9",
+        "indexColumnIds": [
+          "03h44damna12iwbwjihct486i",
+          "03h44damna12iwbwjimhkcrnd"
+        ],
+        "unique": false
+      },
+      "03h45zpihwpzcki6c94vj1jhe": {
+        "id": "03h45zpihwpzcki6c94vj1jhe",
+        "name": "uk_notification_schedule_target",
+        "tableId": "03h4468ge977zqezlosz9hyo7",
+        "indexColumnIds": [
+          "03h45zpihwpzcki6c99815768",
+          "03h45zpihwpzcki6c9cgq6lnq",
+          "03h45zpihwpzcki6c9h9kv7er",
+          "03h45zpihwpzcki6c9l4lfrtb",
+          "03h45zpihwpzcki6c9o14a0xx"
+        ],
+        "unique": true
+      },
+      "03h45zpihwpzcki6c9ti00brw": {
+        "id": "03h45zpihwpzcki6c9ti00brw",
+        "name": "ix_notification_schedule_due",
+        "tableId": "03h4468ge977zqezlosz9hyo7",
+        "indexColumnIds": [
+          "03h45zpihwpzcki6c9xfhye65",
+          "03h45zpihwpzcki6ca19c4h3j"
+        ],
+        "unique": false
+      },
+      "03h45zxe92rplendwahkyltv1": {
+        "id": "03h45zxe92rplendwahkyltv1",
+        "name": "ix_notification_device_owner",
+        "tableId": "03h45zxe8rur98csoh0m99lbi",
+        "indexColumnIds": [
+          "03h45zxe92rplendwaldw8zvc"
+        ],
+        "unique": false
+      },
+      "03h46ggksdze9d44xzuzpuwoj": {
+        "id": "03h46ggksdze9d44xzuzpuwoj",
+        "name": "uk_device_trial_mark_key",
+        "tableId": "03h46ggkrxnffv4hjizyj1crb",
+        "indexColumnIds": [
+          "03h46ggksdze9d44xzzaf3aqh",
+          "03h46ggksdze9d44y01r1r58z",
+          "03h46ggksdze9d44y07hlvsxh"
+        ],
+        "unique": true
+      }
+    },
+    "indexColumnEntities": {
+      "03h4468geephs5erx8ycrkbft": {
+        "id": "03h4468geephs5erx8ycrkbft",
+        "indexId": "03h4468geephs5erx8xgay3x3",
+        "columnId": "03h4468ge3qzlp0kxha9mssri",
+        "orderType": 1
+      },
+      "03h4468geephs5erx90lms1ox": {
+        "id": "03h4468geephs5erx90lms1ox",
+        "indexId": "03h4468geephs5erx8xgay3x3",
+        "columnId": "03h4468ge3qzlp0kxhcb9ilb4",
+        "orderType": 1
+      },
+      "03h4468geephs5erx94o04j6r": {
+        "id": "03h4468geephs5erx94o04j6r",
+        "indexId": "03h4468geephs5erx93j8iobr",
+        "columnId": "03h4468ge3qzlp0kxhoekt12w",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyd3nfw62a": {
+        "id": "03h4468geka6y2ntyd3nfw62a",
+        "indexId": "03h4468geephs5erx93j8iobr",
+        "columnId": "03h4468ge3qzlp0kxht1ose03",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyd7kfjdo6": {
+        "id": "03h4468geka6y2ntyd7kfjdo6",
+        "indexId": "03h4468geka6y2ntyd5n0ag08",
+        "columnId": "03h4468ge3qzlp0kxi8ipwlzn",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyd9hvrd2s": {
+        "id": "03h4468geka6y2ntyd9hvrd2s",
+        "indexId": "03h4468geka6y2ntyd5n0ag08",
+        "columnId": "03h4468ge3qzlp0kxi99xyiv3",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyddie6mp5": {
+        "id": "03h4468geka6y2ntyddie6mp5",
+        "indexId": "03h4468geka6y2ntydb0b8uhz",
+        "columnId": "03h4468ge3qzlp0kxiuu2429c",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntydgdqh7rg": {
+        "id": "03h4468geka6y2ntydgdqh7rg",
+        "indexId": "03h4468geka6y2ntydb0b8uhz",
+        "columnId": "03h4468ge3qzlp0kxj3iu2nsf",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntydjaoyula": {
+        "id": "03h4468geka6y2ntydjaoyula",
+        "indexId": "03h4468geka6y2ntydhfs36mn",
+        "columnId": "03h4468ge3qzlp0kxkw3vc1jr",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntydkywbh98": {
+        "id": "03h4468geka6y2ntydkywbh98",
+        "indexId": "03h4468geka6y2ntydhfs36mn",
+        "columnId": "03h4468ge3qzlp0kxkye45tss",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntydmfjvyxb": {
+        "id": "03h4468geka6y2ntydmfjvyxb",
+        "indexId": "03h4468geka6y2ntydhfs36mn",
+        "columnId": "03h4468ge3qzlp0kxl231a1t9",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntydrb9q1er": {
+        "id": "03h4468geka6y2ntydrb9q1er",
+        "indexId": "03h4468geka6y2ntydpu7v3mb",
+        "columnId": "03h4468ge3qzlp0kxm8da7r27",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntydsqq14sd": {
+        "id": "03h4468geka6y2ntydsqq14sd",
+        "indexId": "03h4468geka6y2ntydpu7v3mb",
+        "columnId": "03h4468ge3qzlp0kxm9uc5u76",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntydy3a97tc": {
+        "id": "03h4468geka6y2ntydy3a97tc",
+        "indexId": "03h4468geka6y2ntydul45n62",
+        "columnId": "03h4468ge3qzlp0kxmssx2mpj",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntye06jgnkn": {
+        "id": "03h4468geka6y2ntye06jgnkn",
+        "indexId": "03h4468geka6y2ntydul45n62",
+        "columnId": "03h4468ge3qzlp0kxmwdguygi",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntye3bisxw5": {
+        "id": "03h4468geka6y2ntye3bisxw5",
+        "indexId": "03h4468geka6y2ntye0xepb32",
+        "columnId": "03h4468ge3qzlp0kxmssx2mpj",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntye552rk18": {
+        "id": "03h4468geka6y2ntye552rk18",
+        "indexId": "03h4468geka6y2ntye0xepb32",
+        "columnId": "03h4468ge3qzlp0kxn6wiid7g",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntye87z52wr": {
+        "id": "03h4468geka6y2ntye87z52wr",
+        "indexId": "03h4468geka6y2ntye83tz2rz",
+        "columnId": "03h4468ge3qzlp0kxnkk1wc0u",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyec0v49xm": {
+        "id": "03h4468geka6y2ntyec0v49xm",
+        "indexId": "03h4468geka6y2ntye83tz2rz",
+        "columnId": "03h4468ge3qzlp0kxnpoyzvq3",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyefkcirxd": {
+        "id": "03h4468geka6y2ntyefkcirxd",
+        "indexId": "03h4468geka6y2ntyecbd6gme",
+        "columnId": "03h4468ge3qzlp0kxnyblhqi8",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyeg2ynxtp": {
+        "id": "03h4468geka6y2ntyeg2ynxtp",
+        "indexId": "03h4468geka6y2ntyecbd6gme",
+        "columnId": "03h4468ge3qzlp0kxo0dhj1bj",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyelpmcyxt": {
+        "id": "03h4468geka6y2ntyelpmcyxt",
+        "indexId": "03h4468geka6y2ntyej4x04bq",
+        "columnId": "03h4468ge3qzlp0kxnyblhqi8",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyenhy2v9r": {
+        "id": "03h4468geka6y2ntyenhy2v9r",
+        "indexId": "03h4468geka6y2ntyej4x04bq",
+        "columnId": "03h4468ge3qzlp0kxo4he1mby",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyer4amey3": {
+        "id": "03h4468geka6y2ntyer4amey3",
+        "indexId": "03h4468geka6y2ntyeootbswh",
+        "columnId": "03h4468ge3qzlp0kxnyblhqi8",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyetaw81c8": {
+        "id": "03h4468geka6y2ntyetaw81c8",
+        "indexId": "03h4468geka6y2ntyeootbswh",
+        "columnId": "03h4468ge3qzlp0kxo65f8qm4",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyevw82iue": {
+        "id": "03h4468geka6y2ntyevw82iue",
+        "indexId": "03h4468geka6y2ntyetx16mmg",
+        "columnId": "03h4468ge3qzlp0kxotunlozh",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyeygs03vu": {
+        "id": "03h4468geka6y2ntyeygs03vu",
+        "indexId": "03h4468geka6y2ntyetx16mmg",
+        "columnId": "03h4468ge3qzlp0kxoxd7zweq",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyezwh2zy0": {
+        "id": "03h4468geka6y2ntyezwh2zy0",
+        "indexId": "03h4468geka6y2ntyetx16mmg",
+        "columnId": "03h4468ge3qzlp0kxoykktfam",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyf5exg188": {
+        "id": "03h4468geka6y2ntyf5exg188",
+        "indexId": "03h4468geka6y2ntyf2g32t0c",
+        "columnId": "03h4468ge3qzlp0kxotunlozh",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyf70vsfl1": {
+        "id": "03h4468geka6y2ntyf70vsfl1",
+        "indexId": "03h4468geka6y2ntyf2g32t0c",
+        "columnId": "03h4468ge3qzlp0kxp79fdsl5",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyf9q48hhu": {
+        "id": "03h4468geka6y2ntyf9q48hhu",
+        "indexId": "03h4468geka6y2ntyf8ek1epd",
+        "columnId": "03h4468ge977zqezlhu49kpu8",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyfbli9rqj": {
+        "id": "03h4468geka6y2ntyfbli9rqj",
+        "indexId": "03h4468geka6y2ntyf8ek1epd",
+        "columnId": "03h4468ge977zqezlhvteit1r",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyfdmsnvbh": {
+        "id": "03h4468geka6y2ntyfdmsnvbh",
+        "indexId": "03h4468geka6y2ntyf8ek1epd",
+        "columnId": "03h4468ge977zqezlhyfww2ig",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyfj59uxjy": {
+        "id": "03h4468geka6y2ntyfj59uxjy",
+        "indexId": "03h4468geka6y2ntyffx02fed",
+        "columnId": "03h4468ge977zqezli5q3gso3",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyfk5dkx0w": {
+        "id": "03h4468geka6y2ntyfk5dkx0w",
+        "indexId": "03h4468geka6y2ntyffx02fed",
+        "columnId": "03h4468ge977zqezli3hld6f0",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyfn7eelf4": {
+        "id": "03h4468geka6y2ntyfn7eelf4",
+        "indexId": "03h4468geka6y2ntyffx02fed",
+        "columnId": "03h4468ge977zqezliak6wzv6",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyfqggd3eq": {
+        "id": "03h4468geka6y2ntyfqggd3eq",
+        "indexId": "03h4468geka6y2ntyfo8fv95i",
+        "columnId": "03h4468ge977zqezliy8hdjvu",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyfsjnk78w": {
+        "id": "03h4468geka6y2ntyfsjnk78w",
+        "indexId": "03h4468geka6y2ntyfo8fv95i",
+        "columnId": "03h4468ge977zqezljk8zzdrp",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyfwvzs68u": {
+        "id": "03h4468geka6y2ntyfwvzs68u",
+        "indexId": "03h4468geka6y2ntyfupt7ngc",
+        "columnId": "03h4468ge977zqezljwsruv8r",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyfywm9s95": {
+        "id": "03h4468geka6y2ntyfywm9s95",
+        "indexId": "03h4468geka6y2ntyfupt7ngc",
+        "columnId": "03h4468ge977zqezlk5eo78ex",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyg1h9s0cl": {
+        "id": "03h4468geka6y2ntyg1h9s0cl",
+        "indexId": "03h4468geka6y2ntyg0ypykbs",
+        "columnId": "03h4468ge977zqezlkkbsif9h",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyg4svhcgd": {
+        "id": "03h4468geka6y2ntyg4svhcgd",
+        "indexId": "03h4468geka6y2ntyg0ypykbs",
+        "columnId": "03h4468ge977zqezlkihkuzrg",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyg7rfpxol": {
+        "id": "03h4468geka6y2ntyg7rfpxol",
+        "indexId": "03h4468geka6y2ntyg5gwzgdd",
+        "columnId": "03h4468ge977zqezll9b253re",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntygad9td1j": {
+        "id": "03h4468geka6y2ntygad9td1j",
+        "indexId": "03h4468geka6y2ntyg5gwzgdd",
+        "columnId": "03h4468ge977zqezllb05x0p6",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntygbxt1d0e": {
+        "id": "03h4468geka6y2ntygbxt1d0e",
+        "indexId": "03h4468geka6y2ntyg5gwzgdd",
+        "columnId": "03h4468ge977zqezlldeli936",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntygexxhfen": {
+        "id": "03h4468geka6y2ntygexxhfen",
+        "indexId": "03h4468geka6y2ntyg5gwzgdd",
+        "columnId": "03h4468ge977zqezllfi07x8w",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntygisdwxzs": {
+        "id": "03h4468geka6y2ntygisdwxzs",
+        "indexId": "03h4468geka6y2ntygf448zf8",
+        "columnId": "03h4468ge977zqezll9b253re",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntygjdv7hyi": {
+        "id": "03h4468geka6y2ntygjdv7hyi",
+        "indexId": "03h4468geka6y2ntygf448zf8",
+        "columnId": "03h4468ge977zqezllpfv59y4",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntygn7x3yc4": {
+        "id": "03h4468geka6y2ntygn7x3yc4",
+        "indexId": "03h4468geka6y2ntyglu44te5",
+        "columnId": "03h4468ge977zqezlmlm7o1hl",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntygqgjphcm": {
+        "id": "03h4468geka6y2ntygqgjphcm",
+        "indexId": "03h4468geka6y2ntyglu44te5",
+        "columnId": "03h4468ge977zqezlmr1xf2vk",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntygqyvf5cr": {
+        "id": "03h4468geka6y2ntygqyvf5cr",
+        "indexId": "03h4468geka6y2ntyglu44te5",
+        "columnId": "03h4468ge977zqezlmredymeq",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntygvwgd63b": {
+        "id": "03h4468geka6y2ntygvwgd63b",
+        "indexId": "03h4468geka6y2ntygtru8bez",
+        "columnId": "03h4468ge977zqezln5v3uxs0",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntygyqcsii8": {
+        "id": "03h4468geka6y2ntygyqcsii8",
+        "indexId": "03h4468geka6y2ntygtru8bez",
+        "columnId": "03h4468ge977zqezln8fhurip",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyh29x6hpl": {
+        "id": "03h4468geka6y2ntyh29x6hpl",
+        "indexId": "03h4468geka6y2ntygzrefo0a",
+        "columnId": "03h4468ge977zqezln5v3uxs0",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyh4n6geib": {
+        "id": "03h4468geka6y2ntyh4n6geib",
+        "indexId": "03h4468geka6y2ntygzrefo0a",
+        "columnId": "03h4468ge977zqezln9gx2ljy",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyh6vs1bku": {
+        "id": "03h4468geka6y2ntyh6vs1bku",
+        "indexId": "03h4468geka6y2ntyh5kum3ch",
+        "columnId": "03h4468ge977zqezln5v3uxs0",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyh8oxps2f": {
+        "id": "03h4468geka6y2ntyh8oxps2f",
+        "indexId": "03h4468geka6y2ntyh5kum3ch",
+        "columnId": "03h4468ge977zqezlnsl5xrg6",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyhatxa3wz": {
+        "id": "03h4468geka6y2ntyhatxa3wz",
+        "indexId": "03h4468geka6y2ntyh5kum3ch",
+        "columnId": "03h4468ge977zqezlnfh0scva",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyhg96ue3k": {
+        "id": "03h4468geka6y2ntyhg96ue3k",
+        "indexId": "03h4468geka6y2ntyhczmgsbt",
+        "columnId": "03h4468ge977zqezln5v3uxs0",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyhhb16edc": {
+        "id": "03h4468geka6y2ntyhhb16edc",
+        "indexId": "03h4468geka6y2ntyhczmgsbt",
+        "columnId": "03h4468ge977zqezlo1fk83nl",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyhtunu9ls": {
+        "id": "03h4468geka6y2ntyhtunu9ls",
+        "indexId": "03h4468geka6y2ntyhqpplspq",
+        "columnId": "03h4468ge977zqezlqgzw4air",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyhvxwz6yv": {
+        "id": "03h4468geka6y2ntyhvxwz6yv",
+        "indexId": "03h4468geka6y2ntyhqpplspq",
+        "columnId": "03h4468ge977zqezlql50ym1j",
+        "orderType": 1
+      },
+      "03h4468geka6y2ntyhwy6rcqa": {
+        "id": "03h4468geka6y2ntyhwy6rcqa",
+        "indexId": "03h4468geka6y2ntyhqpplspq",
+        "columnId": "03h4468ge977zqezlqlj4hbq0",
+        "orderType": 1
+      },
+      "03h44damna12iwbwjihct486i": {
+        "id": "03h44damna12iwbwjihct486i",
+        "indexId": "03h44damna12iwbwjie74u7at",
+        "columnId": "03h4468ge3qzlp0kxk25x4m75",
+        "orderType": 1
+      },
+      "03h44damna12iwbwjimhkcrnd": {
+        "id": "03h44damna12iwbwjimhkcrnd",
+        "indexId": "03h44damna12iwbwjie74u7at",
+        "columnId": "03h44damna12iwbwji555s7xh",
+        "orderType": 1
+      },
+      "03h45zpihwpzcki6c99815768": {
+        "id": "03h45zpihwpzcki6c99815768",
+        "indexId": "03h45zpihwpzcki6c94vj1jhe",
+        "columnId": "03h45zpihltkk2192523hg3t2",
+        "orderType": 1
+      },
+      "03h45zpihwpzcki6c9cgq6lnq": {
+        "id": "03h45zpihwpzcki6c9cgq6lnq",
+        "indexId": "03h45zpihwpzcki6c94vj1jhe",
+        "columnId": "03h4468ge977zqezloyys8afz",
+        "orderType": 1
+      },
+      "03h45zpihwpzcki6c9h9kv7er": {
+        "id": "03h45zpihwpzcki6c9h9kv7er",
+        "indexId": "03h45zpihwpzcki6c94vj1jhe",
+        "columnId": "03h4468ge977zqezlox7az9g5",
+        "orderType": 1
+      },
+      "03h45zpihwpzcki6c9l4lfrtb": {
+        "id": "03h45zpihwpzcki6c9l4lfrtb",
+        "indexId": "03h45zpihwpzcki6c94vj1jhe",
+        "columnId": "03h45zpihltkk2192552wbzrz",
+        "orderType": 1
+      },
+      "03h45zpihwpzcki6c9o14a0xx": {
+        "id": "03h45zpihwpzcki6c9o14a0xx",
+        "indexId": "03h45zpihwpzcki6c94vj1jhe",
+        "columnId": "03h4468ge977zqezlp463t1is",
+        "orderType": 1
+      },
+      "03h45zpihwpzcki6c9xfhye65": {
+        "id": "03h45zpihwpzcki6c9xfhye65",
+        "indexId": "03h45zpihwpzcki6c9ti00brw",
+        "columnId": "03h4468ge977zqezlp6g8jvje",
+        "orderType": 1
+      },
+      "03h45zpihwpzcki6ca19c4h3j": {
+        "id": "03h45zpihwpzcki6ca19c4h3j",
+        "indexId": "03h45zpihwpzcki6c9ti00brw",
+        "columnId": "03h4468ge977zqezlp1jlobe9",
+        "orderType": 1
+      },
+      "03h45zxe92rplendwaldw8zvc": {
+        "id": "03h45zxe92rplendwaldw8zvc",
+        "indexId": "03h45zxe92rplendwahkyltv1",
+        "columnId": "03h45zxe8rur98csoh6zm6jgk",
+        "orderType": 1
+      },
+      "03h46ggksdze9d44xzzaf3aqh": {
+        "id": "03h46ggksdze9d44xzzaf3aqh",
+        "indexId": "03h46ggksdze9d44xzuzpuwoj",
+        "columnId": "03h46ggks30n8gsin8mdrlc2f",
+        "orderType": 1
+      },
+      "03h46ggksdze9d44y01r1r58z": {
+        "id": "03h46ggksdze9d44y01r1r58z",
+        "indexId": "03h46ggksdze9d44xzuzpuwoj",
+        "columnId": "03h46ggks30n8gsin8uksber0",
+        "orderType": 1
+      },
+      "03h46ggksdze9d44y07hlvsxh": {
+        "id": "03h46ggksdze9d44y07hlvsxh",
+        "indexId": "03h46ggksdze9d44xzuzpuwoj",
+        "columnId": "03h46ggks30n8gsin8psp7e9e",
+        "orderType": 1
+      }
+    },
+    "memoEntities": {
+      "03h446hedsmnrwp09ht0scm16": {
+        "id": "03h446hedsmnrwp09ht0scm16",
+        "value": "[설계 판단] 스키마 전체에 적용 (제안 단계, 2026-10-25, D-15)\n\n1. 소유 주체: principal 하나로 계정(ACCOUNT)과 비로그인 설치(ANONYMOUS)를 표현합니다. 모든 소유 테이블의 owner_id는 principal.id를 가리키며, 선이 너무 많아지므로 다이어그램에서는 owner_id 관계를 생략했습니다.\n\n2. 단말 생성 ID: photo·tag·event는 서버 PK(id)와 단말 식별자(client_ref)를 분리하고 UNIQUE(owner_id, client_ref)를 겁니다. 게스트 데이터를 계정에 귀속하거나 한 기기에서 계정을 바꿔도 충돌하지 않고, 재전송은 같은 행으로 모입니다.\n\n3. 모듈 간 참조: 그룹 경계를 넘는 선은 논리 관계입니다. Flyway DDL에서는 같은 모듈 안에만 FK를 걸고, 모듈 간에는 ID만 저장하는 안을 추천합니다. 컨럼 코멘트에 '모듈 간 ID 참조'로 표시했습니다.\n\n4. change_seq: owner_change_counter 행을 같은 트랜잭션에서 갱신해 발급합니다. DB 시퀀스는 커밋 순서와 번호 순서가 달라 Pull이 변경을 놓칠 수 있습니다(설계 세션안 정정).\n\n5. 삭제: 동기화 root는 deleted_at tombstone, 이벤트 사진 제외는 EXCLUDED 상태로 남깁니다.\n\n6. 분석 결과: 사진당 현재 1건만 보관하고 이력 테이블은 두지 않습니다.\n\n공통 컨럼: created_at, updated_at, version(@Version = 클라이언트 데이터 버전). 부분 인덱스(WHERE ...)는 테이블 코멘트에 적었습니다.",
+        "ui": {
+          "x": 3750,
+          "y": 50,
+          "width": 760,
+          "height": 640,
+          "color": "#4C7A9F"
+        }
+      },
+      "03h446hedsmnrwp09hy0cj3i8": {
+        "id": "03h446hedsmnrwp09hy0cj3i8",
+        "value": "[미결 결정에 따라 바뀌는 테이블]\n\n확정: RevenueCat 구독 연동 (ADR-0018) → subscription_entitlement, revenuecat_event. 플랫폼 거래 테이블은 두지 않음\n확정: Haiku 5.5로 시작 (ADR-0016) → analysis_job.model_id, analysis_result.model_id (설정값)\n확정: 검색은 서버가 해석만 하고 단말이 실행 (ADR-0017, D-02 해소) → 서버 검색 색인 없음. Jev 결과는 메모리 캐시에만 두고 DB에 저장하지 않음\n확정: 로그인 계정의 알림은 서버가 FCM으로 발송, silent push 없음 (ADR-0019) → notification_schedule, notification_device\n- 리마인드(FR-N-01)와 비로그인 사용자의 알림은 단말 로컬 예약이라 서버 테이블 없음\n확정: 계정·비로그인 주체 정책 (ADR-0020, feature/first-fr-plan 미병합) → device_trial_mark, provider_identity_mark\n- 사용자 결정 (2026-10-26): 제공자 ID 해시는 가입할 때 저장, 탈퇴 후 revenuecat_event에 type도 남김. ADR-0020의 최소 기록 목록 갱신 필요\n\n남은 판단\n- D-17: 검색 해석 호출 제한(비로그인 포함)을 어디에서 집계할지. 인스턴스 메모리에 두면 서버 대수만큼 나뉘어 집계됨\n- D-18: 여러 기기 중 발송 대상 규칙(P09)에 따라 기기별 발송 기록 테이블이 필요할 수 있음\n- D-14: 기기·계정 이중 집계(device_trial_mark), 장소 알림의 서버 확인 조건(location_permission = ALWAYS), silent push 미도입은 제안 단계\n\nD-01 미정 정책\n- P01·P03: usage_quota.limit_count는 설정값에서 기록, device_trial_mark 집계 기준은 P01\n- P05: photo_group.rule_version\n- P07: photo_device_link 매칭 방식(기기 간 사진 식별은 기술 검증 대상)\n- P08: 비로그인 데이터 보관 기한, 보관 기간 값(탈퇴 최소 기록, device_trial_mark·provider_identity_mark, 해결된 revenuecat_event.payload, 발송을 끝낸 notification_schedule)\n- P09: notification_schedule의 선행 시간·독려 단계, geofence 반경\n- P10: tag.normalized_name 규칙, 메모 길이\n- P11: photo.availability 처리",
+        "ui": {
+          "x": 3750,
+          "y": 760,
+          "width": 760,
+          "height": 760,
+          "color": "#C27A2C"
+        }
+      },
+      "03h446hedsmnrwp09i1jpzkbj": {
+        "id": "03h446hedsmnrwp09i1jpzkbj",
+        "value": "[SSOT 대조 보고 사항] SSOT는 수정하지 않았습니다. 1~3은 D-16\n\n1. 액션 aggregate가 요구사항 '# 데이터 경계와 후속 처리'의 저장 단위 표와 도메인 후보에 없습니다. FR-G-02가 액션 생성을 이벤트 생성과 독립적으로 처리하라고 하므로 별도 모듈을 추천합니다.\n\n2. 비로그인 사용자의 이벤트 자동 생성 위치가 불분명합니다. FR-E-01은 로그인이 필요 없다고 하고 FR-G-03은 기존 이벤트를 입력으로 받는데, 비로그인 사용자의 기존 이벤트는 단말에만 있습니다. 단말 생성을 추천합니다.\n\n3. 정리 상태: FR-C는 단말 전용인데 FR-A-02·04는 정리 상태의 서버 동기화·복원을 요구합니다. 원본 앨범 ID는 기기마다 달라서 source_album_ref의 의미는 P06·P07이 정해야 확정됩니다. ADR-0020도 정리 세션 복원 범위를 미정으로 남겼습니다.\n\n4. 리마인드(해소): 데이터 경계 표에는 리마인드 단위가 있지만 FR-N-01은 단말 전용이고, ADR-0019도 단말 로컬 예약으로 정했습니다. 서버 테이블은 두지 않습니다.\n\n5. 체험 한도(해소, ADR-0020 제안): 기기 단위(device_trial_mark)와 계정 단위(usage_quota)에 모두 기록하고, 하나라도 소진하면 체험을 주지 않습니다. 같은 설치의 비로그인·계정 device 행이 같은 device_trial_mark를 가리켜 기기 단위 이용량을 이어 갑니다.\n\n[비로그인 principal의 서버 데이터]\nphoto(최소 컨럼), analysis_job, analysis_result, photo_action, usage_*, ai_consent, device만 만듭니다. 메모·태그·정리 상태·이벤트는 단말에만 있습니다. 결과를 내려준 뒤 P08 기한에 따라 지웁니다. 로그인하면 사용자 확인을 받은 뒤 단말이 계정 소유로 업로드합니다. 태그는 합집합으로 합치고, 메모·정리 상태가 서버와 다르면 서버 값을 유지하고 충돌 목록을 반환합니다(ADR-0020, 자동 병합 금지).",
+        "ui": {
+          "x": 3750,
+          "y": 1590,
+          "width": 760,
+          "height": 620,
+          "color": "#B5485D"
+        }
+      }
+    },
+    "tableGroupEntities": {
+      "03h4468geka6y2ntyhzlqzeyp": {
+        "id": "03h4468geka6y2ntyhzlqzeyp",
+        "name": "계정과 구독",
+        "color": "#4C7A9F",
+        "ui": {
+          "x": 50,
+          "y": 2954,
+          "width": 4851,
+          "height": 1704
+        }
+      },
+      "03h4468geka6y2ntyi112qpas": {
+        "id": "03h4468geka6y2ntyi112qpas",
+        "name": "사진 연결",
+        "color": "#3E8E63",
+        "ui": {
+          "x": 50,
+          "y": 946,
+          "width": 2714,
+          "height": 768
+        }
+      },
+      "03h4468geka6y2ntyi3eep9za": {
+        "id": "03h4468geka6y2ntyi3eep9za",
+        "name": "정리",
+        "color": "#7A8F3E",
+        "ui": {
+          "x": 2850,
+          "y": 946,
+          "width": 829,
+          "height": 394
+        }
+      },
+      "03h4468geka6y2ntyi62mlft7": {
+        "id": "03h4468geka6y2ntyi62mlft7",
+        "name": "분석과 검색",
+        "color": "#8A5FB0",
+        "ui": {
+          "x": 50,
+          "y": 1794,
+          "width": 3385,
+          "height": 1080
+        }
+      },
+      "03h4468geka6y2ntyi7i4fmex": {
+        "id": "03h4468geka6y2ntyi7i4fmex",
+        "name": "액션 (신설 제안)",
+        "color": "#C27A2C",
+        "ui": {
+          "x": 50,
+          "y": 5756,
+          "width": 2581,
+          "height": 442
+        }
+      },
+      "03h4468geka6y2ntyi9wujrbv": {
+        "id": "03h4468geka6y2ntyi9wujrbv",
+        "name": "이벤트와 알림",
+        "color": "#B5485D",
+        "ui": {
+          "x": 50,
+          "y": 4740,
+          "width": 3070,
+          "height": 936
+        }
+      },
+      "03h4468geka6y2ntyiaw7v936": {
+        "id": "03h4468geka6y2ntyiaw7v936",
+        "name": "공통 인프라",
+        "color": "#6B7280",
+        "ui": {
+          "x": 50,
+          "y": 50,
+          "width": 2599,
+          "height": 816
+        }
+      }
+    }
+  }
+}
