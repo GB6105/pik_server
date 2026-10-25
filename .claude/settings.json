@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew build:*)",
+      "Bash(./gradlew test:*)",
+      "Bash(./gradlew bootRun:*)",
+      "Read(./docs/spec/**)"
+    ],
+    "deny": [
+      "Edit(./docs/spec/**)",
+      "Write(./docs/spec/**)",
+      "Bash(rm:*docs/spec*)",
+      "Bash(mv:*docs/spec*)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Bash(cat:*.env*)"
+    ]
+  }
+}
