@@ -64,6 +64,12 @@ Pik(사진 정리 앱) iOS·Android 클라이언트의 백엔드. Java 21 + Spri
 - 새 환경 변수 추가 시 `.env.example`에 키 추가
 - `.env`·`.env.local` 내용 읽기·출력 금지. 필요한 키는 사용자에게 질문
 
+## 코드 규약
+- Lombok 허용 = `@Getter`, `@NoArgsConstructor`, `@RequiredArgsConstructor`, `@Slf4j`만. 그 외는 `lombok.config`가 컴파일 오류로 차단
+- 엔티티 `@NoArgsConstructor`는 `access = AccessLevel.PROTECTED` 필수 (config로 강제 불가)
+- 엔티티 상태 변경 = 도메인 메서드만 (setter 금지)
+- DTO·커맨드·이벤트·값 객체 = `record`
+
 ## 불변 규칙
 - 사진 원본·실제 앨범 구성은 서버 소유 아님. 서버는 Pik 메타데이터만 보관
 - 입력 ID만으로 소유권 인정 금지. 요청 주체 기준 소유 범위 검증
