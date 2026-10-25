@@ -47,6 +47,10 @@ Pik(사진 정리 앱) iOS·Android 클라이언트의 백엔드. Java 21 + Spri
 
 - 성공 판정은 exit code로. `| tail` 등 파이프로 결과 가리지 않기
 - Java toolchain 21 고정. 21 이후 preview 기능 사용 금지
+- JDK = `mise.toml` (temurin-21). 셸에 mise 미활성 시 `mise exec -- ./gradlew ...`
+- `test`·`build` = Docker 필요 (Testcontainers PostgreSQL). `bootRun` = Docker + `.env.local` 필요 (compose.yaml)
+- 같은 프로젝트에서 Gradle 빌드 동시 실행 금지 (테스트 결과 파일 충돌로 `:test` 실패)
+- DB 스키마 변경 = Flyway 마이그레이션만 (`ddl-auto: validate`)
 
 ## 환경 변수·비밀 값
 | 환경 | 소스 | git |

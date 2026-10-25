@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: pik-server
+  config:
+    import: optional:file:.env.local[.properties]
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
