@@ -19,8 +19,9 @@
 | [0005](0005-server-scope-metadata-only.md) | 서버는 Pik 메타데이터만 소유한다 | 채택 | 2026-10-25 |
 | [0006](0006-open-policies-as-config.md) | 미정 정책 값은 설정값으로 분리한다 | 채택 | 2026-10-25 |
 | [0007](0007-project-record-system.md) | STATUS·ADR·devlog 기록 체계 | 채택 | 2026-10-25 |
-| [0008](0008-git-flow-branching.md) | Git Flow 브랜치 전략 | 채택 | 2026-10-25 |
+| [0008](0008-git-flow-branching.md) | Git Flow 브랜치 전략 | 채택 (병합 방식은 0013으로 대체) | 2026-10-25 |
 | [0009](0009-decision-reporting-per-task.md) | 작업 시작·종료 시 결정 사항 보고 | 채택 | 2026-10-25 |
 | [0010](0010-project-skeleton.md) | 프로젝트 골격 구성 | 채택 (근거 일부 미기록) | 2026-10-25 |
 | [0011](0011-ci-github-actions.md) | GitHub Actions CI (빌드·테스트) | 채택 | 2026-10-25 |
 | [0012](0012-lombok-restricted-usage.md) | Lombok 제한적 사용 (허용 목록) | 채택 | 2026-10-25 |
+| [0013](0013-branch-protection-pr-required.md) | 원격 브랜치 보호: PR·CI 필수 | 채택 | 2026-10-25 |
