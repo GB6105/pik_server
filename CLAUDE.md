@@ -44,6 +44,7 @@ Pik(사진 정리 앱) iOS·Android 클라이언트의 백엔드. Java 21 + Spri
 | 빌드 | `./gradlew build` |
 | 테스트 | `./gradlew test` |
 | 실행 | `./gradlew bootRun` |
+| CI 워크플로 검사 | `docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest -no-color` |
 
 - 성공 판정은 exit code로. `| tail` 등 파이프로 결과 가리지 않기
 - Java toolchain 21 고정. 21 이후 preview 기능 사용 금지
