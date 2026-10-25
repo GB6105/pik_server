@@ -8,10 +8,17 @@ build/
 ### Kotlin ###
 .kotlin/
 
+### Java / JVM ###
+*.class
+*.hprof
+*.jfr
+replay_pid*
+
 ### Spring Boot ###
 HELP.md
 *.log
 logs/
+compose.override.yaml
 
 ### Secrets / Local config ###
 .env
@@ -20,7 +27,9 @@ logs/
 *.pem
 *.key
 *.p12
+*.p8
 *.jks
+*.keystore
 
 ### IntelliJ IDEA ###
 .idea/
@@ -50,13 +59,24 @@ bin/
 /nbdist/
 /.nb-gradle/
 
-### VS Code ###
+### VS Code / Fleet ###
 .vscode/
+.fleet/
 
-### OS ###
+### Local tool overrides ###
+mise.local.toml
+.mise.local.toml
+
+### OS / editor temp ###
 .DS_Store
+._*
 Thumbs.db
+Desktop.ini
+*~
+*.swp
 
 ### AI tools ###
 .omc/
 .claude/settings.local.json
+.claude/worktrees/
+CLAUDE.local.md
