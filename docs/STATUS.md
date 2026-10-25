@@ -1,0 +1,54 @@
+# Pik Server 현황
+
+> 프로젝트 기록의 진입점. 작업이 끝날 때마다 이 파일을 최신 상태로 덮어쓴다.
+> 결정 근거는 `adr/`, 날짜별 진행 기록은 `devlog/`에 둔다.
+
+- 최종 갱신: 2026-10-25
+- 현재 단계: **0. 협업 기반 구축** (코드 없음, 빌드 파일 미생성)
+
+## 기록 체계
+| 문서 | 경로 | 용도 | 갱신 시점 |
+|---|---|---|---|
+| 현황 (이 파일) | `docs/STATUS.md` | 지금 어디까지 왔는지, 다음에 할 일 | 작업 종료 시 덮어쓰기 |
+| ADR | `docs/adr/NNNN-<slug>.md` | 결정과 근거 (변경 이력) | 결정이 생기거나 바뀔 때 추가 |
+| 일일 기록 | `docs/devlog/YYYY-MM-DD.md` | 그날 한 일·막힌 점·회고 메모 | 매일 작업 종료 시 |
+| 요구사항 (SSOT) | `docs/spec/` | 기능 요구사항·시나리오 | 읽기 전용 |
+
+## 단계별 진행
+| 단계 | 내용 | 상태 |
+|---|---|---|
+| 0 | 협업 기반: SSOT 배치, CLAUDE.md, 보조 문서, 권한·훅, 기록 체계, Git Flow | 진행 중 |
+| 1 | 프로젝트 골격: Gradle·Spring Boot 초기화, `.env.example`, CI | 대기 |
+| 2 | 계정 (FR-A-01~05) | 대기 |
+| 3 | 무료 체험·구독 (FR-B-01~05), 동의 기록 (FR-O-02) | 대기 |
+| 4 | 분석 작업·자동 생성 (FR-I, FR-G) | 대기 |
+| 5 | 동기화·이벤트·알림 (FR-L-05, FR-E, FR-N-02~04) | 대기 |
+
+> 단계 2 이후 순서는 잠정안이다. `.claude/docs/fr-scope.md`의 우선 검토 대상을 반영해 확정한다.
+
+## 완료
+- 요구사항 문서를 `docs/spec/`에 읽기 전용 SSOT로 배치 ([ADR-0001](adr/0001-spec-as-read-only-ssot.md))
+- CLAUDE.md 협업 계약과 `.claude/docs/` 보조 문서 6종 작성 ([ADR-0002](adr/0002-claude-md-split-and-size-limit.md))
+- CLAUDE.md 200줄 제한 훅 추가 ([ADR-0002](adr/0002-claude-md-split-and-size-limit.md))
+- 프로젝트 기록 체계(STATUS·ADR·devlog) 도입 ([ADR-0007](adr/0007-project-record-system.md))
+- Git Flow 도입: `develop` 생성, 보호 브랜치 직접 커밋 차단 훅 ([ADR-0008](adr/0008-git-flow-branching.md))
+- 작업 시작·종료 결정 보고 규칙과 미결 결정 주입 훅 ([ADR-0009](adr/0009-decision-reporting-per-task.md))
+
+## 다음 할 일
+- [ ] Gradle + Spring Boot 프로젝트 초기화 (Java 21 toolchain)
+- [ ] `.env.example` 작성
+- [ ] 첫 구현 FR 순서 확정
+
+## 미결 결정
+> SessionStart 훅이 이 표를 읽어 작업 시작 보고에 사용한다. 해소되면 행을 지우고 완료에 ADR 링크를 남긴다.
+
+| ID | 결정 사항 | 선택지 | 필요 시점 | 막는 작업 |
+|---|---|---|---|---|
+| D-01 | 미정 정책 P01~P11 확정 | `.claude/docs/open-policies.md` 초안 참고 | 각 FR 구현 전 | FR-B, FR-I, FR-E, FR-N 인수 조건 |
+| D-02 | 검색 실행 위치 | 단말 / 서버 / 혼합 | FR-S 구현 전 | FR-S-01~04 (확정 전 인터페이스만) |
+| D-03 | 기술 스택 선택 근거 보완 | - | 단계 1 착수 전 | ADR-0003 완결 |
+| D-04 | 원격 기본 브랜치·브랜치 보호 | 기본 브랜치 `develop` 전환 여부, `main`·`develop` 보호 규칙 | 첫 push 전 | PR 기반 병합 |
+| D-05 | 배포 비밀 값 주입 경로 | AWS SSM / GitHub Actions secrets | 배포 환경 구성 전 | CI·배포 |
+
+## 위험·제약
+- 미정 정책이 많아 FR 인수 조건이 불완전하다. 구현 시 하드코딩하지 않고 설정값으로 분리해야 한다.
