@@ -201,7 +201,7 @@
       "03h4468gdyciasr0yyd9e43nc": {
         "id": "03h4468gdyciasr0yyd9e43nc",
         "name": "anonymous_install",
-        "comment": "비로그인 작업 주체. 토큰 발급 시 App Attest·Play Integrity로 정상 앱인지 확인, 재설치 판별은 device_trial_mark (ADR-0020, P08)",
+        "comment": "비로그인 작업 주체. 토큰 발급 시 App Attest·Play Integrity로 정상 앱인지 확인, 재설치 판별은 device_trial_mark 설치 토큰은 만료·교체 없이 access JWT로 교환 (ADR-0020, ADR-0023, P08)",
         "columnIds": [
           "03h4468gdyciasr0yyeplijvi",
           "03h4468gdyciasr0yyhf5icv4",
@@ -209,6 +209,7 @@
           "03h4468gdyciasr0yykp82w3i",
           "03h4468gdyciasr0yyo3n14cn",
           "03h4468gdyciasr0yypq94emk",
+          "03hgqcrj7wpm57tlbs61vebd4",
           "03h4468gdyciasr0yyrc8tg7m"
         ],
         "groupId": "03h4468geka6y2ntyhzlqzeyp",
@@ -3779,6 +3780,14 @@
         "name": "version",
         "dataType": "bigint",
         "options": 8
+      },
+      "03hgqcrj7wpm57tlbs61vebd4": {
+        "id": "03hgqcrj7wpm57tlbs61vebd4",
+        "tableId": "03h4468gdyciasr0yyd9e43nc",
+        "name": "revoked_at",
+        "dataType": "timestamptz",
+        "options": 0,
+        "comment": "설치 토큰 폐기 시각. 값이 있으면 access 교환 거부 (ADR-0023)"
       }
     },
     "relationshipEntities": {

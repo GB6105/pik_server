@@ -55,9 +55,11 @@
 - 데이터 모델 기반 결정: 사진 식별 키, 묶음 판단 위치, 이용량 차감, 파이프라인 확정, 동의 철회·단위, 원본 삭제 후 메타데이터, 체험 이중 집계 ([ADR-0021](adr/0021-data-model-foundation-decisions.md))
 - 서버 ER 설계안 초안: 37개 테이블, ADR-0014~0020 반영 (`docs/erd/pik.erd.json`)
 - ER 설계안을 ADR-0020·0021에 맞춤 (38개 테이블). 스키마 공통 판단 (D-15 해소)·분석 접수 단위·기기 간 사진 식별 범위 결정 ([ADR-0022](adr/0022-schema-rules-analysis-request-and-photo-identity.md))
+- 단계 2 공통 기반 세부 값: 데이터 버전 위치, 오류 응답 구조, 토큰 수명·익명 토큰, API 버전, 멱등 기록, JWT, 로그, 기기 증명 대역, 모듈 골격 ([ADR-0023](adr/0023-stage2-foundation-details.md))
 
 ## 다음 할 일
-- [ ] 단계 2 착수: Modulith 모듈 골격, `ProblemDetail` 오류 형식, 멱등 기록, JWT 보안 설정, 구조화 로그 (ADR-0014), 익명 주체 발급 (ADR-0020), 첫 Flyway 마이그레이션
+- [ ] 로컬 환경 확인: colima (Docker), mise temurin-21, develop 기준선 `./gradlew build`, `.env.local` 준비 (단계 2 전)
+- [ ] 단계 2 착수: Modulith 모듈 골격, `ProblemDetail` 오류 형식, 멱등 기록, JWT 보안 설정, 구조화 로그 (ADR-0014·0023), 익명 주체 발급 (ADR-0020), 첫 Flyway 마이그레이션
 - [ ] 유사도 벡터 모델을 클라이언트와 합의 (단계 5 전, ADR-0021)
 - [ ] TypeSafe Jev 직접 API early access 신청, 데이터 보관·처리 국가 확인 (D-08)
 - [ ] Haiku 5.5·Jev 측정용 실제 사진·검색어 표본 구성 (D-07)

@@ -15,8 +15,8 @@
 |---|---|---|
 | INVALID_INPUT | 필수 입력 누락·잘못된 값 | 400 |
 | UNAUTHENTICATED | 세션 부재·만료 | 401 |
-| FORBIDDEN / PERMISSION_REQUIRED | 기능 권한·동의 부재 | 403 |
-| NOT_FOUND | 소유 범위 내 대상 부재 | 404 |
+| FORBIDDEN | 기능 권한·동의·이용 자격 부재 (`PERMISSION_REQUIRED`는 단말 OS 권한 결과, 서버 미사용) | 403 |
+| NOT_FOUND | 소유 범위 내 대상 부재. 다른 주체의 데이터도 NOT_FOUND (존재 노출 금지) | 404 |
 | CONFLICT | 버전 충돌·반영 중·허용 안 되는 상태 전이 | 409 |
 | UNSUPPORTED_OPERATION | 지원하지 않는 동작 | 422 |
 | TEMPORARY_FAILURE | 통신·외부 처리·일시 저장 장애 | 503 |
@@ -24,11 +24,19 @@
 ## 공통 응답 필드
 - 작업 ID, 결과 상태, 대상별 사유, 재시도 가능 여부
 
-## 형식 (ADR-0014)
-- 오류 응답 = RFC 9457 `ProblemDetail` + `code` (위 오류 코드 표)
-- API 버전 = 요청 헤더 (Spring Framework 7 API versioning)
-- 작업 식별자 = `Idempotency-Key` 헤더 (UUIDv7). 데이터 버전 전달 위치는 구현 시 확정
+## 형식 (ADR-0014, ADR-0023)
+- 오류 응답 = RFC 9457 `ProblemDetail` + `code` (위 표, HTTP와 1:1) + `reason` (세부 사유, 기능별 추가) + `retryable`. 장기 작업 응답은 `jobId` 포함
+- 목록 작업 = 200 + `items[]` (대상별 `result`·`code`·`reason`·`retryable`, 버전 충돌이면 `currentVersion`)
+- API 버전 = 요청 헤더 `API-Version`, 첫 값 `1`. 누락 시 400. 폐기 예정 = `Deprecation`·`Sunset` 응답 헤더. actuator 제외
+- 데이터 버전 = 변경 요청 본문의 대상별 `version`. 응답도 대상별 현재 `version`. `If-Match` 미사용
+- 작업 식별자 = `Idempotency-Key` 헤더 (UUIDv7). 세부 규칙은 `consistency-rules.md` 멱등성
 - 장기 작업 접수 = 202 + 작업 ID + 진행 상태
+
+## 인증 (ADR-0023)
+- access JWT = ES256, 15분. 클레임 `iss`·`sub` (주체 ID)·`kind` (ACCOUNT / ANONYMOUS)·`iat`·`exp`, 헤더 `kid`. 개인정보 금지
+- 계정 refresh = 90일, 사용할 때마다 교체 (마지막 사용부터 90일), 재사용 감지 시 family 폐기
+- 익명 설치 토큰 = 발급 시 기기 증명, 만료·교체 없음, 해시 저장·서버 폐기 가능. 설치 토큰 → access JWT 교환
+- 수명 값은 모두 설정값. 서명 키는 현재 + 이전 키 검증 (키 교체)
 
 ## 정상 결과로 취급
 - 빈 검색 결과
