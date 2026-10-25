@@ -12,7 +12,8 @@
       "Bash(rm:*docs/spec*)",
       "Bash(mv:*docs/spec*)",
       "Read(./.env)",
-      "Read(./.env.*)",
+      "Read(./.env.local)",
+      "Read(./.env.*.local)",
       "Bash(cat:*.env*)"
     ]
   },

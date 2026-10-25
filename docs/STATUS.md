@@ -4,7 +4,7 @@
 > 결정 근거는 `adr/`, 날짜별 진행 기록은 `devlog/`에 둔다.
 
 - 최종 갱신: 2026-10-25
-- 현재 단계: **0. 협업 기반 구축** (코드 없음, 빌드 파일 미생성)
+- 현재 단계: **1. 프로젝트 골격** (빌드·테스트 통과, 도메인 코드 없음)
 
 ## 기록 체계
 | 문서 | 경로 | 용도 | 갱신 시점 |
@@ -17,8 +17,8 @@
 ## 단계별 진행
 | 단계 | 내용 | 상태 |
 |---|---|---|
-| 0 | 협업 기반: SSOT 배치, CLAUDE.md, 보조 문서, 권한·훅, 기록 체계, Git Flow | 진행 중 |
-| 1 | 프로젝트 골격: Gradle·Spring Boot 초기화, `.env.example`, CI | 대기 |
+| 0 | 협업 기반: SSOT 배치, CLAUDE.md, 보조 문서, 권한·훅, 기록 체계, Git Flow | 완료 |
+| 1 | 프로젝트 골격: Gradle·Spring Boot 초기화, `.env.example`, CI | 진행 중 (CI 남음) |
 | 2 | 계정 (FR-A-01~05) | 대기 |
 | 3 | 무료 체험·구독 (FR-B-01~05), 동의 기록 (FR-O-02) | 대기 |
 | 4 | 분석 작업·자동 생성 (FR-I, FR-G) | 대기 |
@@ -33,11 +33,12 @@
 - 프로젝트 기록 체계(STATUS·ADR·devlog) 도입 ([ADR-0007](adr/0007-project-record-system.md))
 - Git Flow 도입: `develop` 생성, 보호 브랜치 직접 커밋 차단 훅 ([ADR-0008](adr/0008-git-flow-branching.md))
 - 작업 시작·종료 결정 보고 규칙과 미결 결정 주입 훅 ([ADR-0009](adr/0009-decision-reporting-per-task.md))
+- Spring Boot 4.1.2 + PostgreSQL 18 + Flyway 골격, `.env.example` ([ADR-0010](adr/0010-project-skeleton.md))
 
 ## 다음 할 일
-- [ ] Gradle + Spring Boot 프로젝트 초기화 (Java 21 toolchain)
-- [ ] `.env.example` 작성
+- [ ] CI 구성 (GitHub Actions: `./gradlew build`)
 - [ ] 첫 구현 FR 순서 확정
+- [ ] 첫 Flyway 마이그레이션 (첫 엔티티와 함께)
 
 ## 미결 결정
 > SessionStart 훅이 이 표를 읽어 작업 시작 보고에 사용한다. 해소되면 행을 지우고 완료에 ADR 링크를 남긴다.
@@ -46,7 +47,7 @@
 |---|---|---|---|---|
 | D-01 | 미정 정책 P01~P11 확정 | `.claude/docs/open-policies.md` 초안 참고 | 각 FR 구현 전 | FR-B, FR-I, FR-E, FR-N 인수 조건 |
 | D-02 | 검색 실행 위치 | 단말 / 서버 / 혼합 | FR-S 구현 전 | FR-S-01~04 (확정 전 인터페이스만) |
-| D-03 | 기술 스택 선택 근거 보완 | - | 단계 1 착수 전 | ADR-0003 완결 |
+| D-03 | 기술 스택·골격 선택 근거 보완 (Spring Boot, PostgreSQL, JPA, MVC, 좌표) | - | 단계 2 착수 전 | ADR-0003·0010 완결 |
 | D-04 | 원격 기본 브랜치·브랜치 보호 | 기본 브랜치 `develop` 전환 여부, `main`·`develop` 보호 규칙 | 첫 push 전 | PR 기반 병합 |
 | D-05 | 배포 비밀 값 주입 경로 | AWS SSM / GitHub Actions secrets | 배포 환경 구성 전 | CI·배포 |
 
