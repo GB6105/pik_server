@@ -30,6 +30,8 @@
 - FK는 같은 모듈 안에만. 모듈 간은 ID만 저장
 - `change_seq` = `owner_change_counter`를 같은 트랜잭션에서 갱신해 발급 (DB 시퀀스 금지)
 - 동기화 root 삭제 = `deleted_at` tombstone. 분석 결과 이력 테이블 없음
+- 동기화 대상·상태 변경 Pik 데이터 행 = `created_at`·`updated_at`·`version`. 추가·삭제만 하는 관계 행, 추가만 하는 기록, 인증·인프라 테이블은 예외
+- 소유 범위 조회 인덱스 = `owner_id` 선두. 배치 폴링용 부분 인덱스, 외부 식별자·상위 행 조회 인덱스는 예외
 
 ## 내부 이벤트
 | 트리거 | 후속 처리 |
