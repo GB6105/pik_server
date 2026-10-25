@@ -27,8 +27,9 @@
 | [0013](0013-branch-protection-pr-required.md) | 원격 브랜치 보호: PR·CI 필수 | 채택 | 2026-10-25 |
 | [0014](0014-application-architecture-and-stack.md) | 서버 애플리케이션 아키텍처와 기술 스택 | 채택 | 2026-10-25 |
 | [0015](0015-aws-infrastructure-and-deployment.md) | AWS 인프라와 배포·비밀 값 주입 | 채택 | 2026-10-25 |
-| [0016](0016-external-ai-and-analysis-pipeline.md) | 외부 AI 연동, 사진 분석 파이프라인, 외부 전송 동의 범위 | 채택 | 2026-10-25 |
+| [0016](0016-external-ai-and-analysis-pipeline.md) | 외부 AI 연동, 사진 분석 파이프라인, 외부 전송 동의 범위 | 채택 (파이프라인 확정·접수 단계 대체: ADR-0021) | 2026-10-25 |
 | [0017](0017-search-interpret-on-server-execute-on-device.md) | 검색 구조: 자연어 해석은 서버, 실행은 단말 | 채택 | 2026-10-25 |
 | [0018](0018-subscription-via-revenuecat.md) | 구독 검증은 RevenueCat으로 연동한다 | 채택 | 2026-10-25 |
 | [0019](0019-server-centric-notification-delivery.md) | 알림은 서버 중심으로 전달한다 | 채택 | 2026-10-25 |
 | [0020](0020-account-and-anonymous-subject-policy.md) | 계정·비로그인 주체 정책 (P07·P08 일부) | 채택 | 2026-10-26 |
+| [0021](0021-data-model-foundation-decisions.md) | 데이터 모델 기반 결정 (사진 식별·묶음·이용량·동의·원본 삭제) | 채택 | 2026-10-26 |
