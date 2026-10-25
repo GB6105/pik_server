@@ -6,7 +6,7 @@
 
 ## 맥락
 - ADR-0003의 스택(Java 21 + Spring Boot + Gradle)으로 빌드 가능한 골격이 필요하다.
-- 사용자가 Spring Initializr로 생성한 결과를 기준으로 한다.
+- Claude(세션 `8683c8fb`)가 Spring Initializr API(`start.spring.io/starter.zip`)로 생성했다. 빌드 DSL(Kotlin DSL)·DB(PostgreSQL)·패키지(`io.github.gb6105.pik`)는 사용자가 확정했고, Boot 4.1.2는 Claude가 제시한 값으로 진행했다.
 
 ## 결정
 | 항목 | 선택 |
@@ -34,4 +34,4 @@
 ## 결과
 - `test`·`build`에 Docker가 필요하고, `bootRun`에는 Docker와 `.env.local`이 필요하다.
 - 첫 엔티티를 만들 때 `src/main/resources/db/migration/V1__*.sql`이 필요하다.
-- `.claude/settings.json`의 Read deny를 `.env.*`에서 `.env.local`·`.env.*.local`로 좁혀 `.env.example`을 읽을 수 있게 했다 (사용자 변경).
+- `.claude/settings.json`의 Read deny를 `.env.*`에서 `.env.local`·`.env.*.local`로 좁혔다. `.env.*` 규칙이 `.env.example` 작성까지 차단해서 Claude가 변경했다 (사용자 사전 승인 없음, 사후 보고). `.env`, `.env.local`, `.env.*.local`의 차단은 유지된다.
