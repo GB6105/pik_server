@@ -64,7 +64,8 @@
       "03h4468geephs5erx6nws4bod",
       "03h45zxe8rur98csoh0m99lbi",
       "03h46ggkrxnffv4hjizyj1crb",
-      "03h46ggksdze9d44y09z2x7zj"
+      "03h46ggksdze9d44y09z2x7zj",
+      "03htygdnvz0ch9exiton03zyv"
     ],
     "relationshipIds": [
       "03h4468geephs5erx72aplmrf",
@@ -103,7 +104,8 @@
       "03h44damn4m3oy7ky89ux8chz",
       "03h45zxe92nmqnj78d0u2jkfx",
       "03h46ggksp11c0qxbs1cdwgr6",
-      "03h46ggksp11c0qxbs58bz9m4"
+      "03h46ggksp11c0qxbs58bz9m4",
+      "03hvo1pplbidr4yi8pghoep3x"
     ],
     "indexIds": [
       "03h4468geephs5erx8xgay3x3",
@@ -139,7 +141,9 @@
       "03h46ggksdze9d44xzuzpuwoj",
       "03hvh0oej5atof0uj0zf90ze2",
       "03hr8oiz2t2vfr123yjl34sav",
-      "03hedey8y9ymng5yhnsj6twhw"
+      "03hedey8y9ymng5yhnsj6twhw",
+      "03hnq42h7pyx0zzgh0fgz5rs6",
+      "03hsv9s34tyfrrx1o6tgp7pyg"
     ],
     "memoIds": [
       "03h446hedsmnrwp09ht0scm16",
@@ -445,11 +449,12 @@
       "03h4468ge3qzlp0kxmoxdncoo": {
         "id": "03h4468ge3qzlp0kxmoxdncoo",
         "name": "photo",
-        "comment": "사진별 Pik 정보 aggregate root. 원본은 서버에 없음. ix_photo_original_deleted는 WHERE original_deleted_at IS NOT NULL 부분 인덱스이며 보관 기한 배치용이라 owner_id 선두 규칙의 예외 (FR-L-05, FR-A-02·04, FR-G-01, P11)",
+        "comment": "사진별 Pik 정보 aggregate root. 원본은 서버에 없음. uk_photo_owner_cloud_ref는 WHERE cloud_ref IS NOT NULL 부분 유니크. ix_photo_original_deleted는 WHERE original_deleted_at IS NOT NULL 부분 인덱스이며 보관 기한 배치용이라 owner_id 선두 규칙의 예외 (FR-L-05, FR-A-02·04, FR-G-01, P11)",
         "columnIds": [
           "03h4468ge3qzlp0kxmqyb4oka",
           "03h4468ge3qzlp0kxmssx2mpj",
           "03h4468ge3qzlp0kxmwdguygi",
+          "03hk7a4hty35b1cuhqurqmvpq",
           "03h4468ge3qzlp0kxmxh4j4lx",
           "03h4468ge3qzlp0kxmzwpk7vm",
           "03h4468ge3qzlp0kxn24nx8my",
@@ -471,14 +476,16 @@
       "03h4468ge3qzlp0kxngunyby9": {
         "id": "03h4468ge3qzlp0kxngunyby9",
         "name": "photo_device_link",
-        "comment": "기기마다 다른 OS 사진 ID. 확인되지 않은 연결은 UNRESOLVED (FR-A-04, P07)",
+        "comment": "기기마다 다른 OS 사진 ID. iCloud 동기화 사진만 여러 기기 행을 갖고, 그 밖의 사진은 처음 발견한 기기의 행 1개 (ADR-0022). 확인되지 않은 연결은 UNRESOLVED, 연결 행이 없으면 그 기기는 미보유 (FR-A-04, FR-L-01, P07)",
         "columnIds": [
           "03h4468ge3qzlp0kxniv2cq4u",
           "03h4468ge3qzlp0kxnkk1wc0u",
           "03h4468ge3qzlp0kxno883cdf",
           "03h4468ge3qzlp0kxnpoyzvq3",
           "03h4468ge3qzlp0kxnr7z3d02",
-          "03h4468ge3qzlp0kxnsclcpf6"
+          "03hotyms4fnfs7ta48p337nby",
+          "03h4468ge3qzlp0kxnsclcpf6",
+          "03hcnioc3ofyxvi079nyx3emn"
         ],
         "groupId": "03h4468geka6y2ntyi112qpas",
         "ui": {
@@ -551,10 +558,11 @@
       "03h4468ge977zqezlhqerbvdc": {
         "id": "03h4468ge977zqezlhqerbvdc",
         "name": "analysis_job",
-        "comment": "분석 작업 큐. ix_analysis_job_ready는 WHERE status = READY 부분 인덱스이며 owner_id 선두 규칙의 예외. SKIP LOCKED 폴링. 결과 저장 직전 사진 버전·작업 버전·principal 상태·동의 상태 대조. 동의 철회 시 전송 전 작업은 CANCELLED로 바꾸고 예약을 반환하며, 이미 보낸 요청의 응답은 저장하지 않음 (FR-I-01·03·06, FR-G-01, ADR-0021 #5)",
+        "comment": "대표 사진 1장의 분석 호출 단위이자 작업 큐. 구성 사진은 photo_group_member를 통해 결과를 이어받음 (REUSED). ix_analysis_job_ready는 WHERE status = READY 부분 인덱스이며 owner_id 선두 규칙의 예외. SKIP LOCKED 폴링. 결과 저장 직전 사진 버전·작업 버전·principal 상태·동의 상태 대조. 동의 철회 시 전송 전 작업은 CANCELLED로 바꾸고 예약을 반환하며, 이미 보낸 요청의 응답은 저장하지 않음 (FR-I-01·03·06, FR-G-01, ADR-0021 #5, ADR-0022)",
         "columnIds": [
           "03h4468ge977zqezlht52p33h",
           "03h4468ge977zqezlhu49kpu8",
+          "03huodysqek1979lnd2mmzh5q",
           "03h4468ge977zqezlhvteit1r",
           "03h4468ge977zqezlhyfww2ig",
           "03h4468ge977zqezli03mytnc",
@@ -959,6 +967,26 @@
         "ui": {
           "x": 1460,
           "y": 3284
+        }
+      },
+      "03htygdnvz0ch9exiton03zyv": {
+        "id": "03htygdnvz0ch9exiton03zyv",
+        "name": "analysis_request",
+        "comment": "분석 접수 1건. POST /analysis-jobs 응답의 작업 ID = id. 접수할 때 묶음을 정하고 대표 사진마다 analysis_job을 만듦. 진행량(대표 분석 수·대상 사진 수·완료 수)은 analysis_job을 집계해 계산 (FR-I-01·06, ADR-0021 접수 흐름, ADR-0022)",
+        "columnIds": [
+          "03hsfso8pnhizeytjdlvm91xu",
+          "03hsjh2xbc8hvtixwo540yg5v",
+          "03h8p9vmgwg99ryan5298tb48",
+          "03hi1ctn7dmhzh59hxytngyex",
+          "03hhcpjbddajodzt2itduuszs",
+          "03hovv9ltyvkj632hjnteg3ud",
+          "03hnmshwqvclnnk39dgy9x6kg",
+          "03hgxqns6rei5a32r6t7t5rbg"
+        ],
+        "groupId": "03h4468geka6y2ntyi62mlft7",
+        "ui": {
+          "x": 1679,
+          "y": 2364
         }
       }
     },
@@ -1610,7 +1638,7 @@
         "id": "03h4468ge3qzlp0kxl57mkayr",
         "tableId": "03h4468ge3qzlp0kxktbzseyu",
         "name": "job_id",
-        "comment": "analysis_job.id, 모듈 간 ID 참조",
+        "comment": "analysis_job.id, 모듈 간 ID 참조. 구성 사진의 예약은 대표 사진의 작업을 가리킴",
         "dataType": "uuid",
         "options": 8
       },
@@ -1856,7 +1884,7 @@
         "id": "03h4468ge3qzlp0kxn2vu1fqi",
         "tableId": "03h4468ge3qzlp0kxmoxdncoo",
         "name": "availability",
-        "comment": "AVAILABLE / ORIGINAL_DELETED / INACCESSIBLE (P11)",
+        "comment": "AVAILABLE / ORIGINAL_DELETED. 연결된 기기 하나에서 삭제가 확인되면 ORIGINAL_DELETED (iCloud 사진은 삭제가 모든 기기에 전파되고, 그 밖의 사진은 연결 기기가 1대뿐). 권한 축소·다운로드 불가는 photo_device_link (P11, ADR-0022)",
         "dataType": "text",
         "options": 8
       },
@@ -1939,7 +1967,7 @@
         "id": "03h4468ge3qzlp0kxnr7z3d02",
         "tableId": "03h4468ge3qzlp0kxngunyby9",
         "name": "status",
-        "comment": "LINKED / UNRESOLVED",
+        "comment": "LINKED / UNRESOLVED / INACCESSIBLE. INACCESSIBLE은 권한 축소·다운로드 불가이며 원본 삭제가 아님 (요구사항 1179행)",
         "dataType": "text",
         "options": 8
       },
@@ -3610,6 +3638,98 @@
         "dataType": "text",
         "options": 8,
         "comment": "예약 대상 사진 버전. 같은 사진 버전은 다시 차감하지 않음 (ADR-0021 #3)"
+      },
+      "03hsfso8pnhizeytjdlvm91xu": {
+        "id": "03hsfso8pnhizeytjdlvm91xu",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "id",
+        "dataType": "uuid",
+        "options": 2,
+        "comment": "UUIDv7. 응답의 작업 ID"
+      },
+      "03hsjh2xbc8hvtixwo540yg5v": {
+        "id": "03hsjh2xbc8hvtixwo540yg5v",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h8p9vmgwg99ryan5298tb48": {
+        "id": "03h8p9vmgwg99ryan5298tb48",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "photo_count",
+        "dataType": "int",
+        "options": 8,
+        "comment": "대상 사진 수 (대표 + 구성)"
+      },
+      "03hi1ctn7dmhzh59hxytngyex": {
+        "id": "03hi1ctn7dmhzh59hxytngyex",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "representative_count",
+        "dataType": "int",
+        "options": 8,
+        "comment": "대표 분석 수 = 만든 analysis_job 수"
+      },
+      "03hhcpjbddajodzt2itduuszs": {
+        "id": "03hhcpjbddajodzt2itduuszs",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "status",
+        "dataType": "text",
+        "options": 8,
+        "comment": "접수 단위 진행 상태. 상태명은 단계 5 구현 시 확정 (ADR-0016)"
+      },
+      "03hovv9ltyvkj632hjnteg3ud": {
+        "id": "03hovv9ltyvkj632hjnteg3ud",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03hnmshwqvclnnk39dgy9x6kg": {
+        "id": "03hnmshwqvclnnk39dgy9x6kg",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03hgxqns6rei5a32r6t7t5rbg": {
+        "id": "03hgxqns6rei5a32r6t7t5rbg",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03huodysqek1979lnd2mmzh5q": {
+        "id": "03huodysqek1979lnd2mmzh5q",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "request_id",
+        "dataType": "uuid",
+        "options": 8,
+        "comment": "analysis_request.id"
+      },
+      "03hk7a4hty35b1cuhqurqmvpq": {
+        "id": "03hk7a4hty35b1cuhqurqmvpq",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "name": "cloud_ref",
+        "dataType": "text",
+        "options": 0,
+        "comment": "iOS PHCloudIdentifier. iCloud 동기화 사진만 기기 간 같은 사진으로 연결하고, 그 밖의 사진은 기기마다 별도 photo (ADR-0022)"
+      },
+      "03hotyms4fnfs7ta48p337nby": {
+        "id": "03hotyms4fnfs7ta48p337nby",
+        "tableId": "03h4468ge3qzlp0kxngunyby9",
+        "name": "inaccessible_reason",
+        "dataType": "text",
+        "options": 0,
+        "comment": "PERMISSION / DOWNLOAD. INACCESSIBLE일 때만"
+      },
+      "03hcnioc3ofyxvi079nyx3emn": {
+        "id": "03hcnioc3ofyxvi079nyx3emn",
+        "tableId": "03h4468ge3qzlp0kxngunyby9",
+        "name": "checked_at",
+        "dataType": "timestamptz",
+        "options": 0,
+        "comment": "이 기기에서 OS 상태를 마지막으로 확인한 시각"
       }
     },
     "relationshipEntities": {
@@ -4282,6 +4402,24 @@
             "03h46ggksp1aqpotyclxuf8xo"
           ]
         }
+      },
+      "03hvo1pplbidr4yi8pghoep3x": {
+        "id": "03hvo1pplbidr4yi8pghoep3x",
+        "relationshipType": 16,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03htygdnvz0ch9exiton03zyv",
+          "columnIds": [
+            "03hsfso8pnhizeytjdlvm91xu"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge977zqezlhqerbvdc",
+          "columnIds": [
+            "03huodysqek1979lnd2mmzh5q"
+          ]
+        }
       }
     },
     "indexEntities": {
@@ -4635,6 +4773,26 @@
           "03hksp3cs62ky12qj7kn3e346",
           "03hrglwj8suff4ec970wepgfx",
           "03hneif4j9e26qrdpo6339bg0"
+        ],
+        "unique": true
+      },
+      "03hnq42h7pyx0zzgh0fgz5rs6": {
+        "id": "03hnq42h7pyx0zzgh0fgz5rs6",
+        "name": "ix_analysis_request_owner_created",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "indexColumnIds": [
+          "03hva62ow4vlm2gtcpi12r2o5",
+          "03hl1p6a1edsrwagbs76oy1b1"
+        ],
+        "unique": false
+      },
+      "03hsv9s34tyfrrx1o6tgp7pyg": {
+        "id": "03hsv9s34tyfrrx1o6tgp7pyg",
+        "name": "uk_photo_owner_cloud_ref",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "indexColumnIds": [
+          "03hc093dg0z6gjes0pqhglr6y",
+          "03hoofy5phb30h47ivtnxhnox"
         ],
         "unique": true
       }
@@ -5125,12 +5283,36 @@
         "indexId": "03hedey8y9ymng5yhnsj6twhw",
         "columnId": "03hddvcejvp3kno6m1n9neihx",
         "orderType": 1
+      },
+      "03hva62ow4vlm2gtcpi12r2o5": {
+        "id": "03hva62ow4vlm2gtcpi12r2o5",
+        "indexId": "03hnq42h7pyx0zzgh0fgz5rs6",
+        "columnId": "03hsjh2xbc8hvtixwo540yg5v",
+        "orderType": 1
+      },
+      "03hl1p6a1edsrwagbs76oy1b1": {
+        "id": "03hl1p6a1edsrwagbs76oy1b1",
+        "indexId": "03hnq42h7pyx0zzgh0fgz5rs6",
+        "columnId": "03hovv9ltyvkj632hjnteg3ud",
+        "orderType": 1
+      },
+      "03hc093dg0z6gjes0pqhglr6y": {
+        "id": "03hc093dg0z6gjes0pqhglr6y",
+        "indexId": "03hsv9s34tyfrrx1o6tgp7pyg",
+        "columnId": "03h4468ge3qzlp0kxmssx2mpj",
+        "orderType": 1
+      },
+      "03hoofy5phb30h47ivtnxhnox": {
+        "id": "03hoofy5phb30h47ivtnxhnox",
+        "indexId": "03hsv9s34tyfrrx1o6tgp7pyg",
+        "columnId": "03hk7a4hty35b1cuhqurqmvpq",
+        "orderType": 1
       }
     },
     "memoEntities": {
       "03h446hedsmnrwp09ht0scm16": {
         "id": "03h446hedsmnrwp09ht0scm16",
-        "value": "[설계 판단] 스키마 전체에 적용 (제안 단계, 2026-10-25, D-15)\n\n1. 소유 주체: principal 하나로 계정(ACCOUNT)과 비로그인 설치(ANONYMOUS)를 표현합니다. 모든 소유 테이블의 owner_id는 principal.id를 가리키며, 선이 너무 많아지므로 다이어그램에서는 owner_id 관계를 생략했습니다.\n\n2. 단말 생성 ID: photo·tag·event는 서버 PK(id)와 단말 식별자(client_ref)를 분리하고 UNIQUE(owner_id, client_ref)를 겁니다. 게스트 데이터를 계정에 귀속하거나 한 기기에서 계정을 바꿔도 충돌하지 않고, 재전송은 같은 행으로 모입니다.\n\n3. 모듈 간 참조: 그룹 경계를 넘는 선은 논리 관계입니다. Flyway DDL에서는 같은 모듈 안에만 FK를 걸고, 모듈 간에는 ID만 저장하는 안을 추천합니다. 컨럼 코멘트에 '모듈 간 ID 참조'로 표시했습니다.\n\n4. change_seq: owner_change_counter 행을 같은 트랜잭션에서 갱신해 발급합니다. DB 시퀀스는 커밋 순서와 번호 순서가 달라 Pull이 변경을 놓칠 수 있습니다(설계 세션안 정정).\n\n5. 삭제: 동기화 root는 deleted_at tombstone, 이벤트 사진 제외는 EXCLUDED 상태로 남깁니다.\n\n6. 분석 결과: 사진당 현재 1건만 보관하고 이력 테이블은 두지 않습니다.\n\n공통 컨럼: created_at, updated_at, version(@Version = 클라이언트 데이터 버전). 부분 인덱스(WHERE ...)는 테이블 코멘트에 적었습니다.",
+        "value": "[설계 판단] 스키마 전체에 적용 (확정, ADR-0022)\n\n1. 소유 주체: principal 하나로 계정(ACCOUNT)과 비로그인 설치(ANONYMOUS)를 표현합니다. 모든 소유 테이블의 owner_id는 principal.id를 가리키며, 선이 너무 많아지므로 다이어그램에서는 owner_id 관계를 생략했습니다.\n\n2. 단말 생성 ID: photo·tag·event는 서버 PK(id)와 단말 식별자(client_ref)를 분리하고 UNIQUE(owner_id, client_ref)를 겁니다. 게스트 데이터를 계정에 귀속하거나 한 기기에서 계정을 바꿔도 충돌하지 않고, 재전송은 같은 행으로 모입니다. API의 photoId는 photo.client_ref이고, 다른 테이블의 photo_id 열은 서버 PK인 photo.id를 가리킵니다. 기기 간 같은 사진은 iCloud 동기화 사진(photo.cloud_ref)만 인정합니다(ADR-0022).\n\n3. 모듈 간 참조: 그룹 경계를 넘는 선은 논리 관계입니다. Flyway DDL에서는 같은 모듈 안에만 FK를 걸고, 모듈 간에는 ID만 저장하는 안을 추천합니다. 컨럼 코멘트에 '모듈 간 ID 참조'로 표시했습니다.\n\n4. change_seq: owner_change_counter 행을 같은 트랜잭션에서 갱신해 발급합니다. DB 시퀀스는 커밋 순서와 번호 순서가 달라 Pull이 변경을 놓칠 수 있습니다(설계 세션안 정정).\n\n5. 삭제: 동기화 root는 deleted_at tombstone, 이벤트 사진 제외는 EXCLUDED 상태로 남깁니다.\n\n6. 분석 결과: 사진당 현재 1건만 보관하고 이력 테이블은 두지 않습니다.\n\n공통 컨럼: created_at, updated_at, version(@Version = 클라이언트 데이터 버전). 부분 인덱스(WHERE ...)는 테이블 코멘트에 적었습니다.",
         "ui": {
           "x": 3750,
           "y": 50,
@@ -5141,7 +5323,7 @@
       },
       "03h446hedsmnrwp09hy0cj3i8": {
         "id": "03h446hedsmnrwp09hy0cj3i8",
-        "value": "[미결 결정에 따라 바뀌는 테이블]\n\n확정: RevenueCat 구독 연동 (ADR-0018) → subscription_entitlement, revenuecat_event. 플랫폼 거래 테이블은 두지 않음\n확정: Haiku 5.5로 시작 (ADR-0016) → analysis_job.model_id, analysis_result.model_id (설정값)\n확정: 검색은 서버가 해석만 하고 단말이 실행 (ADR-0017, D-02 해소) → 서버 검색 색인 없음. Jev 결과는 메모리 캐시에만 두고 DB에 저장하지 않음\n확정: 로그인 계정의 알림은 서버가 FCM으로 발송, silent push 없음 (ADR-0019) → notification_schedule, notification_device\n- 리마인드(FR-N-01)와 비로그인 사용자의 알림은 단말 로컬 예약이라 서버 테이블 없음\n확정: 계정·비로그인 주체 정책 (ADR-0020) → device_trial_mark, provider_identity_mark\n- 사용자 결정 (2026-10-26): 제공자 ID 해시는 가입할 때 저장, 탈퇴 후 revenuecat_event에 type도 남김. ADR-0020에 반영\n확정: 데이터 모델 기반 (ADR-0021) → ai_consent.purpose, photo.original_deleted_at, usage_reservation.photo_version, 동의 철회 시 작업 취소·응답 폐기\n\n남은 판단\n- D-17: 검색 해석 호출 제한(비로그인 포함)을 어디에서 집계할지. 인스턴스 메모리에 두면 서버 대수만큼 나뉘어 집계됨\n- D-18: 여러 기기 중 발송 대상 규칙(P09)에 따라 기기별 발송 기록 테이블이 필요할 수 있음\n- D-14: 장소 알림의 서버 확인 조건(location_permission = ALWAYS), silent push 미도입은 제안 단계\n\nD-01 미정 정책\n- P01·P03: usage_quota.limit_count는 설정값에서 기록, device_trial_mark 집계 기준은 P01\n- P05: photo_group.rule_version\n- P07: photo_device_link 매칭 방식(기기 간 사진 식별은 기술 검증 대상)\n- P08: 비로그인 데이터 보관 기한, 보관 기간 값(탈퇴 최소 기록, device_trial_mark·provider_identity_mark, 해결된 revenuecat_event.payload, 발송을 끝낸 notification_schedule)\n- P09: notification_schedule의 선행 시간·독려 단계, geofence 반경\n- P10: tag.normalized_name 규칙, 메모 길이\n- P11: photo.availability 처리",
+        "value": "[미결 결정에 따라 바뀌는 테이블]\n\n확정: RevenueCat 구독 연동 (ADR-0018) → subscription_entitlement, revenuecat_event. 플랫폼 거래 테이블은 두지 않음\n확정: Haiku 5.5로 시작 (ADR-0016) → analysis_job.model_id, analysis_result.model_id (설정값)\n확정: 검색은 서버가 해석만 하고 단말이 실행 (ADR-0017, D-02 해소) → 서버 검색 색인 없음. Jev 결과는 메모리 캐시에만 두고 DB에 저장하지 않음\n확정: 로그인 계정의 알림은 서버가 FCM으로 발송, silent push 없음 (ADR-0019) → notification_schedule, notification_device\n- 리마인드(FR-N-01)와 비로그인 사용자의 알림은 단말 로컬 예약이라 서버 테이블 없음\n확정: 계정·비로그인 주체 정책 (ADR-0020) → device_trial_mark, provider_identity_mark\n- 사용자 결정 (2026-10-26): 제공자 ID 해시는 가입할 때 저장, 탈퇴 후 revenuecat_event에 type도 남김. ADR-0020에 반영\n확정: 스키마 공통 판단·분석 접수 단위·기기 간 사진 식별 범위 (ADR-0022) → analysis_request, photo.cloud_ref, photo_device_link 기기별 상태\n확정: 데이터 모델 기반 (ADR-0021) → ai_consent.purpose, photo.original_deleted_at, usage_reservation.photo_version, 동의 철회 시 작업 취소·응답 폐기\n\n남은 판단\n- D-17: 검색 해석 호출 제한(비로그인 포함)을 어디에서 집계할지. 인스턴스 메모리에 두면 서버 대수만큼 나뉘어 집계됨\n- D-18: 여러 기기 중 발송 대상 규칙(P09)에 따라 기기별 발송 기록 테이블이 필요할 수 있음\n- D-14: 장소 알림의 서버 확인 조건(location_permission = ALWAYS), silent push 미도입은 제안 단계\n\nD-01 미정 정책\n- P01·P03: usage_quota.limit_count는 설정값에서 기록, device_trial_mark 집계 기준은 P01\n- P05: photo_group.rule_version\n- P07: PHCloudIdentifier 신뢰성, 같은 기기 재설치 때 이전 연결을 찾는 방법 (FR-A-04 기술 검증)\n- P08: 비로그인 데이터 보관 기한, 보관 기간 값(탈퇴 최소 기록, device_trial_mark·provider_identity_mark, 해결된 revenuecat_event.payload, 발송을 끝낸 notification_schedule)\n- P09: notification_schedule의 선행 시간·독려 단계, geofence 반경\n- P10: tag.normalized_name 규칙, 메모 길이\n- P11: '원본 없음' 보관 기간 값",
         "ui": {
           "x": 3750,
           "y": 760,
@@ -5152,7 +5334,7 @@
       },
       "03h446hedsmnrwp09i1jpzkbj": {
         "id": "03h446hedsmnrwp09i1jpzkbj",
-        "value": "[SSOT 대조 보고 사항] SSOT는 수정하지 않았습니다. 1~3은 D-16\n\n1. 액션 aggregate가 요구사항 '# 데이터 경계와 후속 처리'의 저장 단위 표와 도메인 후보에 없습니다. FR-G-02가 액션 생성을 이벤트 생성과 독립적으로 처리하라고 하므로 별도 모듈을 추천합니다.\n\n2. 비로그인 사용자의 이벤트 자동 생성 위치가 불분명합니다. FR-E-01은 로그인이 필요 없다고 하고 FR-G-03은 기존 이벤트를 입력으로 받는데, 비로그인 사용자의 기존 이벤트는 단말에만 있습니다. 단말 생성을 추천합니다.\n\n3. 정리 상태: FR-C는 단말 전용인데 FR-A-02·04는 정리 상태의 서버 동기화·복원을 요구합니다. 원본 앨범 ID는 기기마다 달라서 source_album_ref의 의미는 P06·P07이 정해야 확정됩니다. ADR-0020도 정리 세션 복원 범위를 미정으로 남겼습니다.\n\n4. 리마인드(해소): 데이터 경계 표에는 리마인드 단위가 있지만 FR-N-01은 단말 전용이고, ADR-0019도 단말 로컬 예약으로 정했습니다. 서버 테이블은 두지 않습니다.\n\n5. 체험 한도(해소, ADR-0021 #8): 기기 단위(device_trial_mark)와 계정 단위(usage_quota)에 모두 기록하고, 하나라도 소진하면 체험을 주지 않습니다. 같은 설치의 비로그인·계정 device 행이 같은 device_trial_mark를 가리켜 기기 단위 이용량을 이어 갑니다.\n\n[비로그인 principal의 서버 데이터]\nphoto(최소 컨럼), analysis_job, analysis_result, photo_group, photo_group_member, photo_action, usage_*, ai_consent, device만 만듭니다. 메모·태그·정리 상태·이벤트는 단말에만 있습니다. 결과를 내려준 뒤 P08 기한에 따라 지웁니다. 로그인하면 사용자 확인을 받은 뒤 단말이 계정 소유로 업로드합니다. 태그는 합집합으로 합치고, 메모·정리 상태가 서버와 다르면 서버 값을 유지하고 충돌 목록을 반환합니다(ADR-0020, 자동 병합 금지).",
+        "value": "[SSOT 대조 보고 사항] SSOT는 수정하지 않았습니다. 1~3은 D-16\n\n1. 액션 aggregate가 요구사항 '# 데이터 경계와 후속 처리'의 저장 단위 표와 도메인 후보에 없습니다. FR-G-02가 액션 생성을 이벤트 생성과 독립적으로 처리하라고 하므로 별도 모듈을 추천합니다.\n\n2. 비로그인 사용자의 이벤트 자동 생성 위치가 불분명합니다. FR-E-01은 로그인이 필요 없다고 하고 FR-G-03은 기존 이벤트를 입력으로 받는데, 비로그인 사용자의 기존 이벤트는 단말에만 있습니다. 단말 생성을 추천합니다.\n\n3. 정리 상태: FR-C는 단말 전용인데 FR-A-02·04는 정리 상태의 서버 동기화·복원을 요구합니다. 원본 앨범 ID는 기기마다 달라서 source_album_ref의 의미는 P06·P07이 정해야 확정됩니다. ADR-0020도 정리 세션 복원 범위를 미정으로 남겼습니다.\n\n4. 리마인드(해소): 데이터 경계 표에는 리마인드 단위가 있지만 FR-N-01은 단말 전용이고, ADR-0019도 단말 로컬 예약으로 정했습니다. 서버 테이블은 두지 않습니다.\n\n5. 체험 한도(해소, ADR-0021 #8): 기기 단위(device_trial_mark)와 계정 단위(usage_quota)에 모두 기록하고, 하나라도 소진하면 체험을 주지 않습니다. 같은 설치의 비로그인·계정 device 행이 같은 device_trial_mark를 가리켜 기기 단위 이용량을 이어 갑니다.\n\n[비로그인 principal의 서버 데이터]\nphoto(최소 컨럼), analysis_request, analysis_job, analysis_result, photo_group, photo_group_member, photo_action, usage_*, ai_consent, device만 만듭니다. 메모·태그·정리 상태·이벤트는 단말에만 있습니다. 결과를 내려준 뒤 P08 기한에 따라 지웁니다. 로그인하면 사용자 확인을 받은 뒤 단말이 계정 소유로 업로드합니다. 태그는 합집합으로 합치고, 메모·정리 상태가 서버와 다르면 서버 값을 유지하고 충돌 목록을 반환합니다(ADR-0020, 자동 병합 금지).",
         "ui": {
           "x": 3750,
           "y": 1590,
@@ -5182,7 +5364,7 @@
           "x": 50,
           "y": 946,
           "width": 2714,
-          "height": 768
+          "height": 818
         }
       },
       "03h4468geka6y2ntyi3eep9za": {
@@ -5204,7 +5386,7 @@
           "x": 50,
           "y": 1794,
           "width": 3385,
-          "height": 1080
+          "height": 1110
         }
       },
       "03h4468geka6y2ntyi7i4fmex": {
