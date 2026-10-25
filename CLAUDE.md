@@ -22,6 +22,15 @@ Pik(사진 정리 앱) iOS·Android 클라이언트의 백엔드. Java 21 + Spri
 | API 응답·오류 코드 정의 | `.claude/docs/api-contract.md` |
 | 로그·삭제·탈퇴·보관 기간 처리 | `.claude/docs/data-retention.md` |
 | 미정 정책(P01~P12) 관련 값 사용 | `.claude/docs/open-policies.md` |
+| 작업 종료·결정 발생 시 기록 | `docs/STATUS.md` 갱신, `docs/devlog/YYYY-MM-DD.md` 작성, 결정은 `docs/adr/` 추가 |
+| 브랜치 생성·커밋·병합·릴리스 | `.claude/docs/git-flow.md` |
+| 작업 시작·종료 보고 양식 | `.claude/docs/decision-reporting.md` |
+
+## 작업 단위 계약
+- 작업(요청 하나 또는 하위 태스크 하나) 시작 = `develop`에서 `feature/*` 분기. `main`·`develop` 직접 커밋 금지
+- 시작 보고: 필요한 결정(선택지·추천·근거) + 관련 미결 결정(`docs/STATUS.md` `D-NN`)
+- 종료 보고: 내린 결정(근거·ADR) + 신규·잔존 미결 결정
+- 병합·push·PR = 사용자 승인 후
 
 ## CLAUDE.md 유지 규칙
 - 200줄 이하 유지. 초과 시 세부 내용을 `.claude/docs/<주제>.md`로 분리, 위 상황→경로 표에 행 추가
