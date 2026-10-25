@@ -109,7 +109,6 @@
       "03h4468geephs5erx8xgay3x3",
       "03h4468geephs5erx93j8iobr",
       "03h4468geka6y2ntyd5n0ag08",
-      "03h4468geka6y2ntydb0b8uhz",
       "03h4468geka6y2ntydhfs36mn",
       "03h4468geka6y2ntydpu7v3mb",
       "03h4468geka6y2ntydul45n62",
@@ -137,7 +136,10 @@
       "03h45zpihwpzcki6c94vj1jhe",
       "03h45zpihwpzcki6c9ti00brw",
       "03h45zxe92rplendwahkyltv1",
-      "03h46ggksdze9d44xzuzpuwoj"
+      "03h46ggksdze9d44xzuzpuwoj",
+      "03hvh0oej5atof0uj0zf90ze2",
+      "03hr8oiz2t2vfr123yjl34sav",
+      "03hedey8y9ymng5yhnsj6twhw"
     ],
     "memoIds": [
       "03h446hedsmnrwp09ht0scm16",
@@ -275,11 +277,12 @@
       "03h4468ge3qzlp0kxisn9vsc9": {
         "id": "03h4468ge3qzlp0kxisn9vsc9",
         "name": "ai_consent",
-        "comment": "외부 AI 전송 동의 이력, 추가만 함. 현재 상태 = 최신 행. 전송 직전 재확인 (FR-O-02)",
+        "comment": "외부 AI 전송 동의 이력, 추가만 함. 현재 상태 = 목적별 최신 행. 전송 직전과 결과 저장 직전에 재확인. 철회하면 전송 전 작업을 취소하고 새 전송을 막으며, 이미 보낸 요청의 응답은 저장하지 않고 기존 결과는 유지 (FR-O-02, ADR-0021 #5·6)",
         "columnIds": [
           "03h4468ge3qzlp0kxiu7c2iu4",
           "03h4468ge3qzlp0kxiuu2429c",
           "03h4468ge3qzlp0kxixwa7se7",
+          "03hgckc5ub1epami4oyry0h9o",
           "03h4468ge3qzlp0kxj08yn0md",
           "03h4468ge3qzlp0kxj11rym3y",
           "03h4468ge3qzlp0kxj3iu2nsf"
@@ -361,13 +364,14 @@
       "03h4468ge3qzlp0kxktbzseyu": {
         "id": "03h4468ge3qzlp0kxktbzseyu",
         "name": "usage_reservation",
-        "comment": "사진별 예약. 결과 생성 시 CONSUMED로만 바꾸고 재차감 금지. uk_usage_reservation_trial_photo는 WHERE quota_kind = TRIAL 부분 유니크 (FR-G-01, FR-I-01)",
+        "comment": "사진별 예약. 접수할 때 묶음의 대표+구성 사진 수만큼 예약하고, 실패·취소되면 RELEASED로 반환. 결과 생성 시 CONSUMED로만 바꾸고 재차감 금지. uk_usage_reservation_photo_version은 WHERE status <> RELEASED 부분 유니크 (같은 사진 버전 재분석 미차감), uk_usage_reservation_trial_photo는 WHERE quota_kind = TRIAL AND status <> RELEASED 부분 유니크 (반환 후 재시도는 새 행) (FR-G-01, FR-I-01, ADR-0021 #3)",
         "columnIds": [
           "03h4468ge3qzlp0kxkuazvdjz",
           "03h4468ge3qzlp0kxkw3vc1jr",
           "03h4468ge3qzlp0kxkye45tss",
           "03h4468ge3qzlp0kxl161tcky",
           "03h4468ge3qzlp0kxl231a1t9",
+          "03hddvcejvp3kno6m1n9neihx",
           "03h4468ge3qzlp0kxl57mkayr",
           "03h46ggksp1aqpotyclxuf8xo",
           "03h4468ge3qzlp0kxl5u05qf2",
@@ -441,7 +445,7 @@
       "03h4468ge3qzlp0kxmoxdncoo": {
         "id": "03h4468ge3qzlp0kxmoxdncoo",
         "name": "photo",
-        "comment": "사진별 Pik 정보 aggregate root. 원본은 서버에 없음 (FR-L-05, FR-A-02·04, FR-G-01)",
+        "comment": "사진별 Pik 정보 aggregate root. 원본은 서버에 없음. ix_photo_original_deleted는 WHERE original_deleted_at IS NOT NULL 부분 인덱스이며 보관 기한 배치용이라 owner_id 선두 규칙의 예외 (FR-L-05, FR-A-02·04, FR-G-01, P11)",
         "columnIds": [
           "03h4468ge3qzlp0kxmqyb4oka",
           "03h4468ge3qzlp0kxmssx2mpj",
@@ -450,6 +454,7 @@
           "03h4468ge3qzlp0kxmzwpk7vm",
           "03h4468ge3qzlp0kxn24nx8my",
           "03h4468ge3qzlp0kxn2vu1fqi",
+          "03h59fjnemh81jnvofj01265f",
           "03h4468ge3qzlp0kxn4s55ogh",
           "03h4468ge3qzlp0kxn6wiid7g",
           "03h4468ge3qzlp0kxn8u390ud",
@@ -546,7 +551,7 @@
       "03h4468ge977zqezlhqerbvdc": {
         "id": "03h4468ge977zqezlhqerbvdc",
         "name": "analysis_job",
-        "comment": "분석 작업 큐. ix_analysis_job_ready는 WHERE status = READY 부분 인덱스이며 owner_id 선두 규칙의 예외. SKIP LOCKED 폴링. 결과 저장 직전 사진 버전·작업 버전·principal 상태 대조 (FR-I-01·03·06, FR-G-01)",
+        "comment": "분석 작업 큐. ix_analysis_job_ready는 WHERE status = READY 부분 인덱스이며 owner_id 선두 규칙의 예외. SKIP LOCKED 폴링. 결과 저장 직전 사진 버전·작업 버전·principal 상태·동의 상태 대조. 동의 철회 시 전송 전 작업은 CANCELLED로 바꾸고 예약을 반환하며, 이미 보낸 요청의 응답은 저장하지 않음 (FR-I-01·03·06, FR-G-01, ADR-0021 #5)",
         "columnIds": [
           "03h4468ge977zqezlht52p33h",
           "03h4468ge977zqezlhu49kpu8",
@@ -3581,6 +3586,30 @@
         "name": "first_registered_at",
         "dataType": "timestamptz",
         "options": 8
+      },
+      "03hgckc5ub1epami4oyry0h9o": {
+        "id": "03hgckc5ub1epami4oyry0h9o",
+        "tableId": "03h4468ge3qzlp0kxisn9vsc9",
+        "name": "purpose",
+        "dataType": "text",
+        "options": 8,
+        "comment": "동의 목적. 첫 출시는 AI_ANALYSIS_AND_SEARCH 하나 (사진 분석 + 검색어 전송). 목적별 동의로 바꿀 때 값을 추가 (ADR-0021 #6)"
+      },
+      "03h59fjnemh81jnvofj01265f": {
+        "id": "03h59fjnemh81jnvofj01265f",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "name": "original_deleted_at",
+        "dataType": "timestamptz",
+        "options": 0,
+        "comment": "원본 삭제 확인 시각. '원본 없음' 보관 기한(P11 설정값)의 기준이며, OS '최근 삭제'에서 복구되면 NULL (ADR-0021 #7)"
+      },
+      "03hddvcejvp3kno6m1n9neihx": {
+        "id": "03hddvcejvp3kno6m1n9neihx",
+        "tableId": "03h4468ge3qzlp0kxktbzseyu",
+        "name": "photo_version",
+        "dataType": "text",
+        "options": 8,
+        "comment": "예약 대상 사진 버전. 같은 사진 버전은 다시 차감하지 않음 (ADR-0021 #3)"
       }
     },
     "relationshipEntities": {
@@ -4286,16 +4315,6 @@
         ],
         "unique": true
       },
-      "03h4468geka6y2ntydb0b8uhz": {
-        "id": "03h4468geka6y2ntydb0b8uhz",
-        "name": "ix_ai_consent_principal_decided",
-        "tableId": "03h4468ge3qzlp0kxisn9vsc9",
-        "indexColumnIds": [
-          "03h4468geka6y2ntyddie6mp5",
-          "03h4468geka6y2ntydgdqh7rg"
-        ],
-        "unique": false
-      },
       "03h4468geka6y2ntydhfs36mn": {
         "id": "03h4468geka6y2ntydhfs36mn",
         "name": "uk_usage_reservation_trial_photo",
@@ -4587,6 +4606,37 @@
           "03h46ggksdze9d44y07hlvsxh"
         ],
         "unique": true
+      },
+      "03hvh0oej5atof0uj0zf90ze2": {
+        "id": "03hvh0oej5atof0uj0zf90ze2",
+        "name": "ix_ai_consent_principal_purpose_decided",
+        "tableId": "03h4468ge3qzlp0kxisn9vsc9",
+        "indexColumnIds": [
+          "03h07q77u3l8clmxl0px8fgkx",
+          "03hrupybfbh5nmagvrkn5rc7z",
+          "03hvets059wubvmwnl80tjoyp"
+        ],
+        "unique": false
+      },
+      "03hr8oiz2t2vfr123yjl34sav": {
+        "id": "03hr8oiz2t2vfr123yjl34sav",
+        "name": "ix_photo_original_deleted",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "indexColumnIds": [
+          "03h4e8l0t7xb349kf7fainqow"
+        ],
+        "unique": false
+      },
+      "03hedey8y9ymng5yhnsj6twhw": {
+        "id": "03hedey8y9ymng5yhnsj6twhw",
+        "name": "uk_usage_reservation_photo_version",
+        "tableId": "03h4468ge3qzlp0kxktbzseyu",
+        "indexColumnIds": [
+          "03hksp3cs62ky12qj7kn3e346",
+          "03hrglwj8suff4ec970wepgfx",
+          "03hneif4j9e26qrdpo6339bg0"
+        ],
+        "unique": true
       }
     },
     "indexColumnEntities": {
@@ -4624,18 +4674,6 @@
         "id": "03h4468geka6y2ntyd9hvrd2s",
         "indexId": "03h4468geka6y2ntyd5n0ag08",
         "columnId": "03h4468ge3qzlp0kxi99xyiv3",
-        "orderType": 1
-      },
-      "03h4468geka6y2ntyddie6mp5": {
-        "id": "03h4468geka6y2ntyddie6mp5",
-        "indexId": "03h4468geka6y2ntydb0b8uhz",
-        "columnId": "03h4468ge3qzlp0kxiuu2429c",
-        "orderType": 1
-      },
-      "03h4468geka6y2ntydgdqh7rg": {
-        "id": "03h4468geka6y2ntydgdqh7rg",
-        "indexId": "03h4468geka6y2ntydb0b8uhz",
-        "columnId": "03h4468ge3qzlp0kxj3iu2nsf",
         "orderType": 1
       },
       "03h4468geka6y2ntydjaoyula": {
@@ -5045,6 +5083,48 @@
         "indexId": "03h46ggksdze9d44xzuzpuwoj",
         "columnId": "03h46ggks30n8gsin8psp7e9e",
         "orderType": 1
+      },
+      "03h07q77u3l8clmxl0px8fgkx": {
+        "id": "03h07q77u3l8clmxl0px8fgkx",
+        "indexId": "03hvh0oej5atof0uj0zf90ze2",
+        "columnId": "03h4468ge3qzlp0kxiuu2429c",
+        "orderType": 1
+      },
+      "03hrupybfbh5nmagvrkn5rc7z": {
+        "id": "03hrupybfbh5nmagvrkn5rc7z",
+        "indexId": "03hvh0oej5atof0uj0zf90ze2",
+        "columnId": "03hgckc5ub1epami4oyry0h9o",
+        "orderType": 1
+      },
+      "03hvets059wubvmwnl80tjoyp": {
+        "id": "03hvets059wubvmwnl80tjoyp",
+        "indexId": "03hvh0oej5atof0uj0zf90ze2",
+        "columnId": "03h4468ge3qzlp0kxj3iu2nsf",
+        "orderType": 1
+      },
+      "03h4e8l0t7xb349kf7fainqow": {
+        "id": "03h4e8l0t7xb349kf7fainqow",
+        "indexId": "03hr8oiz2t2vfr123yjl34sav",
+        "columnId": "03h59fjnemh81jnvofj01265f",
+        "orderType": 1
+      },
+      "03hksp3cs62ky12qj7kn3e346": {
+        "id": "03hksp3cs62ky12qj7kn3e346",
+        "indexId": "03hedey8y9ymng5yhnsj6twhw",
+        "columnId": "03h4468ge3qzlp0kxkw3vc1jr",
+        "orderType": 1
+      },
+      "03hrglwj8suff4ec970wepgfx": {
+        "id": "03hrglwj8suff4ec970wepgfx",
+        "indexId": "03hedey8y9ymng5yhnsj6twhw",
+        "columnId": "03h4468ge3qzlp0kxl231a1t9",
+        "orderType": 1
+      },
+      "03hneif4j9e26qrdpo6339bg0": {
+        "id": "03hneif4j9e26qrdpo6339bg0",
+        "indexId": "03hedey8y9ymng5yhnsj6twhw",
+        "columnId": "03hddvcejvp3kno6m1n9neihx",
+        "orderType": 1
       }
     },
     "memoEntities": {
@@ -5061,7 +5141,7 @@
       },
       "03h446hedsmnrwp09hy0cj3i8": {
         "id": "03h446hedsmnrwp09hy0cj3i8",
-        "value": "[미결 결정에 따라 바뀌는 테이블]\n\n확정: RevenueCat 구독 연동 (ADR-0018) → subscription_entitlement, revenuecat_event. 플랫폼 거래 테이블은 두지 않음\n확정: Haiku 5.5로 시작 (ADR-0016) → analysis_job.model_id, analysis_result.model_id (설정값)\n확정: 검색은 서버가 해석만 하고 단말이 실행 (ADR-0017, D-02 해소) → 서버 검색 색인 없음. Jev 결과는 메모리 캐시에만 두고 DB에 저장하지 않음\n확정: 로그인 계정의 알림은 서버가 FCM으로 발송, silent push 없음 (ADR-0019) → notification_schedule, notification_device\n- 리마인드(FR-N-01)와 비로그인 사용자의 알림은 단말 로컬 예약이라 서버 테이블 없음\n확정: 계정·비로그인 주체 정책 (ADR-0020, feature/first-fr-plan 미병합) → device_trial_mark, provider_identity_mark\n- 사용자 결정 (2026-10-26): 제공자 ID 해시는 가입할 때 저장, 탈퇴 후 revenuecat_event에 type도 남김. ADR-0020의 최소 기록 목록 갱신 필요\n\n남은 판단\n- D-17: 검색 해석 호출 제한(비로그인 포함)을 어디에서 집계할지. 인스턴스 메모리에 두면 서버 대수만큼 나뉘어 집계됨\n- D-18: 여러 기기 중 발송 대상 규칙(P09)에 따라 기기별 발송 기록 테이블이 필요할 수 있음\n- D-14: 기기·계정 이중 집계(device_trial_mark), 장소 알림의 서버 확인 조건(location_permission = ALWAYS), silent push 미도입은 제안 단계\n\nD-01 미정 정책\n- P01·P03: usage_quota.limit_count는 설정값에서 기록, device_trial_mark 집계 기준은 P01\n- P05: photo_group.rule_version\n- P07: photo_device_link 매칭 방식(기기 간 사진 식별은 기술 검증 대상)\n- P08: 비로그인 데이터 보관 기한, 보관 기간 값(탈퇴 최소 기록, device_trial_mark·provider_identity_mark, 해결된 revenuecat_event.payload, 발송을 끝낸 notification_schedule)\n- P09: notification_schedule의 선행 시간·독려 단계, geofence 반경\n- P10: tag.normalized_name 규칙, 메모 길이\n- P11: photo.availability 처리",
+        "value": "[미결 결정에 따라 바뀌는 테이블]\n\n확정: RevenueCat 구독 연동 (ADR-0018) → subscription_entitlement, revenuecat_event. 플랫폼 거래 테이블은 두지 않음\n확정: Haiku 5.5로 시작 (ADR-0016) → analysis_job.model_id, analysis_result.model_id (설정값)\n확정: 검색은 서버가 해석만 하고 단말이 실행 (ADR-0017, D-02 해소) → 서버 검색 색인 없음. Jev 결과는 메모리 캐시에만 두고 DB에 저장하지 않음\n확정: 로그인 계정의 알림은 서버가 FCM으로 발송, silent push 없음 (ADR-0019) → notification_schedule, notification_device\n- 리마인드(FR-N-01)와 비로그인 사용자의 알림은 단말 로컬 예약이라 서버 테이블 없음\n확정: 계정·비로그인 주체 정책 (ADR-0020) → device_trial_mark, provider_identity_mark\n- 사용자 결정 (2026-10-26): 제공자 ID 해시는 가입할 때 저장, 탈퇴 후 revenuecat_event에 type도 남김. ADR-0020에 반영\n확정: 데이터 모델 기반 (ADR-0021) → ai_consent.purpose, photo.original_deleted_at, usage_reservation.photo_version, 동의 철회 시 작업 취소·응답 폐기\n\n남은 판단\n- D-17: 검색 해석 호출 제한(비로그인 포함)을 어디에서 집계할지. 인스턴스 메모리에 두면 서버 대수만큼 나뉘어 집계됨\n- D-18: 여러 기기 중 발송 대상 규칙(P09)에 따라 기기별 발송 기록 테이블이 필요할 수 있음\n- D-14: 장소 알림의 서버 확인 조건(location_permission = ALWAYS), silent push 미도입은 제안 단계\n\nD-01 미정 정책\n- P01·P03: usage_quota.limit_count는 설정값에서 기록, device_trial_mark 집계 기준은 P01\n- P05: photo_group.rule_version\n- P07: photo_device_link 매칭 방식(기기 간 사진 식별은 기술 검증 대상)\n- P08: 비로그인 데이터 보관 기한, 보관 기간 값(탈퇴 최소 기록, device_trial_mark·provider_identity_mark, 해결된 revenuecat_event.payload, 발송을 끝낸 notification_schedule)\n- P09: notification_schedule의 선행 시간·독려 단계, geofence 반경\n- P10: tag.normalized_name 규칙, 메모 길이\n- P11: photo.availability 처리",
         "ui": {
           "x": 3750,
           "y": 760,
@@ -5072,7 +5152,7 @@
       },
       "03h446hedsmnrwp09i1jpzkbj": {
         "id": "03h446hedsmnrwp09i1jpzkbj",
-        "value": "[SSOT 대조 보고 사항] SSOT는 수정하지 않았습니다. 1~3은 D-16\n\n1. 액션 aggregate가 요구사항 '# 데이터 경계와 후속 처리'의 저장 단위 표와 도메인 후보에 없습니다. FR-G-02가 액션 생성을 이벤트 생성과 독립적으로 처리하라고 하므로 별도 모듈을 추천합니다.\n\n2. 비로그인 사용자의 이벤트 자동 생성 위치가 불분명합니다. FR-E-01은 로그인이 필요 없다고 하고 FR-G-03은 기존 이벤트를 입력으로 받는데, 비로그인 사용자의 기존 이벤트는 단말에만 있습니다. 단말 생성을 추천합니다.\n\n3. 정리 상태: FR-C는 단말 전용인데 FR-A-02·04는 정리 상태의 서버 동기화·복원을 요구합니다. 원본 앨범 ID는 기기마다 달라서 source_album_ref의 의미는 P06·P07이 정해야 확정됩니다. ADR-0020도 정리 세션 복원 범위를 미정으로 남겼습니다.\n\n4. 리마인드(해소): 데이터 경계 표에는 리마인드 단위가 있지만 FR-N-01은 단말 전용이고, ADR-0019도 단말 로컬 예약으로 정했습니다. 서버 테이블은 두지 않습니다.\n\n5. 체험 한도(해소, ADR-0020 제안): 기기 단위(device_trial_mark)와 계정 단위(usage_quota)에 모두 기록하고, 하나라도 소진하면 체험을 주지 않습니다. 같은 설치의 비로그인·계정 device 행이 같은 device_trial_mark를 가리켜 기기 단위 이용량을 이어 갑니다.\n\n[비로그인 principal의 서버 데이터]\nphoto(최소 컨럼), analysis_job, analysis_result, photo_action, usage_*, ai_consent, device만 만듭니다. 메모·태그·정리 상태·이벤트는 단말에만 있습니다. 결과를 내려준 뒤 P08 기한에 따라 지웁니다. 로그인하면 사용자 확인을 받은 뒤 단말이 계정 소유로 업로드합니다. 태그는 합집합으로 합치고, 메모·정리 상태가 서버와 다르면 서버 값을 유지하고 충돌 목록을 반환합니다(ADR-0020, 자동 병합 금지).",
+        "value": "[SSOT 대조 보고 사항] SSOT는 수정하지 않았습니다. 1~3은 D-16\n\n1. 액션 aggregate가 요구사항 '# 데이터 경계와 후속 처리'의 저장 단위 표와 도메인 후보에 없습니다. FR-G-02가 액션 생성을 이벤트 생성과 독립적으로 처리하라고 하므로 별도 모듈을 추천합니다.\n\n2. 비로그인 사용자의 이벤트 자동 생성 위치가 불분명합니다. FR-E-01은 로그인이 필요 없다고 하고 FR-G-03은 기존 이벤트를 입력으로 받는데, 비로그인 사용자의 기존 이벤트는 단말에만 있습니다. 단말 생성을 추천합니다.\n\n3. 정리 상태: FR-C는 단말 전용인데 FR-A-02·04는 정리 상태의 서버 동기화·복원을 요구합니다. 원본 앨범 ID는 기기마다 달라서 source_album_ref의 의미는 P06·P07이 정해야 확정됩니다. ADR-0020도 정리 세션 복원 범위를 미정으로 남겼습니다.\n\n4. 리마인드(해소): 데이터 경계 표에는 리마인드 단위가 있지만 FR-N-01은 단말 전용이고, ADR-0019도 단말 로컬 예약으로 정했습니다. 서버 테이블은 두지 않습니다.\n\n5. 체험 한도(해소, ADR-0021 #8): 기기 단위(device_trial_mark)와 계정 단위(usage_quota)에 모두 기록하고, 하나라도 소진하면 체험을 주지 않습니다. 같은 설치의 비로그인·계정 device 행이 같은 device_trial_mark를 가리켜 기기 단위 이용량을 이어 갑니다.\n\n[비로그인 principal의 서버 데이터]\nphoto(최소 컨럼), analysis_job, analysis_result, photo_group, photo_group_member, photo_action, usage_*, ai_consent, device만 만듭니다. 메모·태그·정리 상태·이벤트는 단말에만 있습니다. 결과를 내려준 뒤 P08 기한에 따라 지웁니다. 로그인하면 사용자 확인을 받은 뒤 단말이 계정 소유로 업로드합니다. 태그는 합집합으로 합치고, 메모·정리 상태가 서버와 다르면 서버 값을 유지하고 충돌 목록을 반환합니다(ADR-0020, 자동 병합 금지).",
         "ui": {
           "x": 3750,
           "y": 1590,
