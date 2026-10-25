@@ -28,6 +28,7 @@
 | 결과 상태 | `result` = `SUCCEEDED` / `FAILED` / `CANCELLED` / `NEEDS_CHECK` / `ACCEPTED` (장기 작업 접수) | 변경 요청 응답, `items[]` |
 | 대상별 사유 | `items[].code`·`items[].reason` | 대상이 여러 개인 변경 요청 |
 | 재시도 가능 여부 | `retryable` | 변경 요청 응답, 오류 응답, `items[]` |
+- 변경 요청의 오류 응답도 `jobId`·`result` = `FAILED` 포함. 작업을 만들지 못한 장기 작업 접수의 `jobId` = null
 - 조회 (Query) 응답에는 강제하지 않음
 
 ## 형식 (ADR-0014, ADR-0023)
@@ -41,7 +42,7 @@
 
 ## 인증 (ADR-0023)
 - access JWT = ES256, 15분. 클레임 `iss`·`sub` (주체 ID)·`kind` (ACCOUNT / ANONYMOUS)·`iat`·`exp`, 헤더 `kid`. 개인정보 금지
-- 계정 refresh = 90일, 사용할 때마다 교체 (마지막 사용부터 90일), 재사용 감지 시 family 폐기. 교체 직후 유예 30초 (설정값) 안의 재사용은 응답 유실로 보고 폐기 안 함
+- 계정 refresh = 90일, 사용할 때마다 교체 (마지막 사용부터 90일), 재사용 감지 시 family 폐기. 교체 직후 유예 30초 (설정값) 안의 재사용은 응답 유실로 보고 폐기 안 함 → 새 토큰 쌍 재발급, 앞선 후속 토큰 폐기 (판단 기준 `rotated_at`)
 - 익명 설치 토큰 = 발급 시 기기 증명, 만료·교체 없음, 해시 저장·서버 폐기 가능. 설치 토큰 → access JWT 교환
 - 수명 값은 모두 설정값. 서명 키는 현재 + 이전 키 검증 (키 교체)
 

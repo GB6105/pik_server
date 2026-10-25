@@ -250,6 +250,7 @@
           "03h4468ge3qzlp0kxhwfne88a",
           "03h4468ge3qzlp0kxhya1sx44",
           "03h4468ge3qzlp0kxi06tzhx9",
+          "03heb5v0gfbwa7ndkm7115jih",
           "03h4468ge3qzlp0kxi1h489j3"
         ],
         "groupId": "03h4468geka6y2ntyhzlqzeyp",
@@ -3156,14 +3157,15 @@
         "tableId": "03h4468ge977zqezlpt9mf2c0",
         "name": "response_code",
         "dataType": "int",
-        "options": 0
+        "options": 8
       },
       "03h4468ge977zqezlq5y13f3p": {
         "id": "03h4468ge977zqezlq5y13f3p",
         "tableId": "03h4468ge977zqezlpt9mf2c0",
         "name": "response_body",
         "dataType": "jsonb",
-        "options": 0
+        "options": 8,
+        "comment": "저장한 응답 본문. 업로드 URL (S3 presigned)은 넣지 않음"
       },
       "03h4468ge977zqezlq9ewtbfi": {
         "id": "03h4468ge977zqezlq9ewtbfi",
@@ -3779,6 +3781,14 @@
         "dataType": "timestamptz",
         "options": 0,
         "comment": "설치 토큰 폐기 시각. 값이 있으면 access 교환 거부 (ADR-0023)"
+      },
+      "03heb5v0gfbwa7ndkm7115jih": {
+        "id": "03heb5v0gfbwa7ndkm7115jih",
+        "tableId": "03h4468ge3qzlp0kxhjodrf5h",
+        "name": "rotated_at",
+        "dataType": "timestamptz",
+        "options": 0,
+        "comment": "교체 시각. 이후 유예 시간 (설정값, 기본 30초) 안의 재사용은 family를 폐기하지 않음 (ADR-0023 #13)"
       }
     },
     "relationshipEntities": {

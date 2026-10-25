@@ -27,16 +27,17 @@
 | 9 | 로그 | 필드 허용 목록: trace ID, 주체 ID, 동작, 대상 ID, 상태, 사유 코드, HTTP 상태, 소요 시간. 토큰·`Authorization`·푸시 토큰·이메일·IP와 `data-retention.md`의 금지 항목은 기록하지 않는다 |
 | 10 | 기기 증명 | 단계 2는 검증 인터페이스와 개발·테스트용 대역만 만든다. 운영 프로필에서 대역이 켜져 있으면 기동을 실패시킨다. ADR-0020의 "발급할 때 기기 증명"은 운영 배포 전에 실제 App Attest·Play Integrity 검증으로 바꾼다 (STATUS 다음 할 일) |
 | 11 | 모듈 골격 | 단계 2는 `shared` (ERD 그룹 '공통 인프라': 오류·멱등·로그·보안)와 `account` (도메인 후보 '계정과 구독' 중 주체·설치·기기·토큰)만 만든다. 구독·이용량의 모듈 경계와 나머지 모듈은 해당 단계에서 정한다 |
-| 12 | 공통 응답 필드 (요구사항 172행 해석) | 변경 요청 (Command) 응답은 `jobId`·`result`·`retryable`을 담고, 대상이 여러 개면 `items[]`에 대상별 결과와 `reason`을 담는다. `jobId` = 장기 작업은 서버가 만든 작업 ID, 즉시 처리하는 변경은 요청의 `Idempotency-Key`. `result` = `SUCCEEDED` / `FAILED` / `CANCELLED` / `NEEDS_CHECK` / `ACCEPTED` (장기 작업 접수). 조회 (Query) 응답에는 강제하지 않는다. 최상위 `code`는 HTTP 상태와 1:1이고, `items[].code`는 같은 분류를 HTTP 없이 쓴다. 요청 자체가 잘못되면 4xx, 대상별로 처리했으면 모두 실패해도 200 + `items[]` |
-| 13 | refresh 재사용 유예 | 교체 직후 유예 시간 (설정값, 기본 30초) 안에 이전 refresh 토큰이 다시 오면 응답 유실로 보고 family를 폐기하지 않는다. 유예 시간이 지난 재사용은 family 전체를 폐기한다 |
+| 12 | 공통 응답 필드 (요구사항 172행 해석) | 변경 요청 (Command) 응답은 `jobId`·`result`·`retryable`을 담고, 대상이 여러 개면 `items[]`에 대상별 결과와 `reason`을 담는다. `jobId` = 장기 작업은 서버가 만든 작업 ID, 즉시 처리하는 변경은 요청의 `Idempotency-Key`. `result` = `SUCCEEDED` / `FAILED` / `CANCELLED` / `NEEDS_CHECK` / `ACCEPTED` (장기 작업 접수). 변경 요청의 오류 응답 (`ProblemDetail`)도 `jobId`와 `result` = `FAILED`를 담고, 작업을 만들지 못한 장기 작업 접수의 `jobId`는 null이다. 조회 (Query) 응답에는 강제하지 않는다. 최상위 `code`는 HTTP 상태와 1:1이고, `items[].code`는 같은 분류를 HTTP 없이 쓴다. 요청 자체가 잘못되면 4xx, 대상별로 처리했으면 모두 실패해도 200 + `items[]` |
+| 13 | refresh 재사용 유예 | 교체 직후 유예 시간 (설정값, 기본 30초) 안에 이전 refresh 토큰이 다시 오면 응답 유실로 보고 family를 폐기하지 않는다. 이때 새 토큰 쌍을 다시 발급하고 앞서 발급한 후속 토큰은 폐기한다 (해시만 저장해 같은 토큰을 돌려줄 수 없음). 교체 시각은 `refresh_token.rotated_at`. 유예 시간이 지난 재사용은 family 전체를 폐기한다 |
 
 ### 멱등 기록 규칙 (결정 7)
 - `Idempotency-Key` = UUIDv7, 범위 = (주체, 키), 보관 7일 (설정값). 탈퇴하면 함께 삭제한다.
 - 멱등 기록은 업무 변경과 같은 트랜잭션에 저장한다 (ADR-0016·0021). 비정상 종료하면 함께 롤백되므로 처리 중 상태로 남는 기록이 없다.
 - 같은 키의 동시 요청은 기록 행 잠금을 기다리고, 잠금 대기 시간 (설정값)을 넘으면 409 `CONFLICT` / `IDEMPOTENCY_IN_PROGRESS` (재시도 가능).
-- 결과가 확정된 2xx·4xx 응답은 저장해 같은 응답을 돌려준다. 401, `IDEMPOTENCY_IN_PROGRESS`, 503, 처리 중 예외는 저장하지 않는다.
+- 결과가 확정된 2xx·4xx 응답은 저장해 같은 응답을 돌려준다. 4xx는 업무 변경을 롤백하고 멱등 기록만 커밋한다. 401, `IDEMPOTENCY_IN_PROGRESS`, 503, 처리 중 예외는 저장하지 않는다. `IDEMPOTENCY_KEY_REUSED`는 원본 기록을 바꾸지 않는다.
+- 200 응답의 `items[]`에 재시도 가능한 실패가 있으면, 그 대상은 새 키로 다시 보낸다.
 - 같은 키는 같은 작업의 재전송에만 쓴다. 본문을 바꾸거나 사용자가 다시 시도하는 새 작업은 새 키를 쓴다. 같은 키에 다른 본문 = 400 `INVALID_INPUT` / `IDEMPOTENCY_KEY_REUSED`. 변경 요청에 키가 없으면 400 `INVALID_INPUT` / `IDEMPOTENCY_KEY_REQUIRED`.
-- 장기 작업 접수를 재전송하면 저장된 응답 대신 현재 작업 상태를 돌려주고, 만료되는 업로드 URL (S3 presigned)은 다시 발급한다.
+- 장기 작업 접수를 재전송하면 저장된 응답 대신 현재 작업 상태를 돌려주고, 만료되는 업로드 URL (S3 presigned)은 다시 발급한다. 그래서 저장하는 응답 본문에는 업로드 URL을 넣지 않는다.
 - 보관 기간이 지난 재전송은 데이터 버전, `client_ref` 유니크, 사진 버전 유니크 (`analysis_job`·`usage_reservation`)가 중복 반영과 중복 차감을 막는다 (ADR-0021·0022).
 
 ## 근거
@@ -61,7 +62,7 @@
 
 ## 결과
 - `api-contract.md`·`consistency-rules.md`·`data-retention.md`·`domain-boundaries.md`에 세부 규칙을 반영했다.
-- ERD: `anonymous_install.revoked_at`을 추가하고, `idempotency_record.status`를 뺐다 (같은 트랜잭션 저장이라 처리 중 상태가 보이지 않음).
+- ERD: `anonymous_install.revoked_at`과 `refresh_token.rotated_at`을 추가했다. `idempotency_record.status`를 빼고 (같은 트랜잭션 저장이라 처리 중 상태가 보이지 않음) 응답 컬럼을 NOT NULL로 바꿨다.
 - 새 비밀 값: JWT 서명 키 (ES256, `kid`별), 식별자 HMAC 키. 단계 2를 구현할 때 `.env.example`에 키를 추가하고, 로컬은 개발용 키를 `.env.local`에 둔다.
 - 구현할 때 Spring Framework 7 API 버전 설정과 Spring Security Resource Server의 키 설정 이름을 공식 문서로 확인한다.
 - 계속 미정: 호출 제한 초과 응답 (429 사용 여부, SSOT 오류 표에 없음, D-17), 장기 미사용 익명 설치의 보관 기준 (P08 비로그인 데이터 보관 기한과 함께), `reason` 값 목록 (기능별로 추가).
