@@ -78,3 +78,4 @@ Pik(사진 정리 앱) iOS·Android 클라이언트의 백엔드. Java 21 + Spri
 - 요구사항에 없는 기능 임의 추가 (첫 출시 제외 범위: `open-policies.md` 하단)
 - 단말 전용 FR을 서버에 구현
 - 비밀 값(키·토큰·인증서)을 코드·설정 파일·커밋에 기록
+- 권한·차단 규칙(`.claude/settings.json` deny, `.claude/hooks/`) 임의 완화. 막히면 중단하고 사용자 승인 요청
