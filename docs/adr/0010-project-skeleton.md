@@ -1,6 +1,6 @@
 # ADR-0010: 프로젝트 골격 구성
 
-- 상태: 채택 (근거 일부 미기록)
+- 상태: 채택 (사후 검토 근거: ADR-0014)
 - 날짜: 2026-10-25
 - 관련: ADR-0003, ADR-0004, 브랜치 `feature/spring-boot-init`
 
@@ -29,7 +29,8 @@
 - `open-in-view: false`: 트랜잭션 밖(뷰 렌더링 중)의 지연 로딩 쿼리를 막는다. 외부 연동을 트랜잭션에서 분리하는 불변 규칙(ADR-0005)과도 맞는다.
 - Testcontainers: 테스트를 운영과 같은 PostgreSQL 18에서 실행해, H2 같은 대체 DB와 동작이 다른 문제를 피한다.
 - 비밀 값은 `.env.local`(로컬)과 주입된 환경 변수(배포)로만 받는다 (ADR-0004).
-- PostgreSQL·JPA·MVC 선택 자체, 그리고 좌표: **근거 미기록** → D-03에서 함께 보완한다.
+- PostgreSQL·JPA·MVC 선택 자체: 선택 당시 근거는 기록되지 않았다. 사후 검토 근거는 [ADR-0014](0014-application-architecture-and-stack.md)에 기록했다 (D-03 해소).
+- 좌표: 사용자가 확정했고 선택 이유는 기록되지 않았다. `io.github.<사용자>` group은 GitHub에서 호스팅하는 프로젝트의 Maven 좌표 관례와 일치한다 (사후 검토).
 
 ## 결과
 - `test`·`build`에 Docker가 필요하고, `bootRun`에는 Docker와 `.env.local`이 필요하다.
