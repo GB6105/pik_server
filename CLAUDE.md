@@ -23,6 +23,12 @@ Pik(사진 정리 앱) iOS·Android 클라이언트의 백엔드. Java 21 + Spri
 | 로그·삭제·탈퇴·보관 기간 처리 | `.claude/docs/data-retention.md` |
 | 미정 정책(P01~P12) 관련 값 사용 | `.claude/docs/open-policies.md` |
 
+## CLAUDE.md 유지 규칙
+- 200줄 이하 유지. 초과 시 세부 내용을 `.claude/docs/<주제>.md`로 분리, 위 상황→경로 표에 행 추가
+- 이 파일에는 항상 필요한 계약만. 상황별 세부 규칙은 보조 문서
+- `@import` 금지 (전량 상시 로드됨)
+- 분리 대상에 `docs/spec/**` 사용 금지 (SSOT 전용)
+
 ## 명령
 | 목적 | 명령 |
 |---|---|
