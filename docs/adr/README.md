@@ -32,4 +32,5 @@
 | [0018](0018-subscription-via-revenuecat.md) | 구독 검증은 RevenueCat으로 연동한다 | 채택 | 2026-10-25 |
 | [0019](0019-server-centric-notification-delivery.md) | 알림은 서버 중심으로 전달한다 | 채택 | 2026-10-25 |
 | [0020](0020-account-and-anonymous-subject-policy.md) | 계정·비로그인 주체 정책 (P07·P08 일부) | 채택 | 2026-10-26 |
-| [0021](0021-data-model-foundation-decisions.md) | 데이터 모델 기반 결정 (사진 식별·묶음·이용량·동의·원본 삭제) | 채택 | 2026-10-26 |
+| [0021](0021-data-model-foundation-decisions.md) | 데이터 모델 기반 결정 (사진 식별·묶음·이용량·동의·원본 삭제) | 채택 (#1 기기 간 식별 일부 대체: ADR-0022) | 2026-10-26 |
+| [0022](0022-schema-rules-analysis-request-and-photo-identity.md) | 스키마 공통 규칙·분석 접수 단위·기기 간 사진 식별 범위 | 채택 | 2026-10-26 |
