@@ -14,14 +14,20 @@
 |---|---|---|---|
 | [0001](0001-spec-as-read-only-ssot.md) | 요구사항 문서를 읽기 전용 SSOT로 둔다 | 채택 | 2026-10-25 |
 | [0002](0002-claude-md-split-and-size-limit.md) | CLAUDE.md 200줄 제한과 보조 문서 분리 | 채택 | 2026-10-25 |
-| [0003](0003-tech-stack-java21-spring-boot.md) | Java 21 + Spring Boot + Gradle | 채택 (근거 미기록) | 2026-10-25 |
-| [0004](0004-env-and-secret-management.md) | 환경 변수·비밀 값 관리 방식 | 채택 (근거 일부 미기록) | 2026-10-25 |
+| [0003](0003-tech-stack-java21-spring-boot.md) | Java 21 + Spring Boot + Gradle | 채택 (사후 근거: 0014) | 2026-10-25 |
+| [0004](0004-env-and-secret-management.md) | 환경 변수·비밀 값 관리 방식 | 채택 (배포 서버 주입은 0015로 대체) | 2026-10-25 |
 | [0005](0005-server-scope-metadata-only.md) | 서버는 Pik 메타데이터만 소유한다 | 채택 | 2026-10-25 |
 | [0006](0006-open-policies-as-config.md) | 미정 정책 값은 설정값으로 분리한다 | 채택 | 2026-10-25 |
 | [0007](0007-project-record-system.md) | STATUS·ADR·devlog 기록 체계 | 채택 | 2026-10-25 |
 | [0008](0008-git-flow-branching.md) | Git Flow 브랜치 전략 | 채택 (병합 방식은 0013으로 대체) | 2026-10-25 |
 | [0009](0009-decision-reporting-per-task.md) | 작업 시작·종료 시 결정 사항 보고 | 채택 | 2026-10-25 |
-| [0010](0010-project-skeleton.md) | 프로젝트 골격 구성 | 채택 (근거 일부 미기록) | 2026-10-25 |
+| [0010](0010-project-skeleton.md) | 프로젝트 골격 구성 | 채택 (사후 근거: 0014) | 2026-10-25 |
 | [0011](0011-ci-github-actions.md) | GitHub Actions CI (빌드·테스트) | 채택 | 2026-10-25 |
 | [0012](0012-lombok-restricted-usage.md) | Lombok 제한적 사용 (허용 목록) | 채택 | 2026-10-25 |
 | [0013](0013-branch-protection-pr-required.md) | 원격 브랜치 보호: PR·CI 필수 | 채택 | 2026-10-25 |
+| [0014](0014-application-architecture-and-stack.md) | 서버 애플리케이션 아키텍처와 기술 스택 | 채택 | 2026-10-25 |
+| [0015](0015-aws-infrastructure-and-deployment.md) | AWS 인프라와 배포·비밀 값 주입 | 채택 | 2026-10-25 |
+| [0016](0016-external-ai-and-analysis-pipeline.md) | 외부 AI 연동, 사진 분석 파이프라인, 외부 전송 동의 범위 | 채택 | 2026-10-25 |
+| [0017](0017-search-interpret-on-server-execute-on-device.md) | 검색 구조: 자연어 해석은 서버, 실행은 단말 | 채택 | 2026-10-25 |
+| [0018](0018-subscription-via-revenuecat.md) | 구독 검증은 RevenueCat으로 연동한다 | 채택 | 2026-10-25 |
+| [0019](0019-server-centric-notification-delivery.md) | 알림은 서버 중심으로 전달한다 | 채택 | 2026-10-25 |

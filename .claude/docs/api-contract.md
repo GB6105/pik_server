@@ -24,6 +24,12 @@
 ## 공통 응답 필드
 - 작업 ID, 결과 상태, 대상별 사유, 재시도 가능 여부
 
+## 형식 (ADR-0014)
+- 오류 응답 = RFC 9457 `ProblemDetail` + `code` (위 오류 코드 표)
+- API 버전 = 요청 헤더 (Spring Framework 7 API versioning)
+- 작업 식별자 = `Idempotency-Key` 헤더 (UUIDv7). 데이터 버전 전달 위치는 구현 시 확정
+- 장기 작업 접수 = 202 + 작업 ID + 진행 상태
+
 ## 정상 결과로 취급
 - 빈 검색 결과
 - 사용자 취소

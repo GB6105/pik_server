@@ -58,7 +58,7 @@ Pik(사진 정리 앱) iOS·Android 클라이언트의 백엔드. Java 21 + Spri
 | 환경 | 소스 | git |
 |---|---|---|
 | 로컬 개발 | `.env.local` | 제외 |
-| 배포 서버 | `.env` ← AWS SSM Parameter Store 또는 GitHub Actions secrets 주입 | 제외 |
+| 배포 서버 | ECS task `secrets` ← AWS SSM Parameter Store, DB 비밀번호는 RDS 관리형 Secrets Manager (CI → AWS = GitHub OIDC, ADR-0015) | 해당 없음 |
 | 키 목록 공유 | `.env.example` (값 없이 키만) | 포함 |
 
 - 새 환경 변수 추가 시 `.env.example`에 키 추가
