@@ -55,9 +55,12 @@
 - 데이터 모델 기반 결정: 사진 식별 키, 묶음 판단 위치, 이용량 차감, 파이프라인 확정, 동의 철회·단위, 원본 삭제 후 메타데이터, 체험 이중 집계 ([ADR-0021](adr/0021-data-model-foundation-decisions.md))
 - 서버 ER 설계안 초안: 37개 테이블, ADR-0014~0020 반영 (`docs/erd/pik.erd.json`)
 - ER 설계안을 ADR-0020·0021에 맞춤 (38개 테이블). 스키마 공통 판단 (D-15 해소)·분석 접수 단위·기기 간 사진 식별 범위 결정 ([ADR-0022](adr/0022-schema-rules-analysis-request-and-photo-identity.md))
+- 단계 2 공통 기반 세부 값: 데이터 버전 위치, 오류 응답 구조·오류 코드 해석·공통 응답 필드, 토큰 수명·익명 토큰·refresh 재사용 유예, API 버전, 멱등 기록, JWT, 로그, 기기 증명 대역, 모듈 골격 ([ADR-0023](adr/0023-stage2-foundation-details.md))
 
 ## 다음 할 일
-- [ ] 단계 2 착수: Modulith 모듈 골격, `ProblemDetail` 오류 형식, 멱등 기록, JWT 보안 설정, 구조화 로그 (ADR-0014), 익명 주체 발급 (ADR-0020), 첫 Flyway 마이그레이션
+- [ ] 로컬 환경 확인: colima (Docker), mise temurin-21, develop 기준선 `./gradlew build`, `.env.local` 준비 (단계 2 전)
+- [ ] 단계 2 착수: Modulith 모듈 골격, `ProblemDetail` 오류 형식, 멱등 기록, JWT 보안 설정, 구조화 로그 (ADR-0014·0023), 익명 주체 발급 (ADR-0020), 첫 Flyway 마이그레이션
+- [ ] 실제 기기 증명 검증 (App Attest·Play Integrity) 구현: 단계 2는 대역만 사용. Apple 키·Google Cloud 서비스 계정 준비 후, 클라이언트 연동·운영 배포 전 (ADR-0020·0023)
 - [ ] 유사도 벡터 모델을 클라이언트와 합의 (단계 5 전, ADR-0021)
 - [ ] TypeSafe Jev 직접 API early access 신청, 데이터 보관·처리 국가 확인 (D-08)
 - [ ] Haiku 5.5·Jev 측정용 실제 사진·검색어 표본 구성 (D-07)
@@ -82,9 +85,9 @@
 | D-13 | 인프라 비용 선택 | NAT Gateway AZ별 배치 (가용성) / 1개 (비용), RDS 인스턴스 크기 | 배포 환경 구성 전 | 인프라 코드 |
 | D-14 | ADR-0014~0019의 `(제안)` 항목 확인 | Pro LLM = Haiku, 웹 탐색 Sonnet 폴백, 검색 구현 세부, RevenueCat 즉시 재조회·구매 이전 설정·장애 시 유예 후 Pro 제한, silent push 미도입·장소 알림 권한, SSOT 해석 (FR-B-03·04 = RevenueCat 결과 조회, FR-N-04 = 마지막 보고 권한 상태로 판단) | 각 구현 착수 전 | 해당 FR 구현 |
 | D-16 | ER 설계 중 발견한 SSOT 보고 3건 | 액션 aggregate: 별도 모듈 (추천) / 분석 모듈 안. 비로그인 이벤트 자동 생성: 단말 (추천) / 서버. 정리 상태 동기화 범위·`source_album_ref` 의미: P04·P06·P07과 함께 결정 | 해당 FR 구현 전 | FR-G-02·03, FR-E-01, FR-A-02·04 |
-| D-17 | 검색 해석 호출 제한 (비로그인 포함) 집계 위치 | 인스턴스 메모리 (서버 대수만큼 나뉘어 집계) / DB 카운터 | FR-S 구현 전 | `/search/interpret` 남용 방지 (ADR-0017) |
+| D-17 | 검색 해석 호출 제한 (비로그인 포함) 집계 위치와 초과 응답 | 집계: 인스턴스 메모리 (서버 대수만큼 나뉘어 집계) / DB 카운터. 응답: 429 + `Retry-After` (SSOT 오류 표에 없음) / 503 `TEMPORARY_FAILURE` (ADR-0023) | FR-S 구현 전 | `/search/interpret` 남용 방지 (ADR-0017) |
 | D-18 | 기기별 알림 발송 기록 테이블 필요 여부 | P09 발송 대상 기기 규칙에 따라 결정 | FR-N 서버 발송 구현 전 | FR-N-02~04 (ADR-0019) |
-| D-19 | 이미 작업이 있는 사진 버전의 재접수, 서버 배치 작업의 접수 귀속 | 추천: 같은 사진 버전의 작업은 하나로 유지. 완료면 새 접수에서 빼고 기존 결과 반환, 실패·취소면 같은 작업을 다시 대기로 바꿔 새 접수에 귀속, 진행 중이면 기존 작업 표시 / 접수마다 새 작업. PRO_BACKLOG 작업의 귀속 포함 | 단계 5 마이그레이션 전 | FR-I-01·06, `analysis_job.request_id` NOT NULL 여부 (ADR-0022) |
+| D-19 | 이미 작업이 있는 사진 버전의 재접수, 서버 배치 작업의 접수 귀속 | 추천: 같은 사진 버전의 작업은 하나로 유지. 완료면 새 접수에서 빼고 기존 결과 반환, 실패·취소면 같은 작업을 다시 대기로 바꿔 새 접수에 귀속, 진행 중이면 기존 작업 표시 / 접수마다 새 작업. PRO_BACKLOG 작업의 귀속 포함. 접수마다 새 작업을 고르면 `uk_analysis_job_photo_version` 변경 필요 | 단계 5 마이그레이션 전 | FR-I-01·06, `analysis_job.request_id` NOT NULL 여부 (ADR-0022) |
 | D-20 | iCloud 사진 photoId 수렴, 재설치 때 연결 이관 | 두 번째 기기가 만든 photoId를 같은 `cloud_ref`의 서버 photoId로 바꾸는 절차, 이전 설치 (`device` 행)의 `photo_device_link`를 새 설치로 옮기는 방법 (iOS는 기기 식별자 없음). FR-A-04 기술 검증과 함께 결정 | 단계 9 전 | FR-A-02·04, FR-L-05 (ADR-0022) |
 
 ## 위험·제약
@@ -96,4 +99,5 @@
 - 장소 알림의 서버 확인에는 위치 권한 '항상 허용'이 필요하다. '앱 사용 중 허용'이면 서버 확인 없이 표시되어, 다른 기기에서 완료한 이벤트의 장소 알림이 울릴 수 있다 (수용 위험, ADR-0019).
 - 권한 요청 알림은 단말이 마지막으로 보고한 권한 상태로 판단해, FR-N-04의 "발송 시 재확인"과 차이가 있다 (ADR-0019).
 - 요구사항 140·948행 (같은 사진의 다른 기기 ID 매칭)과 FR-A-04·시나리오 A-03 (기기 변경 후 복원)을 iCloud 동기화 사진으로 한정한다. 영향은 두 가지다. 첫째, Android 사용자와 iCloud를 쓰지 않는 iOS 사용자는 기기를 바꾸면 기존 Pik 정보가 새 기기의 사진에 연결되지 않는다. 둘째, 한 계정을 iCloud로 묶이지 않은 기기 여러 대에서 쓰면 (예: iPhone + Android, iCloud 없는 iPhone + iPad) 같은 내용의 사진이 기기마다 별도 사진이 된다. 그래서 메모·태그·이벤트 연결이 기기 사이에 이어지지 않고, 분석과 이용량 차감도 기기마다 따로 일어난다. 같은 기기 재설치는 OS 로컬 ID로 복원할 수 있으며, 방법은 D-20에서 정한다. 사용자 결정 (ADR-0022).
+- SSOT 오류 표의 "FORBIDDEN 또는 PERMISSION_REQUIRED"를 서버 `FORBIDDEN`·단말 `PERMISSION_REQUIRED`로 나눠 해석하고, 다른 주체의 데이터는 `NOT_FOUND`로 응답한다. `UNAUTHENTICATED`는 "로그인 전용 호출"보다 넓게, 익명 access JWT 만료·설치 토큰 폐기에도 쓴다 (ADR-0023).
 - FR-S-01의 "Jev 기초 분류"를 사용자 정의에 따라 "검색어 → 폴더 관련도"로 해석했다. 사진 단위 Jev 분류는 하지 않는다 (ADR-0017).

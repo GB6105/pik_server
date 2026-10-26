@@ -23,6 +23,10 @@
 - 원본 삭제 = 사진 단위 상태. 권한 축소·다운로드 불가 = 기기별 연결 상태 (ADR-0022)
 - OS 촬영·수정 시각과 Pik 처리 시각은 별도 필드
 
+## 모듈 (ADR-0014, ADR-0023)
+- Modulith 모듈 = 도메인 후보 + `shared` (ERD 그룹 '공통 인프라': 오류·멱등·로그·보안)
+- 단계 2 = `shared`, `account` ('계정과 구독' 중 주체·설치·기기·토큰). 구독·이용량 경계와 나머지 모듈은 해당 단계에서 결정
+
 ## 스키마 공통 규칙 (ADR-0022)
 - ER 설계안: `docs/erd/pik.erd.json` (erd-editor)
 - 소유 주체 = `principal` (ACCOUNT / ANONYMOUS). 모든 `owner_id` → `principal.id`

@@ -201,7 +201,7 @@
       "03h4468gdyciasr0yyd9e43nc": {
         "id": "03h4468gdyciasr0yyd9e43nc",
         "name": "anonymous_install",
-        "comment": "비로그인 작업 주체. 토큰 발급 시 App Attest·Play Integrity로 정상 앱인지 확인, 재설치 판별은 device_trial_mark (ADR-0020, P08)",
+        "comment": "비로그인 작업 주체. 토큰 발급 시 App Attest·Play Integrity로 정상 앱인지 확인, 재설치 판별은 device_trial_mark. 설치 토큰은 만료·교체 없이 access JWT로 교환 (ADR-0020, ADR-0023, P08)",
         "columnIds": [
           "03h4468gdyciasr0yyeplijvi",
           "03h4468gdyciasr0yyhf5icv4",
@@ -209,6 +209,7 @@
           "03h4468gdyciasr0yykp82w3i",
           "03h4468gdyciasr0yyo3n14cn",
           "03h4468gdyciasr0yypq94emk",
+          "03hgqcrj7wpm57tlbs61vebd4",
           "03h4468gdyciasr0yyrc8tg7m"
         ],
         "groupId": "03h4468geka6y2ntyhzlqzeyp",
@@ -249,6 +250,7 @@
           "03h4468ge3qzlp0kxhwfne88a",
           "03h4468ge3qzlp0kxhya1sx44",
           "03h4468ge3qzlp0kxi06tzhx9",
+          "03heb5v0gfbwa7ndkm7115jih",
           "03h4468ge3qzlp0kxi1h489j3"
         ],
         "groupId": "03h4468geka6y2ntyhzlqzeyp",
@@ -815,13 +817,12 @@
       "03h4468ge977zqezlpt9mf2c0": {
         "id": "03h4468ge977zqezlpt9mf2c0",
         "name": "idempotency_record",
-        "comment": "변경 요청 재전송 중복 방지. 처리 중인 키가 다시 오면 CONFLICT (공통 규칙, api-contract)",
+        "comment": "변경 요청 재전송 중복 방지. 업무 변경과 같은 트랜잭션에 저장하고, 같은 키의 동시 요청은 행 잠금 대기 시간을 넘으면 CONFLICT. 결과가 확정된 2xx·4xx만 저장. 보관 7일 (설정값), 탈퇴 시 삭제 (ADR-0023, consistency-rules)",
         "columnIds": [
           "03h4468ge977zqezlpv0n6k04",
           "03h4468ge977zqezlpwhvasgx",
           "03h4468ge977zqezlpynmgmmf",
           "03h4468ge977zqezlq0hxdys6",
-          "03h4468ge977zqezlq2q2p6lp",
           "03h4468ge977zqezlq5duco1z",
           "03h4468ge977zqezlq5y13f3p",
           "03h4468ge977zqezlq9ewtbfi",
@@ -3151,27 +3152,20 @@
         "dataType": "text",
         "options": 8
       },
-      "03h4468ge977zqezlq2q2p6lp": {
-        "id": "03h4468ge977zqezlq2q2p6lp",
-        "tableId": "03h4468ge977zqezlpt9mf2c0",
-        "name": "status",
-        "comment": "IN_PROGRESS / COMPLETED",
-        "dataType": "text",
-        "options": 8
-      },
       "03h4468ge977zqezlq5duco1z": {
         "id": "03h4468ge977zqezlq5duco1z",
         "tableId": "03h4468ge977zqezlpt9mf2c0",
         "name": "response_code",
         "dataType": "int",
-        "options": 0
+        "options": 8
       },
       "03h4468ge977zqezlq5y13f3p": {
         "id": "03h4468ge977zqezlq5y13f3p",
         "tableId": "03h4468ge977zqezlpt9mf2c0",
         "name": "response_body",
         "dataType": "jsonb",
-        "options": 0
+        "options": 8,
+        "comment": "저장한 응답 본문. 업로드 URL (S3 presigned)은 넣지 않음"
       },
       "03h4468ge977zqezlq9ewtbfi": {
         "id": "03h4468ge977zqezlq9ewtbfi",
@@ -3779,6 +3773,22 @@
         "name": "version",
         "dataType": "bigint",
         "options": 8
+      },
+      "03hgqcrj7wpm57tlbs61vebd4": {
+        "id": "03hgqcrj7wpm57tlbs61vebd4",
+        "tableId": "03h4468gdyciasr0yyd9e43nc",
+        "name": "revoked_at",
+        "dataType": "timestamptz",
+        "options": 0,
+        "comment": "설치 토큰 폐기 시각. 값이 있으면 access 교환 거부 (ADR-0023)"
+      },
+      "03heb5v0gfbwa7ndkm7115jih": {
+        "id": "03heb5v0gfbwa7ndkm7115jih",
+        "tableId": "03h4468ge3qzlp0kxhjodrf5h",
+        "name": "rotated_at",
+        "dataType": "timestamptz",
+        "options": 0,
+        "comment": "교체 시각. 이후 유예 시간 (설정값, 기본 30초) 안의 재사용은 family를 폐기하지 않음 (ADR-0023 #13)"
       }
     },
     "relationshipEntities": {
