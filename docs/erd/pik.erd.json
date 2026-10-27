@@ -65,7 +65,10 @@
       "03h45zxe8rur98csoh0m99lbi",
       "03h46ggkrxnffv4hjizyj1crb",
       "03h46ggksdze9d44y09z2x7zj",
-      "03htygdnvz0ch9exiton03zyv"
+      "03htygdnvz0ch9exiton03zyv",
+      "03hjfcwl6ebn9795fj0udpy4t",
+      "03h0grztwslns5gtmr59vipg3",
+      "03hnm2l1rr3ilai38jdtwi3o3"
     ],
     "relationshipIds": [
       "03h4468geephs5erx72aplmrf",
@@ -105,13 +108,14 @@
       "03h45zxe92nmqnj78d0u2jkfx",
       "03h46ggksp11c0qxbs1cdwgr6",
       "03h46ggksp11c0qxbs58bz9m4",
-      "03hvo1pplbidr4yi8pghoep3x"
+      "03hvo1pplbidr4yi8pghoep3x",
+      "03hq8c76ybsua6rz0f848cb3t",
+      "03h2x3shbywzf8y96wnq7226m"
     ],
     "indexIds": [
       "03h4468geephs5erx8xgay3x3",
       "03h4468geephs5erx93j8iobr",
       "03h4468geka6y2ntyd5n0ag08",
-      "03h4468geka6y2ntydhfs36mn",
       "03h4468geka6y2ntydpu7v3mb",
       "03h4468geka6y2ntydul45n62",
       "03h4468geka6y2ntye0xepb32",
@@ -121,7 +125,6 @@
       "03h4468geka6y2ntyeootbswh",
       "03h4468geka6y2ntyetx16mmg",
       "03h4468geka6y2ntyf2g32t0c",
-      "03h4468geka6y2ntyf8ek1epd",
       "03h4468geka6y2ntyffx02fed",
       "03h4468geka6y2ntyfo8fv95i",
       "03h4468geka6y2ntyfupt7ngc",
@@ -141,10 +144,15 @@
       "03h46ggksdze9d44xzuzpuwoj",
       "03hvh0oej5atof0uj0zf90ze2",
       "03hr8oiz2t2vfr123yjl34sav",
-      "03hedey8y9ymng5yhnsj6twhw",
       "03hnq42h7pyx0zzgh0fgz5rs6",
       "03hsv9s34tyfrrx1o6tgp7pyg",
-      "03hhqhiojqago3zp0mp9fe1ud"
+      "03hhqhiojqago3zp0mp9fe1ud",
+      "03hm0aljsf2p1ioh72tt3of0s",
+      "03h4wynmqmu1gnj4k9lelu1br",
+      "03hq8751kxx725f793dglfpkz",
+      "03h6jvzg07bv5pctizzfeydig",
+      "03hlnnu5iae7wujmbxaeadqae",
+      "03h8ubyxj764q6dplogninvz7"
     ],
     "memoIds": [
       "03h446hedsmnrwp09ht0scm16",
@@ -327,7 +335,7 @@
       "03h4468ge3qzlp0kxjueu7nb9": {
         "id": "03h4468ge3qzlp0kxjueu7nb9",
         "name": "revenuecat_event",
-        "comment": "웹훅 inbox. 응답 전에 app_user_id·본문 저장, 계정을 못 찾으면 UNRESOLVED로 두고 배치가 재시도하며 권한은 넓히지 않음. 탈퇴 후에는 payload·last_error_code를 지우고 event_id·type·app_user_id(내부 계정 ID)·처리 상태·시각·재시도 횟수만 남김 (ADR-0020 최소 기록). ix_revenuecat_event_retry는 WHERE status = UNRESOLVED (FR-B-04, ADR-0020)",
+        "comment": "웹훅 inbox. 응답 전에 app_user_id·본문 저장, 계정을 못 찾으면 UNRESOLVED로 두고 배치가 재시도하며 권한은 넓히지 않음. 탈퇴 후에는 payload·last_error_code를 지우고 event_id·type·app_user_id(내부 계정 ID)·처리 상태·시각·재시도 횟수만 남김 (ADR-0020 최소 기록). ix_revenuecat_event_retry는 WHERE status = UNRESOLVED (FR-B-04, ADR-0020) TRANSFER는 받는 계정 쪽으로 한 번만 오고 app_user_id가 없음 (RevenueCat 문서). transferred_from·transferred_to의 계정을 모두 REST로 다시 조회해 반영하고, account_id는 받는 계정. 넘겨준 계정은 Pro를 잃음. 계정 데이터는 옮기지 않음 (ADR-0024 #9-2)",
         "columnIds": [
           "03h4468ge3qzlp0kxjy0szbv2",
           "03h44damn4kxud9wpdo1p8shr",
@@ -358,6 +366,7 @@
           "03h4468ge3qzlp0kxkgl6kvaq",
           "03h4468ge3qzlp0kxkjr6hqu2",
           "03h4468ge3qzlp0kxkkpllh1v",
+          "03h8jdato5y6ok94pelthc4e3",
           "03h4468ge3qzlp0kxkmvmcq5e",
           "03h4468ge3qzlp0kxkpd51bsi",
           "03h4468ge3qzlp0kxkq9as1gx"
@@ -371,7 +380,7 @@
       "03h4468ge3qzlp0kxktbzseyu": {
         "id": "03h4468ge3qzlp0kxktbzseyu",
         "name": "usage_reservation",
-        "comment": "사진별 예약. 접수할 때 묶음의 대표+구성 사진 수만큼 예약하고, 실패·취소되면 RELEASED로 반환. 결과 생성 시 CONSUMED로만 바꾸고 재차감 금지. uk_usage_reservation_photo_version은 WHERE status <> RELEASED 부분 유니크 (같은 사진 버전 재분석 미차감), uk_usage_reservation_trial_photo는 WHERE quota_kind = TRIAL AND status <> RELEASED 부분 유니크 (반환 후 재시도는 새 행) (FR-G-01, FR-I-01, ADR-0021 #3)",
+        "comment": "사진별 예약. 접수할 때 묶음의 대표+구성 사진 수만큼 예약하고, 실패·취소되면 RELEASED로 반환. 결과 생성 시 CONSUMED로만 바꾸고 재차감 금지. uk_usage_reservation_photo는 WHERE status <> RELEASED 부분 유니크 (사진당 차감 1회, 체험·Pro 공통, 수정된 사진도 재차감 없음, ADR-0024 #4-1·#6-1). 작업이 FAILED·CANCELLED·INELIGIBLE로 끝나면 RELEASED, 반환 후 재시도는 새 행 (FR-G-01, FR-I-01, ADR-0021 #3)",
         "columnIds": [
           "03h4468ge3qzlp0kxkuazvdjz",
           "03h4468ge3qzlp0kxkw3vc1jr",
@@ -394,7 +403,7 @@
       "03h4468ge3qzlp0kxlcf5ld1e": {
         "id": "03h4468ge3qzlp0kxlcf5ld1e",
         "name": "trial_click",
-        "comment": "액션·이벤트 3회 클릭 집계. 중복·실패 집계 기준은 P01 (FR-B-01)",
+        "comment": "액션·이벤트 3회 클릭 집계. 대상별 1회, 서버가 클릭 시점 상태를 확인해 준비 완료 액션과 숨김·완료가 아닌 이벤트만 기록하고 단말이 보고한 실행 실패는 기록하지 않음. 비로그인 이벤트 클릭은 단말 보고 그대로. 새 계정으로 로그인하면 그 기기의 게스트 클릭을 이어받고 같은 대상은 무시 (uk_trial_click_target). 기존 계정 로그인은 이어받지 않음 (FR-B-01, P01, ADR-0024 #7)",
         "columnIds": [
           "03h4468ge3qzlp0kxldxmq81d",
           "03h4468ge3qzlp0kxlglq5g0y",
@@ -540,7 +549,7 @@
       "03h4468ge3qzlp0kxoqfcm9ix": {
         "id": "03h4468ge3qzlp0kxoqfcm9ix",
         "name": "organize_state",
-        "comment": "정리 상태 동기화 (FR-A-02·04). 정리 세션·임시 선택·되돌리기는 단말 전용",
+        "comment": "정리 상태 동기화 (FR-A-02·04). 반영에 성공한 완료 상태와 정리 가능 시점만 서버에 둠. 정리 세션·임시 선택·되돌리기는 단말 전용 (ADR-0024 #10-1)",
         "columnIds": [
           "03h4468ge3qzlp0kxosj92zk7",
           "03h4468ge3qzlp0kxotunlozh",
@@ -564,7 +573,7 @@
       "03h4468ge977zqezlhqerbvdc": {
         "id": "03h4468ge977zqezlhqerbvdc",
         "name": "analysis_job",
-        "comment": "대표 사진 1장의 분석 호출 단위이자 작업 큐. 구성 사진은 photo_group_member를 통해 결과를 이어받음 (REUSED). ix_analysis_job_ready는 WHERE status = READY 부분 인덱스이며 owner_id 선두 규칙의 예외. SKIP LOCKED 폴링. 결과 저장 직전 사진 버전·작업 버전·principal 상태·동의 상태 대조. 동의 철회 시 전송 전 작업은 CANCELLED로 바꾸고 예약을 반환하며, 이미 보낸 요청의 응답은 저장하지 않음 (FR-I-01·03·06, FR-G-01, ADR-0021 #5, ADR-0022)",
+        "comment": "대표 사진 1장의 분석 호출 단위이자 작업 큐. 구성 사진은 photo_group_member를 통해 결과를 이어받음 (REUSED). ix_analysis_job_ready는 WHERE status = READY 부분 인덱스이며 owner_id 선두 규칙의 예외. SKIP LOCKED 폴링. 결과 저장 직전 사진 버전·작업 버전·principal 상태·동의 상태 대조. 사진 버전만 다르면 분석한 버전으로 결과를 저장하고 재분석하지 않음 (ADR-0024 #6-1). 동의 철회 시 전송 전 작업은 CANCELLED로 바꾸고 예약을 반환하며, 이미 보낸 요청의 응답은 저장하지 않음 (FR-I-01·03·06, FR-G-01, ADR-0021 #5, ADR-0022) uk_analysis_job_photo_active는 WHERE status NOT IN (FAILED, CANCELLED, INELIGIBLE) 부분 유니크 (사진당 살아 있는 작업 1개, 버전 무관). 결과가 있는 사진은 버전과 관계없이 재접수에서 빼고, FAILED·CANCELLED·INELIGIBLE만 남은 사진의 재접수는 새 행, 자동 재시도는 같은 행 (ADR-0024 #4-1·#6-1)",
         "columnIds": [
           "03h4468ge977zqezlht52p33h",
           "03h4468ge977zqezlhu49kpu8",
@@ -663,7 +672,7 @@
       "03h4468ge977zqezll4ciftac": {
         "id": "03h4468ge977zqezll4ciftac",
         "name": "photo_action",
-        "comment": "[SSOT 저장 단위 표에 없음] 사진별 액션. 실제 전화·복사·구매는 수행하지 않음 (FR-G-02·04)",
+        "comment": "사진별 액션. action 모듈 (ADR-0024 #3). 실제 전화·복사·구매는 수행하지 않음 (FR-G-02·04)",
         "columnIds": [
           "03h4468ge977zqezll6uv0ne5",
           "03h4468ge977zqezll9b253re",
@@ -683,13 +692,13 @@
         "groupId": "03h4468geka6y2ntyi7i4fmex",
         "ui": {
           "x": 1466,
-          "y": 5808
+          "y": 6008
         }
       },
       "03h4468ge977zqezllz96xg0x": {
         "id": "03h4468ge977zqezllz96xg0x",
         "name": "web_link_candidate",
-        "comment": "웹페이지 후보. 후보가 여러 개면 임의로 확정하지 않음 (FR-X-06)",
+        "comment": "웹페이지 후보. 후보가 여러 개면 임의로 확정하지 않음 (FR-X-06). 탐색 모델은 설정값, 초기값 Sonnet 5.5 + web_search·web_fetch _20260209 (ADR-0024 #8)",
         "columnIds": [
           "03h4468ge977zqezlm1fabamm",
           "03h4468ge977zqezlm1ku6if5",
@@ -704,13 +713,13 @@
         "groupId": "03h4468geka6y2ntyi7i4fmex",
         "ui": {
           "x": 74,
-          "y": 5808
+          "y": 6008
         }
       },
       "03h4468ge977zqezlmi9acrpo": {
         "id": "03h4468ge977zqezlmi9acrpo",
         "name": "translation",
-        "comment": "번역 결과. 같은 원문·언어는 다시 호출하지 않음 (FR-X-05)",
+        "comment": "번역 결과. 서버가 Claude Haiku 5.5(설정값)로 번역. 같은 원문·언어는 다시 호출하지 않음 (FR-X-05, ADR-0024 #13-4)",
         "columnIds": [
           "03h4468ge977zqezlmjs8najs",
           "03h4468ge977zqezlmlm7o1hl",
@@ -725,13 +734,13 @@
         "groupId": "03h4468geka6y2ntyi7i4fmex",
         "ui": {
           "x": 820,
-          "y": 5808
+          "y": 6008
         }
       },
       "03h4468ge977zqezln1403jfq": {
         "id": "03h4468ge977zqezln1403jfq",
         "name": "event",
-        "comment": "COMPLETED·HIDDEN은 삭제가 아닌 상태, 늦은 분석으로 되살리지 않음. uk_event_origin_job은 WHERE origin_job_id IS NOT NULL (FR-E-01~04, FR-G-03)",
+        "comment": "COMPLETED·HIDDEN은 삭제가 아닌 상태, 늦은 분석으로 되살리지 않음. uk_event_origin_job은 WHERE origin_job_id IS NOT NULL (FR-E-01~04, FR-G-03). 사진이 모두 빠지면 원인과 관계없이 HIDDEN, 숨기면 notification_version을 올려 예약 무효 (ADR-0024 #11). 장소 좌표는 Google Places, 좌표는 30일 이내만 보관. ix_event_place_refresh는 WHERE place_coord_expires_at IS NOT NULL 부분 인덱스이며 owner_id 선두 규칙의 예외 (ADR-0024 #13-5)",
         "columnIds": [
           "03h4468ge977zqezln3jpwmc8",
           "03h4468ge977zqezln5v3uxs0",
@@ -745,6 +754,11 @@
           "03h4468ge977zqezlnkykd134",
           "03h4468ge977zqezlnoctxovo",
           "03h4468ge977zqezlnprs7y23",
+          "03hqi9w4tfvaeep2p89rbfy4p",
+          "03htk12gwad4xlomhwvpmm2sm",
+          "03hzy67cy23e1kaqqlewwyymh",
+          "03h4l4okluyftul2zes2ua82i",
+          "03hc3v6x6j7cqxiyz8y4eqbtd",
           "03h4468ge977zqezlnsl5xrg6",
           "03h4468ge977zqezlnu2pvzib",
           "03h4468ge977zqezlnvr7adz6",
@@ -788,7 +802,7 @@
       "03h4468ge977zqezlosz9hyo7": {
         "id": "03h4468ge977zqezlosz9hyo7",
         "name": "notification_schedule",
-        "comment": "로그인 계정의 알림 예약. worker가 fire_at에 SKIP LOCKED로 가져와 버전을 다시 확인하고 FCM으로 발송. EVENT_PLACE는 구역 진입 시 서버가 확인. ix_notification_schedule_due는 배치 폴링용이라 owner_id 선두 규칙의 예외 (ADR-0019, FR-N-02·03·04)",
+        "comment": "로그인 계정의 알림 예약. worker가 fire_at에 SKIP LOCKED로 가져와 버전을 다시 확인하고, 같은 트랜잭션에서 대상 기기별 notification_delivery 행을 만든 뒤 DISPATCHED로 바꿈. EVENT_PLACE는 구역 진입 시 서버가 확인. ix_notification_schedule_due는 배치 폴링용이라 owner_id 선두 규칙의 예외 (ADR-0019, FR-N-02·03·04) 대상 기기: EVENT_TIME은 계정의 모든 기기, ORGANIZE·PERMISSION_*는 device_id 기기. ORGANIZE 예약은 남은 정리 대상을 보고한 기기마다 만들고 시점·단계도 그 기기 기준. EVENT_PLACE는 기기별 발송 행을 만들지 않고 구역 진입 시 서버가 확인 (ADR-0024 #12-1)",
         "columnIds": [
           "03h4468ge977zqezlovyajhgw",
           "03h45zpihltkk2192523hg3t2",
@@ -800,10 +814,6 @@
           "03h45zpihltkk219258rp700t",
           "03h4468ge977zqezlp2rijoeg",
           "03h4468ge977zqezlp6g8jvje",
-          "03h45zpihr6blrfhig9twata9",
-          "03h45zpihr6blrfhige6p5628",
-          "03h45zpihr6blrfhightjwimg",
-          "03h45zpihr6blrfhiglu46ce5",
           "03h4468ge977zqezlp8u0exf8",
           "03h45zpihr6blrfhigopttvrq",
           "03h45zpihr6blrfhigspgfd6e"
@@ -916,7 +926,7 @@
       "03h45zxe8rur98csoh0m99lbi": {
         "id": "03h45zxe8rur98csoh0m99lbi",
         "name": "notification_device",
-        "comment": "알림 발송용 기기 상태(단말 보고값). 로그인 계정의 기기만 행을 가지며 로그아웃·기기 해제 시 삭제. 발송 대상 기기 규칙은 P09 (ADR-0019, FR-N-03·04)",
+        "comment": "알림 발송용 기기 상태(단말 보고값). 로그인 계정의 기기만 행을 가지며 로그아웃·기기 해제 시 삭제. 발송 대상 기기 규칙은 ADR-0024 #12-1 (ADR-0019, FR-N-03·04)",
         "columnIds": [
           "03h45zxe8rur98csoh3a2lhcw",
           "03h45zxe8rur98csoh6zm6jgk",
@@ -984,6 +994,7 @@
         "columnIds": [
           "03hsfso8pnhizeytjdlvm91xu",
           "03hsjh2xbc8hvtixwo540yg5v",
+          "03hd1dh643i2d068gexy0eoqj",
           "03h8p9vmgwg99ryan5298tb48",
           "03hi1ctn7dmhzh59hxytngyex",
           "03hhcpjbddajodzt2itduuszs",
@@ -995,6 +1006,66 @@
         "ui": {
           "x": 1679,
           "y": 2364
+        }
+      },
+      "03hjfcwl6ebn9795fj0udpy4t": {
+        "id": "03hjfcwl6ebn9795fj0udpy4t",
+        "name": "photo_vector",
+        "comment": "유사도 벡터. 사진이 있는 동안 보관하고 사진 삭제·탈퇴·비로그인 데이터 삭제 때 함께 지움. 같은 모델·버전끼리만 비교. 묶음 판단·서버 배치 묶음·대표 재선정에 사용 (FR-I-02, P05, ADR-0021 #2, ADR-0024 #5·#6-3)",
+        "columnIds": [
+          "03hyh5ud70c8jcij43hkp2g37",
+          "03hbekkthepotmhxv372qmdhs",
+          "03hb5rb2z2ap9bdz7xxrl88hj",
+          "03hl0jogeer0auxb3twgejymv",
+          "03hxjdkn2oky21mddaasxt3vy",
+          "03h7tsgz0fwv1165aetyfeyaf",
+          "03hwfc20jtrcr4a5nv8hdaqeb"
+        ],
+        "groupId": "03h4468geka6y2ntyi62mlft7",
+        "ui": {
+          "x": 2490,
+          "y": 2364
+        }
+      },
+      "03h0grztwslns5gtmr59vipg3": {
+        "id": "03h0grztwslns5gtmr59vipg3",
+        "name": "api_rate_counter",
+        "comment": "API 호출 제한 카운터. 주체·API별 단기·일일 창을 UPSERT로 집계하고 한도 값은 설정값. 초과하면 429 RATE_LIMITED. 대상: 검색 해석 (FR-S-01), 단말이 요청하는 장소 조회 (비로그인 좌표·모호한 장소 후보, FR-N-02). 지난 창은 배치로 삭제 (ADR-0017, ADR-0024 #13-1·#13-2·#13-5)",
+        "columnIds": [
+          "03hjnn5tebz2bc1oabfslw5bm",
+          "03hpvewqdzbsok24k40ubj5fv",
+          "03h29c8t8j5ebbkpiog5w9gz0",
+          "03hnq9tkza2r2eyy4c25r4bpk",
+          "03h10enuw5jdoa1932on0zbcl",
+          "03h2glmiy3ibdam8vek2erhwv"
+        ],
+        "groupId": "03h4468geka6y2ntyi62mlft7",
+        "ui": {
+          "x": 2490,
+          "y": 2640
+        }
+      },
+      "03hnm2l1rr3ilai38jdtwi3o3": {
+        "id": "03hnm2l1rr3ilai38jdtwi3o3",
+        "name": "notification_delivery",
+        "comment": "기기별 발송 기록이자 발송 큐. worker가 SKIP LOCKED로 가져와 보내기 직전마다 예약 상태·알림 버전·이벤트 상태(숨김·완료)·expires_at을 다시 확인하고, 맞지 않으면 CANCELLED. 일부 기기만 실패하면 그 기기 행만 재시도. ix_notification_delivery_due는 WHERE status = PENDING 부분 인덱스이며 owner_id 선두 규칙의 예외 (D-18 해소, ADR-0019, ADR-0024 #11-2·#12-1)",
+        "columnIds": [
+          "03h6dzd9j8dvqykii8pzv2b6r",
+          "03hhdp5mbc8611tugwmhhf0md",
+          "03hjl0kqwsa6gjogfvd2x7guo",
+          "03hlcwvpw0kx35p5chf9p508l",
+          "03huhbyoqhy140dgjkmdetskj",
+          "03hqxoy32pwtxhgcjzgftywze",
+          "03hhbed7dvrmevwr6d2pd4dum",
+          "03h7w42dfjddrrqkn7ot3gnuz",
+          "03hvro0lfqlcr6j54gpey45ia",
+          "03hn01f3xveaxrchos860t750",
+          "03hldxyx9or3iudnsf1ojcqhp"
+        ],
+        "groupId": "03h4468geka6y2ntyi9wujrbv",
+        "ui": {
+          "x": 3200,
+          "y": 4792
         }
       }
     },
@@ -1505,9 +1576,9 @@
         "id": "03h44damn4kxud9wpdo1p8shr",
         "tableId": "03h4468ge3qzlp0kxjueu7nb9",
         "name": "app_user_id",
-        "comment": "웹훅의 RevenueCat app_user_id 원문(= 계정 principal.id 예정). 계정 조회 재시도와 REST 재조회 기준",
+        "comment": "웹훅의 RevenueCat app_user_id 원문(= 계정 principal.id 예정). TRANSFER에는 없음 (transferred_from/to는 payload). 계정 조회 재시도와 REST 재조회 기준",
         "dataType": "text",
-        "options": 8
+        "options": 0
       },
       "03h44damn4kxud9wpds6qu84f": {
         "id": "03h44damn4kxud9wpds6qu84f",
@@ -1708,7 +1779,8 @@
         "tableId": "03h4468ge3qzlp0kxlcf5ld1e",
         "name": "target_id",
         "dataType": "uuid",
-        "options": 8
+        "options": 8,
+        "comment": "API의 액션·이벤트 ID. 비로그인 이벤트는 단말 이벤트 ID"
       },
       "03h4468ge3qzlp0kxlllqha3c": {
         "id": "03h4468ge3qzlp0kxlllqha3c",
@@ -2111,7 +2183,7 @@
         "id": "03h4468ge3qzlp0kxoykktfam",
         "tableId": "03h4468ge3qzlp0kxoqfcm9ix",
         "name": "source_album_ref",
-        "comment": "원본 앨범 식별. 기기 간 의미는 P06·P07 확정 필요",
+        "comment": "ALL(전체 보관함) / CLOUD:<iCloud 앨범 식별자> / DEVICE:<device.id>:<기기 앨범 ID>. 기기 간 매칭은 서버. 앨범 iCloud 식별자 지원은 FR-A-04 기술 검증. DEVICE 값은 설치 기준이라 재설치 때 D-20 연결 이관에 포함 (ADR-0024 #10-2)",
         "dataType": "text",
         "options": 8
       },
@@ -2198,7 +2270,7 @@
         "id": "03h4468ge977zqezlhyfww2ig",
         "tableId": "03h4468ge977zqezlhqerbvdc",
         "name": "photo_version",
-        "comment": "접수 시 photo.content_version",
+        "comment": "접수 시 photo.content_version. 결과는 이 버전 기준",
         "dataType": "text",
         "options": 8
       },
@@ -2206,7 +2278,7 @@
         "id": "03h4468ge977zqezli03mytnc",
         "tableId": "03h4468ge977zqezlhqerbvdc",
         "name": "cause",
-        "comment": "NEW / MODIFIED / RETRY / PRO_BACKLOG",
+        "comment": "NEW / RETRY / PRO_BACKLOG. 수정된 사진은 재분석하지 않으므로 MODIFIED 없음 (ADR-0024 #6-1)",
         "dataType": "text",
         "options": 8
       },
@@ -2333,7 +2405,8 @@
         "tableId": "03h4468ge977zqezliupy3y6i",
         "name": "job_id",
         "dataType": "uuid",
-        "options": 8
+        "options": 8,
+        "comment": "결과를 만든 analysis_job.id. INHERITED면 원래 작업. 결과가 있는 동안 이 작업 행은 지우지 않음 (ADR-0024 #6-3)"
       },
       "03h4468ge977zqezlj17dmzyt": {
         "id": "03h4468ge977zqezlj17dmzyt",
@@ -2346,7 +2419,7 @@
         "id": "03h4468ge977zqezlj3tu2is6",
         "tableId": "03h4468ge977zqezliupy3y6i",
         "name": "source",
-        "comment": "DIRECT / REUSED",
+        "comment": "DIRECT / REUSED / INHERITED. INHERITED = 대표 삭제 뒤 새 대표가 이어받은 결과이며 job_id는 원래 작업 (ADR-0024 #6-3)",
         "dataType": "text",
         "options": 8
       },
@@ -2354,7 +2427,7 @@
         "id": "03h4468ge977zqezlj5lo67so",
         "tableId": "03h4468ge977zqezliupy3y6i",
         "name": "source_photo_id",
-        "comment": "REUSED일 때 대표 사진. photo.id, 모듈 간 ID 참조",
+        "comment": "REUSED일 때 현재 대표 사진. 대표가 바뀌면 새 대표로 갱신. photo.id, 모듈 간 ID 참조",
         "dataType": "uuid",
         "options": 0
       },
@@ -2590,7 +2663,7 @@
         "id": "03h4468ge977zqezllhz3gj2n",
         "tableId": "03h4468ge977zqezll4ciftac",
         "name": "payload",
-        "comment": "실행 데이터. 장소 후보(FR-X-03) 포함",
+        "comment": "실행 데이터. MAP은 장소 문구·주소만 담고 외부 장소 API 결과는 저장하지 않음. 단말이 사용자가 고른 지도 앱을 이 검색어로 엶 (FR-X-03, ADR-0024 #13-3)",
         "dataType": "jsonb",
         "options": 0
       },
@@ -3019,7 +3092,7 @@
         "id": "03h4468ge977zqezlp1jlobe9",
         "tableId": "03h4468ge977zqezlosz9hyo7",
         "name": "fire_at",
-        "comment": "서버 발송 시각. EVENT_PLACE는 NULL",
+        "comment": "서버 발송 시각. EVENT_PLACE는 NULL. ORGANIZE는 그 기기의 마지막 정리·이용 시점 기준",
         "dataType": "timestamptz",
         "options": 0
       },
@@ -3027,7 +3100,7 @@
         "id": "03h4468ge977zqezlp2rijoeg",
         "tableId": "03h4468ge977zqezlosz9hyo7",
         "name": "geofence",
-        "comment": "EVENT_PLACE만. 반경 P09",
+        "comment": "EVENT_PLACE만. 반경(P09)과 event 좌표 사본. event 좌표를 갱신하거나 지우면 함께 바꿈",
         "dataType": "jsonb",
         "options": 0
       },
@@ -3035,7 +3108,7 @@
         "id": "03h4468ge977zqezlp463t1is",
         "tableId": "03h4468ge977zqezlosz9hyo7",
         "name": "notification_version",
-        "comment": "EVENT_*: event.notification_version, ORGANIZE: 독려 단계(P09), PERMISSION_*: 요청 회차",
+        "comment": "EVENT_*: event.notification_version, ORGANIZE: 그 기기의 독려 단계(P09), PERMISSION_*: 요청 회차",
         "dataType": "int",
         "options": 8
       },
@@ -3043,7 +3116,7 @@
         "id": "03h4468ge977zqezlp6g8jvje",
         "tableId": "03h4468ge977zqezlosz9hyo7",
         "name": "status",
-        "comment": "PLANNED / SENDING / SENT / CANCELLED / EXPIRED / FAILED. ix_notification_schedule_due는 WHERE status = PLANNED",
+        "comment": "PLANNED / DISPATCHED / CANCELLED / EXPIRED. DISPATCHED = 기기별 발송 행을 만든 상태이며 발송·재시도는 notification_delivery가 맡음. ix_notification_schedule_due는 WHERE status = PLANNED",
         "dataType": "text",
         "options": 8
       },
@@ -3066,7 +3139,7 @@
         "id": "03h45zpihltkk2192552wbzrz",
         "tableId": "03h4468ge977zqezlosz9hyo7",
         "name": "device_id",
-        "comment": "PERMISSION_*만. device.id, 모듈 간 ID 참조",
+        "comment": "PERMISSION_*·ORGANIZE만 (기기별 예약, ADR-0024 #12-1). device.id, 모듈 간 ID 참조",
         "dataType": "uuid",
         "options": 0
       },
@@ -3076,36 +3149,6 @@
         "name": "expires_at",
         "comment": "FCM 메시지 유효 기간의 끝. EVENT_TIME은 이벤트 시작 시각",
         "dataType": "timestamptz",
-        "options": 0
-      },
-      "03h45zpihr6blrfhig9twata9": {
-        "id": "03h45zpihr6blrfhig9twata9",
-        "tableId": "03h4468ge977zqezlosz9hyo7",
-        "name": "attempt_count",
-        "dataType": "int",
-        "options": 8
-      },
-      "03h45zpihr6blrfhige6p5628": {
-        "id": "03h45zpihr6blrfhige6p5628",
-        "tableId": "03h4468ge977zqezlosz9hyo7",
-        "name": "locked_until",
-        "comment": "SENDING 점유가 풀리는 시각. FCM 호출은 DB 트랜잭션 밖에서 함",
-        "dataType": "timestamptz",
-        "options": 0
-      },
-      "03h45zpihr6blrfhightjwimg": {
-        "id": "03h45zpihr6blrfhightjwimg",
-        "tableId": "03h4468ge977zqezlosz9hyo7",
-        "name": "sent_at",
-        "dataType": "timestamptz",
-        "options": 0
-      },
-      "03h45zpihr6blrfhiglu46ce5": {
-        "id": "03h45zpihr6blrfhiglu46ce5",
-        "tableId": "03h4468ge977zqezlosz9hyo7",
-        "name": "last_error_code",
-        "comment": "UNREGISTERED이면 notification_device.push_token을 지움",
-        "dataType": "text",
         "options": 0
       },
       "03h45zpihr6blrfhigopttvrq": {
@@ -3207,7 +3250,7 @@
         "id": "03h4468ge977zqezlql50ym1j",
         "tableId": "03h4468ge977zqezlqcrd27lf",
         "name": "subject_type",
-        "comment": "ANALYSIS_JOB / PHOTO_ACTION / TRANSLATION",
+        "comment": "ANALYSIS_JOB / PHOTO_ACTION / TRANSLATION / EVENT (장소 조회, ADR-0024 #13-5). 저장 없는 실시간 장소 조회는 기록하지 않음",
         "dataType": "text",
         "options": 8
       },
@@ -3463,7 +3506,7 @@
         "id": "03h45zxe8xapjz6nhwpqrb01p",
         "tableId": "03h45zxe8rur98csoh0m99lbi",
         "name": "organize_remaining_count",
-        "comment": "단말이 보고한 남은 정리 대상 수 (FR-N-03)",
+        "comment": "단말이 보고한 이 기기의 남은 정리 대상 수. 정리 독려는 기기마다 이 값으로 판단 (FR-N-03, ADR-0024 #12-1)",
         "dataType": "int",
         "options": 0
       },
@@ -3638,7 +3681,7 @@
         "name": "photo_version",
         "dataType": "text",
         "options": 8,
-        "comment": "예약 대상 사진 버전. 같은 사진 버전은 다시 차감하지 않음 (ADR-0021 #3)"
+        "comment": "예약 당시 사진 버전 (기록용). 중복 차감 판단은 사진 단위 (ADR-0021 #3, ADR-0024 #4-1)"
       },
       "03hsfso8pnhizeytjdlvm91xu": {
         "id": "03hsfso8pnhizeytjdlvm91xu",
@@ -3706,7 +3749,7 @@
         "name": "request_id",
         "dataType": "uuid",
         "options": 8,
-        "comment": "analysis_request.id"
+        "comment": "analysis_request.id. NOT NULL (서버 배치도 접수 행에 귀속, ADR-0024 #4-2)"
       },
       "03hk7a4hty35b1cuhqurqmvpq": {
         "id": "03hk7a4hty35b1cuhqurqmvpq",
@@ -3789,6 +3832,241 @@
         "dataType": "timestamptz",
         "options": 0,
         "comment": "교체 시각. 이후 유예 시간 (설정값, 기본 30초) 안의 재사용은 family를 폐기하지 않음 (ADR-0023 #13)"
+      },
+      "03hd1dh643i2d068gexy0eoqj": {
+        "id": "03hd1dh643i2d068gexy0eoqj",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "origin",
+        "dataType": "text",
+        "options": 8,
+        "comment": "CLIENT / SERVER_BATCH. 서버 배치(PRO_BACKLOG)는 실행할 때 주체별로 접수 행을 만듦 (ADR-0024 #4-2)"
+      },
+      "03hyh5ud70c8jcij43hkp2g37": {
+        "id": "03hyh5ud70c8jcij43hkp2g37",
+        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
+        "name": "photo_id",
+        "dataType": "uuid",
+        "options": 2,
+        "comment": "photo.id, 모듈 간 ID 참조"
+      },
+      "03hbekkthepotmhxv372qmdhs": {
+        "id": "03hbekkthepotmhxv372qmdhs",
+        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
+        "name": "model_id",
+        "dataType": "text",
+        "options": 2,
+        "comment": "단말 벡터 모델 ID"
+      },
+      "03hb5rb2z2ap9bdz7xxrl88hj": {
+        "id": "03hb5rb2z2ap9bdz7xxrl88hj",
+        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
+        "name": "model_version",
+        "dataType": "text",
+        "options": 2
+      },
+      "03hl0jogeer0auxb3twgejymv": {
+        "id": "03hl0jogeer0auxb3twgejymv",
+        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03hxjdkn2oky21mddaasxt3vy": {
+        "id": "03hxjdkn2oky21mddaasxt3vy",
+        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
+        "name": "photo_version",
+        "dataType": "text",
+        "options": 8,
+        "comment": "벡터를 계산한 사진 버전. 사진이 수정돼도 다시 계산하지 않음 (ADR-0024 #6-1)"
+      },
+      "03h7tsgz0fwv1165aetyfeyaf": {
+        "id": "03h7tsgz0fwv1165aetyfeyaf",
+        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
+        "name": "vector",
+        "dataType": "bytea",
+        "options": 8,
+        "comment": "저장 형식(pgvector / bytea)·양자화는 단계 5에서 결정"
+      },
+      "03hwfc20jtrcr4a5nv8hdaqeb": {
+        "id": "03hwfc20jtrcr4a5nv8hdaqeb",
+        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03hjnn5tebz2bc1oabfslw5bm": {
+        "id": "03hjnn5tebz2bc1oabfslw5bm",
+        "tableId": "03h0grztwslns5gtmr59vipg3",
+        "name": "principal_id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h29c8t8j5ebbkpiog5w9gz0": {
+        "id": "03h29c8t8j5ebbkpiog5w9gz0",
+        "tableId": "03h0grztwslns5gtmr59vipg3",
+        "name": "window_kind",
+        "dataType": "text",
+        "options": 2,
+        "comment": "SHORT / DAILY"
+      },
+      "03hnq9tkza2r2eyy4c25r4bpk": {
+        "id": "03hnq9tkza2r2eyy4c25r4bpk",
+        "tableId": "03h0grztwslns5gtmr59vipg3",
+        "name": "window_start",
+        "dataType": "timestamptz",
+        "options": 2
+      },
+      "03h10enuw5jdoa1932on0zbcl": {
+        "id": "03h10enuw5jdoa1932on0zbcl",
+        "tableId": "03h0grztwslns5gtmr59vipg3",
+        "name": "call_count",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h2glmiy3ibdam8vek2erhwv": {
+        "id": "03h2glmiy3ibdam8vek2erhwv",
+        "tableId": "03h0grztwslns5gtmr59vipg3",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h8jdato5y6ok94pelthc4e3": {
+        "id": "03h8jdato5y6ok94pelthc4e3",
+        "tableId": "03h4468ge3qzlp0kxk9r388k6",
+        "name": "guided_at",
+        "dataType": "timestamptz",
+        "options": 0,
+        "comment": "TRIAL만. 3회 클릭 구독 안내를 한 시각. 안내는 1회만. 새 계정으로 로그인하면 게스트 값을 이어받음 (ADR-0024 #7)"
+      },
+      "03hqi9w4tfvaeep2p89rbfy4p": {
+        "id": "03hqi9w4tfvaeep2p89rbfy4p",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "place_ref",
+        "dataType": "text",
+        "options": 0,
+        "comment": "Google Places place_id. 계속 저장 가능 (ADR-0024 #13-5)"
+      },
+      "03hzy67cy23e1kaqqlewwyymh": {
+        "id": "03hzy67cy23e1kaqqlewwyymh",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "place_lat",
+        "dataType": "double precision",
+        "options": 0,
+        "comment": "Google 좌표. place_coord_expires_at까지만 보관"
+      },
+      "03h4l4okluyftul2zes2ua82i": {
+        "id": "03h4l4okluyftul2zes2ua82i",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "place_lng",
+        "dataType": "double precision",
+        "options": 0,
+        "comment": "Google 좌표. place_coord_expires_at까지만 보관"
+      },
+      "03hc3v6x6j7cqxiyz8y4eqbtd": {
+        "id": "03hc3v6x6j7cqxiyz8y4eqbtd",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "place_coord_expires_at",
+        "dataType": "timestamptz",
+        "options": 0,
+        "comment": "좌표 보관 기한 (조회 후 30일 이내). 장소 알림 예약이 있는 ACTIVE 이벤트만 기한 전에 place_ref로 다시 조회해 갱신. 그 밖의 이벤트, 갱신 실패, 동의 철회 때는 기한에 좌표를 지움"
+      },
+      "03h6dzd9j8dvqykii8pzv2b6r": {
+        "id": "03h6dzd9j8dvqykii8pzv2b6r",
+        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
+        "name": "schedule_id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03hhdp5mbc8611tugwmhhf0md": {
+        "id": "03hhdp5mbc8611tugwmhhf0md",
+        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
+        "name": "device_id",
+        "dataType": "uuid",
+        "options": 2,
+        "comment": "device.id, 모듈 간 ID 참조"
+      },
+      "03hjl0kqwsa6gjogfvd2x7guo": {
+        "id": "03hjl0kqwsa6gjogfvd2x7guo",
+        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03hlcwvpw0kx35p5chf9p508l": {
+        "id": "03hlcwvpw0kx35p5chf9p508l",
+        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
+        "name": "status",
+        "dataType": "text",
+        "options": 8,
+        "comment": "PENDING / SENDING / SENT / FAILED / CANCELLED. 일시 실패는 PENDING으로 돌려 next_attempt_at에 재시도, FAILED는 최종 실패 (재시도 한도 초과·UNREGISTERED)"
+      },
+      "03huhbyoqhy140dgjkmdetskj": {
+        "id": "03huhbyoqhy140dgjkmdetskj",
+        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
+        "name": "attempt_count",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h7w42dfjddrrqkn7ot3gnuz": {
+        "id": "03h7w42dfjddrrqkn7ot3gnuz",
+        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
+        "name": "sent_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03hvro0lfqlcr6j54gpey45ia": {
+        "id": "03hvro0lfqlcr6j54gpey45ia",
+        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
+        "name": "last_error_code",
+        "dataType": "text",
+        "options": 0,
+        "comment": "UNREGISTERED이면 notification_device.push_token을 지움"
+      },
+      "03hn01f3xveaxrchos860t750": {
+        "id": "03hn01f3xveaxrchos860t750",
+        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03hldxyx9or3iudnsf1ojcqhp": {
+        "id": "03hldxyx9or3iudnsf1ojcqhp",
+        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03hqxoy32pwtxhgcjzgftywze": {
+        "id": "03hqxoy32pwtxhgcjzgftywze",
+        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
+        "name": "next_attempt_at",
+        "dataType": "timestamptz",
+        "options": 8,
+        "comment": "다음 발송 시도 시각"
+      },
+      "03hhbed7dvrmevwr6d2pd4dum": {
+        "id": "03hhbed7dvrmevwr6d2pd4dum",
+        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
+        "name": "locked_until",
+        "dataType": "timestamptz",
+        "options": 0,
+        "comment": "SENDING 점유가 풀리는 시각. FCM 호출은 DB 트랜잭션 밖에서 함"
+      },
+      "03htk12gwad4xlomhwvpmm2sm": {
+        "id": "03htk12gwad4xlomhwvpmm2sm",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "place_status",
+        "dataType": "text",
+        "options": 0,
+        "comment": "NULL(장소 없음) / RESOLVED / AMBIGUOUS / NOT_FOUND. AMBIGUOUS면 단말이 후보를 실시간 조회해 사용자가 고름 (후보는 저장 안 함, ADR-0024 #13-5)"
+      },
+      "03hpvewqdzbsok24k40ubj5fv": {
+        "id": "03hpvewqdzbsok24k40ubj5fv",
+        "tableId": "03h0grztwslns5gtmr59vipg3",
+        "name": "api",
+        "dataType": "text",
+        "options": 2,
+        "comment": "SEARCH_INTERPRET / PLACE_LOOKUP"
       }
     },
     "relationshipEntities": {
@@ -4479,6 +4757,42 @@
             "03huodysqek1979lnd2mmzh5q"
           ]
         }
+      },
+      "03hq8c76ybsua6rz0f848cb3t": {
+        "id": "03hq8c76ybsua6rz0f848cb3t",
+        "relationshipType": 16,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+          "columnIds": [
+            "03h4468ge3qzlp0kxmqyb4oka"
+          ]
+        },
+        "end": {
+          "tableId": "03hjfcwl6ebn9795fj0udpy4t",
+          "columnIds": [
+            "03hyh5ud70c8jcij43hkp2g37"
+          ]
+        }
+      },
+      "03h2x3shbywzf8y96wnq7226m": {
+        "id": "03h2x3shbywzf8y96wnq7226m",
+        "relationshipType": 16,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge977zqezlosz9hyo7",
+          "columnIds": [
+            "03h4468ge977zqezlovyajhgw"
+          ]
+        },
+        "end": {
+          "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
+          "columnIds": [
+            "03h6dzd9j8dvqykii8pzv2b6r"
+          ]
+        }
       }
     },
     "indexEntities": {
@@ -4509,17 +4823,6 @@
         "indexColumnIds": [
           "03h4468geka6y2ntyd7kfjdo6",
           "03h4468geka6y2ntyd9hvrd2s"
-        ],
-        "unique": true
-      },
-      "03h4468geka6y2ntydhfs36mn": {
-        "id": "03h4468geka6y2ntydhfs36mn",
-        "name": "uk_usage_reservation_trial_photo",
-        "tableId": "03h4468ge3qzlp0kxktbzseyu",
-        "indexColumnIds": [
-          "03h4468geka6y2ntydjaoyula",
-          "03h4468geka6y2ntydkywbh98",
-          "03h4468geka6y2ntydmfjvyxb"
         ],
         "unique": true
       },
@@ -4613,17 +4916,6 @@
           "03h4468geka6y2ntyf70vsfl1"
         ],
         "unique": false
-      },
-      "03h4468geka6y2ntyf8ek1epd": {
-        "id": "03h4468geka6y2ntyf8ek1epd",
-        "name": "uk_analysis_job_photo_version",
-        "tableId": "03h4468ge977zqezlhqerbvdc",
-        "indexColumnIds": [
-          "03h4468geka6y2ntyf9q48hhu",
-          "03h4468geka6y2ntyfbli9rqj",
-          "03h4468geka6y2ntyfdmsnvbh"
-        ],
-        "unique": true
       },
       "03h4468geka6y2ntyffx02fed": {
         "id": "03h4468geka6y2ntyffx02fed",
@@ -4824,17 +5116,6 @@
         ],
         "unique": false
       },
-      "03hedey8y9ymng5yhnsj6twhw": {
-        "id": "03hedey8y9ymng5yhnsj6twhw",
-        "name": "uk_usage_reservation_photo_version",
-        "tableId": "03h4468ge3qzlp0kxktbzseyu",
-        "indexColumnIds": [
-          "03hksp3cs62ky12qj7kn3e346",
-          "03hrglwj8suff4ec970wepgfx",
-          "03hneif4j9e26qrdpo6339bg0"
-        ],
-        "unique": true
-      },
       "03hnq42h7pyx0zzgh0fgz5rs6": {
         "id": "03hnq42h7pyx0zzgh0fgz5rs6",
         "name": "ix_analysis_request_owner_created",
@@ -4861,6 +5142,65 @@
         "tableId": "03h4468ge977zqezlhqerbvdc",
         "indexColumnIds": [
           "03hj59bnrqpg1crqubacf1zxu"
+        ],
+        "unique": false
+      },
+      "03hm0aljsf2p1ioh72tt3of0s": {
+        "id": "03hm0aljsf2p1ioh72tt3of0s",
+        "name": "ix_photo_vector_owner",
+        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
+        "indexColumnIds": [
+          "03hfnshyz68ayy1dac53a5bop"
+        ],
+        "unique": false
+      },
+      "03h4wynmqmu1gnj4k9lelu1br": {
+        "id": "03h4wynmqmu1gnj4k9lelu1br",
+        "name": "uk_trial_click_target",
+        "tableId": "03h4468ge3qzlp0kxlcf5ld1e",
+        "indexColumnIds": [
+          "03hcdyjjr6skwknbsvpey1xhu",
+          "03hbavb921a83pwttleo1f9rz",
+          "03hre4kwv9b1ed0bmgtyltl8n"
+        ],
+        "unique": true
+      },
+      "03hq8751kxx725f793dglfpkz": {
+        "id": "03hq8751kxx725f793dglfpkz",
+        "name": "uk_analysis_job_photo_active",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "indexColumnIds": [
+          "03huukffyjfhhdfo1it76fa3j",
+          "03hshfxoqr1ekkz4hnzpvvjxe"
+        ],
+        "unique": true
+      },
+      "03h6jvzg07bv5pctizzfeydig": {
+        "id": "03h6jvzg07bv5pctizzfeydig",
+        "name": "uk_usage_reservation_photo",
+        "tableId": "03h4468ge3qzlp0kxktbzseyu",
+        "indexColumnIds": [
+          "03hid9awj3zjq2kn52i1fslmp",
+          "03h1btdua3ijuz4c773csbysq"
+        ],
+        "unique": true
+      },
+      "03hlnnu5iae7wujmbxaeadqae": {
+        "id": "03hlnnu5iae7wujmbxaeadqae",
+        "name": "ix_notification_delivery_due",
+        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
+        "indexColumnIds": [
+          "03hcr4atwfmzmik0ed9vodf1o",
+          "03hjdgjmc6viae9eyfsyntnpo"
+        ],
+        "unique": false
+      },
+      "03h8ubyxj764q6dplogninvz7": {
+        "id": "03h8ubyxj764q6dplogninvz7",
+        "name": "ix_event_place_refresh",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "indexColumnIds": [
+          "03h3us3xxggcc0kv2rxd8kp1y"
         ],
         "unique": false
       }
@@ -4900,24 +5240,6 @@
         "id": "03h4468geka6y2ntyd9hvrd2s",
         "indexId": "03h4468geka6y2ntyd5n0ag08",
         "columnId": "03h4468ge3qzlp0kxi99xyiv3",
-        "orderType": 1
-      },
-      "03h4468geka6y2ntydjaoyula": {
-        "id": "03h4468geka6y2ntydjaoyula",
-        "indexId": "03h4468geka6y2ntydhfs36mn",
-        "columnId": "03h4468ge3qzlp0kxkw3vc1jr",
-        "orderType": 1
-      },
-      "03h4468geka6y2ntydkywbh98": {
-        "id": "03h4468geka6y2ntydkywbh98",
-        "indexId": "03h4468geka6y2ntydhfs36mn",
-        "columnId": "03h4468ge3qzlp0kxkye45tss",
-        "orderType": 1
-      },
-      "03h4468geka6y2ntydmfjvyxb": {
-        "id": "03h4468geka6y2ntydmfjvyxb",
-        "indexId": "03h4468geka6y2ntydhfs36mn",
-        "columnId": "03h4468ge3qzlp0kxl231a1t9",
         "orderType": 1
       },
       "03h4468geka6y2ntydrb9q1er": {
@@ -5032,24 +5354,6 @@
         "id": "03h4468geka6y2ntyf70vsfl1",
         "indexId": "03h4468geka6y2ntyf2g32t0c",
         "columnId": "03h4468ge3qzlp0kxp79fdsl5",
-        "orderType": 1
-      },
-      "03h4468geka6y2ntyf9q48hhu": {
-        "id": "03h4468geka6y2ntyf9q48hhu",
-        "indexId": "03h4468geka6y2ntyf8ek1epd",
-        "columnId": "03h4468ge977zqezlhu49kpu8",
-        "orderType": 1
-      },
-      "03h4468geka6y2ntyfbli9rqj": {
-        "id": "03h4468geka6y2ntyfbli9rqj",
-        "indexId": "03h4468geka6y2ntyf8ek1epd",
-        "columnId": "03h4468ge977zqezlhvteit1r",
-        "orderType": 1
-      },
-      "03h4468geka6y2ntyfdmsnvbh": {
-        "id": "03h4468geka6y2ntyfdmsnvbh",
-        "indexId": "03h4468geka6y2ntyf8ek1epd",
-        "columnId": "03h4468ge977zqezlhyfww2ig",
         "orderType": 1
       },
       "03h4468geka6y2ntyfj59uxjy": {
@@ -5334,24 +5638,6 @@
         "columnId": "03h59fjnemh81jnvofj01265f",
         "orderType": 1
       },
-      "03hksp3cs62ky12qj7kn3e346": {
-        "id": "03hksp3cs62ky12qj7kn3e346",
-        "indexId": "03hedey8y9ymng5yhnsj6twhw",
-        "columnId": "03h4468ge3qzlp0kxkw3vc1jr",
-        "orderType": 1
-      },
-      "03hrglwj8suff4ec970wepgfx": {
-        "id": "03hrglwj8suff4ec970wepgfx",
-        "indexId": "03hedey8y9ymng5yhnsj6twhw",
-        "columnId": "03h4468ge3qzlp0kxl231a1t9",
-        "orderType": 1
-      },
-      "03hneif4j9e26qrdpo6339bg0": {
-        "id": "03hneif4j9e26qrdpo6339bg0",
-        "indexId": "03hedey8y9ymng5yhnsj6twhw",
-        "columnId": "03hddvcejvp3kno6m1n9neihx",
-        "orderType": 1
-      },
       "03hva62ow4vlm2gtcpi12r2o5": {
         "id": "03hva62ow4vlm2gtcpi12r2o5",
         "indexId": "03hnq42h7pyx0zzgh0fgz5rs6",
@@ -5381,12 +5667,78 @@
         "indexId": "03hhqhiojqago3zp0mp9fe1ud",
         "columnId": "03huodysqek1979lnd2mmzh5q",
         "orderType": 1
+      },
+      "03hfnshyz68ayy1dac53a5bop": {
+        "id": "03hfnshyz68ayy1dac53a5bop",
+        "indexId": "03hm0aljsf2p1ioh72tt3of0s",
+        "columnId": "03hl0jogeer0auxb3twgejymv",
+        "orderType": 1
+      },
+      "03hcdyjjr6skwknbsvpey1xhu": {
+        "id": "03hcdyjjr6skwknbsvpey1xhu",
+        "indexId": "03h4wynmqmu1gnj4k9lelu1br",
+        "columnId": "03h4468ge3qzlp0kxldxmq81d",
+        "orderType": 1
+      },
+      "03hbavb921a83pwttleo1f9rz": {
+        "id": "03hbavb921a83pwttleo1f9rz",
+        "indexId": "03h4wynmqmu1gnj4k9lelu1br",
+        "columnId": "03h4468ge3qzlp0kxli2dy4fu",
+        "orderType": 1
+      },
+      "03hre4kwv9b1ed0bmgtyltl8n": {
+        "id": "03hre4kwv9b1ed0bmgtyltl8n",
+        "indexId": "03h4wynmqmu1gnj4k9lelu1br",
+        "columnId": "03h4468ge3qzlp0kxljsgwhi1",
+        "orderType": 1
+      },
+      "03huukffyjfhhdfo1it76fa3j": {
+        "id": "03huukffyjfhhdfo1it76fa3j",
+        "indexId": "03hq8751kxx725f793dglfpkz",
+        "columnId": "03h4468ge977zqezlhu49kpu8",
+        "orderType": 1
+      },
+      "03hshfxoqr1ekkz4hnzpvvjxe": {
+        "id": "03hshfxoqr1ekkz4hnzpvvjxe",
+        "indexId": "03hq8751kxx725f793dglfpkz",
+        "columnId": "03h4468ge977zqezlhvteit1r",
+        "orderType": 1
+      },
+      "03hid9awj3zjq2kn52i1fslmp": {
+        "id": "03hid9awj3zjq2kn52i1fslmp",
+        "indexId": "03h6jvzg07bv5pctizzfeydig",
+        "columnId": "03h4468ge3qzlp0kxkw3vc1jr",
+        "orderType": 1
+      },
+      "03h1btdua3ijuz4c773csbysq": {
+        "id": "03h1btdua3ijuz4c773csbysq",
+        "indexId": "03h6jvzg07bv5pctizzfeydig",
+        "columnId": "03h4468ge3qzlp0kxl231a1t9",
+        "orderType": 1
+      },
+      "03hcr4atwfmzmik0ed9vodf1o": {
+        "id": "03hcr4atwfmzmik0ed9vodf1o",
+        "indexId": "03hlnnu5iae7wujmbxaeadqae",
+        "columnId": "03hlcwvpw0kx35p5chf9p508l",
+        "orderType": 1
+      },
+      "03hjdgjmc6viae9eyfsyntnpo": {
+        "id": "03hjdgjmc6viae9eyfsyntnpo",
+        "indexId": "03hlnnu5iae7wujmbxaeadqae",
+        "columnId": "03hqxoy32pwtxhgcjzgftywze",
+        "orderType": 1
+      },
+      "03h3us3xxggcc0kv2rxd8kp1y": {
+        "id": "03h3us3xxggcc0kv2rxd8kp1y",
+        "indexId": "03h8ubyxj764q6dplogninvz7",
+        "columnId": "03hc3v6x6j7cqxiyz8y4eqbtd",
+        "orderType": 1
       }
     },
     "memoEntities": {
       "03h446hedsmnrwp09ht0scm16": {
         "id": "03h446hedsmnrwp09ht0scm16",
-        "value": "[설계 판단] 스키마 전체에 적용 (확정, ADR-0022)\n\n1. 소유 주체: principal 하나로 계정(ACCOUNT)과 비로그인 설치(ANONYMOUS)를 표현합니다. 모든 소유 테이블의 owner_id는 principal.id를 가리키며, 선이 너무 많아지므로 다이어그램에서는 owner_id 관계를 생략했습니다.\n\n2. 단말 생성 ID: photo·tag·event는 서버 PK(id)와 단말 식별자(client_ref)를 분리하고 UNIQUE(owner_id, client_ref)를 겁니다. 게스트 데이터를 계정에 귀속하거나 한 기기에서 계정을 바꿔도 충돌하지 않고, 재전송은 같은 행으로 모입니다. API의 photoId는 photo.client_ref이고, 다른 테이블의 photo_id 열은 서버 PK인 photo.id를 가리킵니다. 기기 간 같은 사진은 iCloud 동기화 사진(photo.cloud_ref)만 인정합니다(ADR-0022).\n\n3. 모듈 간 참조: 그룹 경계를 넘는 선은 논리 관계입니다. Flyway DDL에서는 같은 모듈 안에만 FK를 걸고, 모듈 간에는 ID만 저장합니다. 컬럼 코멘트에 '모듈 간 ID 참조'로 표시했습니다.\n\n4. change_seq: owner_change_counter 행을 같은 트랜잭션에서 갱신해 발급합니다. DB 시퀀스는 커밋 순서와 번호 순서가 달라 Pull이 변경을 놓칠 수 있습니다(설계 세션안 정정).\n\n5. 삭제: 동기화 root는 deleted_at tombstone, 이벤트 사진 제외는 EXCLUDED 상태로 남깁니다.\n\n6. 분석 결과: 사진당 현재 1건만 보관하고 이력 테이블은 두지 않습니다.\n\n공통 컬럼: 동기화 대상이거나 상태가 바뀌는 Pik 데이터 행은 created_at, updated_at, version(@Version = 클라이언트 데이터 버전)을 둡니다(요구사항 1171행). 추가·삭제만 하는 관계 행(photo_tag, photo_group_member), 추가만 하는 기록(ai_consent, trial_click, web_link_candidate, provider_identity_mark), 인증·결제·인프라 테이블은 예외이며 필요한 시각 컬럼만 둡니다.\n\n인덱스: 소유 범위로 조회하는 인덱스는 owner_id(또는 principal_id)를 선두에 둡니다. 배치 폴링용 부분 인덱스와, 외부 식별자나 상위 행으로 찾는 인덱스는 예외입니다. 부분 인덱스(WHERE ...)는 테이블 코멘트에 적었습니다.",
+        "value": "[설계 판단] 스키마 전체에 적용 (확정, ADR-0022)\n\n1. 소유 주체: principal 하나로 계정(ACCOUNT)과 비로그인 설치(ANONYMOUS)를 표현합니다. 모든 소유 테이블의 owner_id는 principal.id를 가리키며, 선이 너무 많아지므로 다이어그램에서는 owner_id 관계를 생략했습니다.\n\n2. 단말 생성 ID: photo·tag·event는 서버 PK(id)와 단말 식별자(client_ref)를 분리하고 UNIQUE(owner_id, client_ref)를 겁니다. 게스트 데이터를 계정에 귀속하거나 한 기기에서 계정을 바꿔도 충돌하지 않고, 재전송은 같은 행으로 모입니다. API의 photoId는 photo.client_ref이고, 다른 테이블의 photo_id 열은 서버 PK인 photo.id를 가리킵니다. 기기 간 같은 사진은 iCloud 동기화 사진(photo.cloud_ref)만 인정합니다(ADR-0022).\n\n3. 모듈 간 참조: 그룹 경계를 넘는 선은 논리 관계입니다. Flyway DDL에서는 같은 모듈 안에만 FK를 걸고, 모듈 간에는 ID만 저장합니다. 컬럼 코멘트에 '모듈 간 ID 참조'로 표시했습니다.\n\n4. change_seq: owner_change_counter 행을 같은 트랜잭션에서 갱신해 발급합니다. DB 시퀀스는 커밋 순서와 번호 순서가 달라 Pull이 변경을 놓칠 수 있습니다(설계 세션안 정정).\n\n5. 삭제: 동기화 root는 deleted_at tombstone, 이벤트 사진 제외는 EXCLUDED 상태로 남깁니다.\n\n6. 분석 결과: 사진당 현재 1건만 보관하고 이력 테이블은 두지 않습니다.\n\n공통 컬럼: 동기화 대상이거나 상태가 바뀌는 Pik 데이터 행은 created_at, updated_at, version(@Version = 클라이언트 데이터 버전)을 둡니다(요구사항 1171행). 추가·삭제만 하는 관계 행(photo_tag, photo_group_member), 추가만 하는 기록(ai_consent, trial_click, web_link_candidate, provider_identity_mark, photo_vector), 인증·결제·발송·인프라 테이블(notification_delivery, api_rate_counter 포함)은 예외이며 필요한 시각 컬럼만 둡니다.\n\n인덱스: 소유 범위로 조회하는 인덱스는 owner_id(또는 principal_id)를 선두에 둡니다. 배치 폴링용 부분 인덱스와, 외부 식별자나 상위 행으로 찾는 인덱스는 예외입니다. 부분 인덱스(WHERE ...)는 테이블 코멘트에 적었습니다.",
         "ui": {
           "x": 3750,
           "y": 50,
@@ -5397,23 +5749,23 @@
       },
       "03h446hedsmnrwp09hy0cj3i8": {
         "id": "03h446hedsmnrwp09hy0cj3i8",
-        "value": "[미결 결정에 따라 바뀌는 테이블]\n\n확정: RevenueCat 구독 연동 (ADR-0018) → subscription_entitlement, revenuecat_event. 플랫폼 거래 테이블은 두지 않음\n확정: Haiku 5.5로 시작 (ADR-0016) → analysis_job.model_id, analysis_result.model_id (설정값)\n확정: 검색은 서버가 해석만 하고 단말이 실행 (ADR-0017, D-02 해소) → 서버 검색 색인 없음. Jev 결과는 메모리 캐시에만 두고 DB에 저장하지 않음\n확정: 로그인 계정의 알림은 서버가 FCM으로 발송, silent push 없음 (ADR-0019) → notification_schedule, notification_device\n- 리마인드(FR-N-01)와 비로그인 사용자의 알림은 단말 로컬 예약이라 서버 테이블 없음\n확정: 계정·비로그인 주체 정책 (ADR-0020) → device_trial_mark, provider_identity_mark\n- 사용자 결정 (2026-10-26): 제공자 ID 해시는 가입할 때 저장, 탈퇴 후 revenuecat_event에 type도 남김. ADR-0020에 반영\n확정: 스키마 공통 판단·분석 접수 단위·기기 간 사진 식별 범위 (ADR-0022) → analysis_request, photo.cloud_ref, photo_device_link 기기별 상태\n확정: 데이터 모델 기반 (ADR-0021) → ai_consent.purpose, photo.original_deleted_at, usage_reservation.photo_version, 동의 철회 시 작업 취소·응답 폐기\n\n남은 판단\n- D-17: 검색 해석 호출 제한(비로그인 포함)을 어디에서 집계할지. 인스턴스 메모리에 두면 서버 대수만큼 나뉘어 집계됨\n- D-18: 여러 기기 중 발송 대상 규칙(P09)에 따라 기기별 발송 기록 테이블이 필요할 수 있음\n- D-19: 이미 작업이 있는 사진 버전의 재접수, 서버 배치가 만드는 작업의 접수 귀속 → analysis_job.request_id NOT NULL 여부\n- D-20: 두 번째 기기가 만든 photoId를 같은 cloud_ref의 서버 photoId로 바꾸는 절차, 재설치 때 이전 설치의 photo_device_link 이관\n- 유사도 벡터 서버 보관 범위 (ADR-0021, P05·P08)\n- D-14: 장소 알림의 서버 확인 조건(location_permission = ALWAYS), silent push 미도입은 제안 단계\n\nD-01 미정 정책\n- P01·P03: usage_quota.limit_count는 설정값에서 기록, device_trial_mark 집계 기준은 P01\n- P05: photo_group.rule_version\n- P07: PHCloudIdentifier 신뢰성, 같은 기기 재설치 때 이전 연결을 찾는 방법 (FR-A-04 기술 검증)\n- P08: 비로그인 데이터 보관 기한, 보관 기간 값(탈퇴 최소 기록, device_trial_mark·provider_identity_mark, 해결된 revenuecat_event.payload, 발송을 끝낸 notification_schedule)\n- P09: notification_schedule의 선행 시간·독려 단계, geofence 반경\n- P10: tag.normalized_name 규칙, 메모 길이\n- P11: '원본 없음' 보관 기간 값, 이벤트의 모든 사진을 제외했을 때 상태",
+        "value": "[미결 결정에 따라 바뀌는 테이블]\n\n확정: RevenueCat 구독 연동 (ADR-0018) → subscription_entitlement, revenuecat_event. 플랫폼 거래 테이블은 두지 않음\n확정: Haiku 5.5로 시작 (ADR-0016) → analysis_job.model_id, analysis_result.model_id (설정값)\n확정: 검색은 서버가 해석만 하고 단말이 실행 (ADR-0017, D-02 해소) → 서버 검색 색인 없음. Jev 결과는 메모리 캐시에만 두고 DB에 저장하지 않음\n확정: 로그인 계정의 알림은 서버가 FCM으로 발송, silent push 없음 (ADR-0019) → notification_schedule, notification_device\n- 리마인드(FR-N-01)와 비로그인 사용자의 알림은 단말 로컬 예약이라 서버 테이블 없음\n확정: 계정·비로그인 주체 정책 (ADR-0020) → device_trial_mark, provider_identity_mark\n- 사용자 결정 (2026-10-26): 제공자 ID 해시는 가입할 때 저장, 탈퇴 후 revenuecat_event에 type도 남김. ADR-0020에 반영\n확정: 스키마 공통 판단·분석 접수 단위·기기 간 사진 식별 범위 (ADR-0022) → analysis_request, photo.cloud_ref, photo_device_link 기기별 상태\n확정: 데이터 모델 기반 (ADR-0021) → ai_consent.purpose, photo.original_deleted_at, usage_reservation.photo_version, 동의 철회 시 작업 취소·응답 폐기\n확정: 구현 전 미결 결정 (ADR-0024) → action 모듈, analysis_request.origin, analysis_job 부분 유니크, photo_vector, trial_click 대상별 유니크·usage_quota.guided_at, notification_delivery, event 장소 좌표(Google, 30일)·장소 해석 상태, api_rate_counter, organize_state.source_album_ref 의미\n\n남은 판단\n- D-20: 두 번째 기기가 만든 photoId를 같은 cloud_ref의 서버 photoId로 바꾸는 절차, 재설치 때 이전 설치의 photo_device_link와 organize_state DEVICE 키 이관\n- D-14: 검색 구현 세부(Jev 질문 방식, 상대 날짜 토큰, 캐시 단위)는 D-08 이후\n- photo_vector 저장 형식(pgvector / bytea)·양자화는 단계 5\n- event 자동 숨김과 사용자 숨김을 구분하는 열(hidden_reason) 여부는 단계 9\n\nD-01 미정 정책\n- P01·P03: usage_quota.limit_count는 설정값에서 기록 (P01 체험 반환·교체 없음, 3회 클릭 집계는 ADR-0024)\n- P05: photo_group.rule_version, 묶음 임계값·대표 선정·재편성 기준 (벡터 보관·수정 사진·대표 삭제는 ADR-0024)\n- P07: PHCloudIdentifier 신뢰성, 같은 기기 재설치 때 이전 연결을 찾는 방법 (FR-A-04 기술 검증)\n- P08: 비로그인 데이터 보관 기한, 보관 기간 값(탈퇴 최소 기록, device_trial_mark·provider_identity_mark, 해결된 revenuecat_event.payload, 발송을 끝낸 notification_schedule·notification_delivery, 지난 api_rate_counter 창)\n- P09: notification_schedule의 선행 시간·독려 단계, geofence 반경 (발송 대상 = 이벤트는 모든 기기, 정리 독려는 대상이 남은 기기, ADR-0024)\n- P10: tag.normalized_name 규칙, 메모 길이\n- P11: '원본 없음' 보관 기간 값 (이벤트의 사진이 모두 빠지면 숨김, ADR-0024)",
         "ui": {
           "x": 3750,
           "y": 760,
           "width": 760,
-          "height": 760,
+          "height": 900,
           "color": "#C27A2C"
         }
       },
       "03h446hedsmnrwp09i1jpzkbj": {
         "id": "03h446hedsmnrwp09i1jpzkbj",
-        "value": "[SSOT 대조 보고 사항] SSOT는 수정하지 않았습니다. 1~3은 D-16\n\n1. 액션 aggregate가 요구사항 '# 데이터 경계와 후속 처리'의 저장 단위 표와 도메인 후보에 없습니다. FR-G-02가 액션 생성을 이벤트 생성과 독립적으로 처리하라고 하므로 별도 모듈을 추천합니다.\n\n2. 비로그인 사용자의 이벤트 자동 생성 위치가 불분명합니다. FR-E-01은 로그인이 필요 없다고 하고 FR-G-03은 기존 이벤트를 입력으로 받는데, 비로그인 사용자의 기존 이벤트는 단말에만 있습니다. 단말 생성을 추천합니다.\n\n3. 정리 상태: FR-C는 단말 전용인데 FR-A-02·04는 정리 상태의 서버 동기화·복원을 요구합니다. 원본 앨범 ID는 기기마다 달라서 source_album_ref의 의미는 P06·P07이 정해야 확정됩니다. ADR-0020도 정리 세션 복원 범위를 미정으로 남겼습니다.\n\n4. 리마인드(해소): 데이터 경계 표에는 리마인드 단위가 있지만 FR-N-01은 단말 전용이고, ADR-0019도 단말 로컬 예약으로 정했습니다. 서버 테이블은 두지 않습니다.\n\n5. 체험 한도(해소, ADR-0021 #8): 기기 단위(device_trial_mark)와 계정 단위(usage_quota)에 모두 기록하고, 하나라도 소진하면 체험을 주지 않습니다. 같은 설치의 비로그인·계정 device 행이 같은 device_trial_mark를 가리켜 기기 단위 이용량을 이어 갑니다.\n\n6. 기기 간 사진 식별 축소(사용자 결정, ADR-0022): 요구사항 140·948행의 다른 기기 ID 매칭과 FR-A-04·A-03의 기기 변경 후 복원을 iCloud 동기화 사진으로 한정했습니다. 영향은 STATUS 위험 항목에 기록했습니다.\n\n[비로그인 principal의 서버 데이터]\nphoto(최소 컬럼), analysis_request, analysis_job, analysis_result, photo_group, photo_group_member, photo_action, usage_*, ai_consent, device만 만듭니다. 메모·태그·정리 상태·이벤트는 단말에만 있습니다. 결과를 내려준 뒤 P08 기한에 따라 지웁니다. 로그인하면 사용자 확인을 받은 뒤 단말이 계정 소유로 업로드합니다. 태그는 합집합으로 합치고, 메모·정리 상태가 서버와 다르면 서버 값을 유지하고 충돌 목록을 반환합니다(ADR-0020, 자동 병합 금지).",
+        "value": "[SSOT 대조 보고 사항] SSOT는 수정하지 않았습니다. 1~3은 해소 (ADR-0024)\n\n1. 액션 aggregate가 요구사항 '# 데이터 경계와 후속 처리'의 저장 단위 표와 도메인 후보에 없습니다. FR-G-02가 액션 생성을 이벤트 생성과 독립적으로 처리하라고 하므로 별도 action 모듈로 확정했습니다 (ADR-0024 #3).\n\n2. 비로그인 사용자의 이벤트 자동 생성 위치가 불분명합니다. FR-E-01은 로그인이 필요 없다고 하고 FR-G-03은 기존 이벤트를 입력으로 받는데, 비로그인 사용자의 기존 이벤트는 단말에만 있습니다. 서버가 단말이 보낸 기존 이벤트 요약으로 판단하고, 저장은 단말이 하는 방식으로 확정했습니다 (ADR-0024 #2).\n\n3. 정리 상태: FR-C는 단말 전용인데 FR-A-02·04는 정리 상태의 서버 동기화·복원을 요구합니다. 원본 앨범 ID는 기기마다 달라서 source_album_ref의 의미는 P06·P07이 정해야 확정됩니다. 정리 상태만 동기화하고, source_album_ref는 전체 보관함 고정값 / iCloud 앨범 식별자 / 기기별 앨범 ID로 확정했습니다 (ADR-0024 #10).\n\n4. 리마인드(해소): 데이터 경계 표에는 리마인드 단위가 있지만 FR-N-01은 단말 전용이고, ADR-0019도 단말 로컬 예약으로 정했습니다. 서버 테이블은 두지 않습니다.\n\n5. 체험 한도(해소, ADR-0021 #8): 기기 단위(device_trial_mark)와 계정 단위(usage_quota)에 모두 기록하고, 하나라도 소진하면 체험을 주지 않습니다. 같은 설치의 비로그인·계정 device 행이 같은 device_trial_mark를 가리켜 기기 단위 이용량을 이어 갑니다.\n\n6. 기기 간 사진 식별 축소(사용자 결정, ADR-0022): 요구사항 140·948행의 다른 기기 ID 매칭과 FR-A-04·A-03의 기기 변경 후 복원을 iCloud 동기화 사진으로 한정했습니다. 영향은 STATUS 위험 항목에 기록했습니다.\n\n7. 호출 제한 오류 코드: SSOT 오류 표에 호출 제한 코드가 없어 RATE_LIMITED(429)를 api-contract.md에 추가했습니다 (ADR-0024 #13-2).\n\n8. 구독 장애 시 권한: FR-B-05 \"확인된 만료에만 제한\"과 FR-B-04 \"일시 장애는 권한을 임의 확대하지 않는다\"가 상충합니다. 확인 전까지 Pro를 유지하는 것을 기존 권한 유지로 해석했습니다 (ADR-0024 #9-3).\n\n9. 지도 장소 후보: FR-X-03의 \"후보를 선택받아 목적지를 전달\"을 지도 앱 검색 결과에서 고르는 것으로 대신합니다 (ADR-0024 #13-3).\n\n[비로그인 principal의 서버 데이터]\nphoto(최소 컬럼), analysis_request, analysis_job, analysis_result, photo_group, photo_group_member, photo_vector, photo_action, web_link_candidate, translation, usage_*, trial_click, ai_consent, api_rate_counter, device만 만듭니다. 메모·태그·정리 상태·이벤트는 단말에만 있습니다. 이벤트 판단은 서버가 요청에 담긴 기존 이벤트 요약으로 하고 저장하지 않습니다 (ADR-0024 #2). 결과를 내려준 뒤 P08 기한에 따라 지웁니다. 로그인하면 사용자 확인을 받은 뒤 단말이 계정 소유로 업로드합니다. 태그는 합집합으로 합치고, 메모·정리 상태가 서버와 다르면 서버 값을 유지하고 충돌 목록을 반환합니다(ADR-0020, 자동 병합 금지).",
         "ui": {
           "x": 3750,
-          "y": 1590,
+          "y": 1730,
           "width": 760,
-          "height": 620,
+          "height": 860,
           "color": "#B5485D"
         }
       }
@@ -5465,11 +5817,11 @@
       },
       "03h4468geka6y2ntyi7i4fmex": {
         "id": "03h4468geka6y2ntyi7i4fmex",
-        "name": "액션 (신설 제안)",
+        "name": "액션",
         "color": "#C27A2C",
         "ui": {
           "x": 50,
-          "y": 5756,
+          "y": 5956,
           "width": 2581,
           "height": 442
         }
@@ -5481,8 +5833,8 @@
         "ui": {
           "x": 50,
           "y": 4740,
-          "width": 3070,
-          "height": 976
+          "width": 4100,
+          "height": 1176
         }
       },
       "03h4468geka6y2ntyiaw7v936": {
