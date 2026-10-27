@@ -20,7 +20,7 @@
 | CONFLICT | 버전 충돌·반영 중·허용 안 되는 상태 전이 | 409 |
 | UNSUPPORTED_OPERATION | 지원하지 않는 동작 | 422 |
 | TEMPORARY_FAILURE | 통신·외부 처리·일시 저장 장애 | 503 |
-| RATE_LIMITED | 호출 제한 초과 (검색 해석 등). `Retry-After` 헤더 포함. **SSOT 오류 표에 없음** (ADR-0024 #13-2) | 429 |
+| RATE_LIMITED | 호출 제한 초과 (검색 해석, 단말 장소 조회). `Retry-After` 헤더 포함, `retryable` = true, 멱등 기록에 저장 안 함. **SSOT 오류 표에 없음** (ADR-0024 #13-2) | 429 |
 
 ## 공통 응답 필드 (요구사항 172행, ADR-0023)
 | 요구사항 | 필드 | 범위 |

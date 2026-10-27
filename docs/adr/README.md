@@ -27,12 +27,12 @@
 | [0013](0013-branch-protection-pr-required.md) | 원격 브랜치 보호: PR·CI 필수 | 채택 | 2026-10-25 |
 | [0014](0014-application-architecture-and-stack.md) | 서버 애플리케이션 아키텍처와 기술 스택 | 채택 | 2026-10-25 |
 | [0015](0015-aws-infrastructure-and-deployment.md) | AWS 인프라와 배포·비밀 값 주입 | 채택 | 2026-10-25 |
-| [0016](0016-external-ai-and-analysis-pipeline.md) | 외부 AI 연동, 사진 분석 파이프라인, 외부 전송 동의 범위 | 채택 (파이프라인 확정·접수 단계 대체: ADR-0021, 웹 탐색 모델: ADR-0024) | 2026-10-25 |
+| [0016](0016-external-ai-and-analysis-pipeline.md) | 외부 AI 연동, 사진 분석 파이프라인, 외부 전송 동의 범위 | 채택 (파이프라인 확정·접수 단계 대체: ADR-0021, 웹 탐색 모델·장소 제공자: ADR-0024) | 2026-10-25 |
 | [0017](0017-search-interpret-on-server-execute-on-device.md) | 검색 구조: 자연어 해석은 서버, 실행은 단말 | 채택 (호출 제한: ADR-0024) | 2026-10-25 |
 | [0018](0018-subscription-via-revenuecat.md) | 구독 검증은 RevenueCat으로 연동한다 | 채택 (제안 확정·일부 대체: ADR-0024) | 2026-10-25 |
 | [0019](0019-server-centric-notification-delivery.md) | 알림은 서버 중심으로 전달한다 | 채택 (제안 확정·발송 대상: ADR-0024) | 2026-10-25 |
 | [0020](0020-account-and-anonymous-subject-policy.md) | 계정·비로그인 주체 정책 (P07·P08 일부) | 채택 | 2026-10-26 |
 | [0021](0021-data-model-foundation-decisions.md) | 데이터 모델 기반 결정 (사진 식별·묶음·이용량·동의·원본 삭제) | 채택 (#1 기기 간 식별 일부 대체: ADR-0022, 미정 항목 일부 확정: ADR-0024) | 2026-10-26 |
-| [0022](0022-schema-rules-analysis-request-and-photo-identity.md) | 스키마 공통 규칙·분석 접수 단위·기기 간 사진 식별 범위 | 채택 (D-19 확정: ADR-0024) | 2026-10-26 |
-| [0023](0023-stage2-foundation-details.md) | 단계 2 공통 기반 세부 결정 (API·오류·멱등·인증·로그) | 채택 | 2026-10-26 |
+| [0022](0022-schema-rules-analysis-request-and-photo-identity.md) | 스키마 공통 규칙·분석 접수 단위·기기 간 사진 식별 범위 | 채택 (D-19·벡터 보관 확정, 재접수 유니크 변경: ADR-0024) | 2026-10-26 |
+| [0023](0023-stage2-foundation-details.md) | 단계 2 공통 기반 세부 결정 (API·오류·멱등·인증·로그) | 채택 (429 확정: ADR-0024) | 2026-10-26 |
 | [0024](0024-pre-implementation-decisions.md) | 구현 전 미결 결정 일괄 확정 (서버 우선 원칙, 체험·분석·이벤트·구독·알림·검색·장소) | 채택 | 2026-10-27 |
