@@ -23,9 +23,9 @@
 - 키 = `Idempotency-Key` (UUIDv7), 범위 = (주체, 키), 보관 7일 (설정값), 탈퇴 시 삭제 (ADR-0023)
 - 멱등 기록 = 업무 변경과 같은 트랜잭션에 저장. 비정상 종료 시 함께 롤백 (처리 중 기록 없음)
 - 같은 키 동시 요청 = 키 단위 advisory 잠금 (트랜잭션 범위) 대기 → 대기 시간 (설정값, 기본 3초) 초과 시 409 `CONFLICT`/`IDEMPOTENCY_IN_PROGRESS` (재시도 가능, ADR-0026)
-- 실행 = `IdempotentExecutor.execute`를 트랜잭션 밖에서 호출 (트랜잭션은 실행기가 시작). 저장 대상 4xx = 업무 트랜잭션 전체 롤백 → 새 트랜잭션에서 잠금·기록 재확인 후 저장, 그 사이 저장된 기록이 있으면 그 기록 반환 (ADR-0026)
+- 실행 = `IdempotentExecutor.execute`를 트랜잭션 밖에서 호출 (트랜잭션은 실행기가 시작). 저장 대상 4xx = 업무 트랜잭션 전체 롤백 → 새 트랜잭션에서 잠금·기록 재확인 후 저장, 그 사이 저장된 기록이 있으면 그 기록 반환, 본문이 다르면 `IDEMPOTENCY_KEY_REUSED` (ADR-0026)
 - 커맨드 record = 업무 변경이 의존하는 입력 전부 (경로 변수·쿼리 포함). 나중에 추가하는 필드는 null 허용 (해시에서 빠짐)
-- 커넥션 격리 수준 = READ COMMITTED 고정 (`application.yml`). 멱등 실행기가 의존
+- 커넥션 격리 수준 = READ COMMITTED 고정 (`application.yml`, 풀 설정 + 커넥션 초기화 SQL). 멱등 실행기가 의존
 - 저장 = 결과가 확정된 2xx·4xx → 같은 응답 반환. 4xx는 업무 변경 롤백 + 멱등 기록만 커밋. 401·`IDEMPOTENCY_IN_PROGRESS`·429 `RATE_LIMITED` (ADR-0024)·`Retry-After`가 있는 4xx·503·처리 중 예외는 저장 안 함. `IDEMPOTENCY_KEY_REUSED`는 원본 기록 유지
 - 200 응답 `items[]`의 재시도 가능한 실패 = 그 대상만 새 키로 재전송
 - 같은 키 = 같은 작업의 재전송만. 본문 변경·사용자 재시도 = 새 키 (저장된 4xx는 `retryable`이어도 같은 키면 같은 응답). 같은 키·다른 본문 = 400 `INVALID_INPUT`/`IDEMPOTENCY_KEY_REUSED`. 키 누락 = 400 `INVALID_INPUT`/`IDEMPOTENCY_KEY_REQUIRED`

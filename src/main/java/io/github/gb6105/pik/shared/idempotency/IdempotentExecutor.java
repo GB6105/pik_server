@@ -42,10 +42,12 @@ public class IdempotentExecutor {
 
 	private final JsonMapper jsonMapper;
 
-	// Built on its own so that spring.jackson.* changes do not alter the hashes of stored records. Absent values are
-	// left out so that a field added to a command does not reject retransmissions sent before the change.
+	// Built on its own so that spring.jackson.* changes do not alter the hashes of stored records. Record components
+	// are sorted too (Jackson 3 keeps creator properties first by default), and absent values are left out, so that
+	// reordering or adding command fields does not reject retransmissions sent before the change.
 	private final JsonMapper canonicalMapper = JsonMapper.builder()
 		.enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+		.disable(MapperFeature.SORT_CREATOR_PROPERTIES_FIRST)
 		.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
 		.enable(JsonNodeFeature.WRITE_PROPERTIES_SORTED)
 		.changeDefaultPropertyInclusion((inclusion) -> inclusion.withValueInclusion(JsonInclude.Include.NON_ABSENT))
@@ -161,7 +163,7 @@ public class IdempotentExecutor {
 		private final PikException exception;
 
 		RejectedAction(PikException exception) {
-			super(null, null, false, false);
+			super(null, exception, false, false);
 			this.exception = exception;
 		}
 

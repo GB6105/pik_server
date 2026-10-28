@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * JPA view of {@code owner_change_counter}, used to check that flushed entity changes roll back with a stored 4xx.
+ * Every test context validates it against the schema, so a migration that changes the table must change it too.
  */
 @Entity
 @Table(name = "owner_change_counter")

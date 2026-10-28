@@ -18,7 +18,10 @@ spring:
   datasource:
     hikari:
       # PostgreSQL's default, pinned: IdempotentExecutor must see records committed while it waited for the key lock.
+      # Hikari only applies transaction-isolation when it differs from the default it read on its first connection,
+      # so each new connection also sets it, in case the database default changes later.
       transaction-isolation: TRANSACTION_READ_COMMITTED
+      connection-init-sql: SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL READ COMMITTED
       data-source-properties:
         # PostgreSQL error details can echo column values into exception messages.
         logServerErrorDetail: false

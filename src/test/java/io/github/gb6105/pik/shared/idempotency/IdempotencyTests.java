@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
+import com.zaxxer.hikari.HikariDataSource;
 import io.github.gb6105.pik.TestcontainersConfiguration;
 import io.github.gb6105.pik.shared.change.ChangeSequence;
 import io.github.gb6105.pik.shared.error.CommandResult;
@@ -89,6 +90,9 @@ class IdempotencyTests {
 	EntityManager entityManager;
 
 	@Autowired
+	HikariDataSource dataSource;
+
+	@Autowired
 	ApplicationEventPublisher events;
 
 	@Autowired
@@ -130,14 +134,15 @@ class IdempotencyTests {
 	}
 
 	@Test
-	void fieldAddedToCommandKeepsHashOfEarlierRequests() {
+	void reorderedOrExtendedCommandKeepsHashOfEarlierRequests() {
 		IdempotencyKey key = new IdempotencyKey(uuidV7());
 		AtomicInteger runs = new AtomicInteger();
 
-		executor.execute(new IdempotentRequest(owner, key, "probe.evolve", new CommandBefore("a")),
+		executor.execute(new IdempotentRequest(owner, key, "probe.evolve", new CommandBefore("z", "a")),
 				runs::incrementAndGet);
 		IdempotentResponse replay = executor.execute(
-				new IdempotentRequest(owner, key, "probe.evolve", new CommandAfter("a", null)), runs::incrementAndGet);
+				new IdempotentRequest(owner, key, "probe.evolve", new CommandAfter("a", null, "z")),
+				runs::incrementAndGet);
 
 		assertThat(replay.status()).isEqualTo(200);
 		assertThat(runs).hasValue(1);
@@ -395,6 +400,28 @@ class IdempotencyTests {
 		assertThat(response.body().toString()).isEqualTo("[\"%s\",\"read committed\"]".formatted(outside));
 	}
 
+	// Hikari compares the configured isolation with the default it read on its first connection only.
+	@Test
+	void actionRunsUnderReadCommittedAfterDatabaseDefaultChanges() {
+		String database = jdbc.sql("SELECT current_database()").query(String.class).single();
+		jdbc.sql("ALTER DATABASE \"%s\" SET default_transaction_isolation = 'repeatable read'".formatted(database))
+			.update();
+		try {
+			dataSource.getHikariPoolMXBean().softEvictConnections();
+
+			IdempotentResponse response = executor.execute(directRequest(uuidV7()),
+					() -> List.of(jdbc.sql("SELECT reset_val FROM pg_settings WHERE name = 'default_transaction_isolation'")
+						.query(String.class)
+						.single(), setting("transaction_isolation")));
+
+			assertThat(response.body().toString()).isEqualTo("[\"repeatable read\",\"read committed\"]");
+		}
+		finally {
+			jdbc.sql("ALTER DATABASE \"%s\" RESET default_transaction_isolation".formatted(database)).update();
+			dataSource.getHikariPoolMXBean().softEvictConnections();
+		}
+	}
+
 	@Test
 	void executorRefusesToJoinExistingTransaction() {
 		assertThatThrownBy(() -> transactions
@@ -520,10 +547,10 @@ class IdempotencyTests {
 		return new UUID(msb, lsb);
 	}
 
-	record CommandBefore(String name) {
+	record CommandBefore(String zeta, String alpha) {
 	}
 
-	record CommandAfter(String name, @Nullable String added) {
+	record CommandAfter(String alpha, @Nullable String added, String zeta) {
 	}
 
 	record ProbeEvent(UUID key) {
