@@ -2,7 +2,9 @@ package io.github.gb6105.pik.shared.error;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.github.gb6105.pik.AuthenticatedMockMvc;
 import io.github.gb6105.pik.TestcontainersConfiguration;
+import io.github.gb6105.pik.shared.security.AccessTokens;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,6 +34,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
@@ -46,8 +49,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.json.JsonMapper;
 
-@Import({ TestcontainersConfiguration.class, ApiFoundationTests.ProbeController.class,
-		ApiFoundationTests.FailingFilterConfig.class })
+@Import({ TestcontainersConfiguration.class, AuthenticatedMockMvc.class,
+		ApiFoundationTests.ProbeController.class, ApiFoundationTests.FailingFilterConfig.class })
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @ExtendWith(OutputCaptureExtension.class)
@@ -65,6 +68,9 @@ class ApiFoundationTests {
 
 	@Autowired
 	MockMvcTester mvc;
+
+	@Autowired
+	AccessTokens accessTokens;
 
 	@LocalServerPort
 	int port;
@@ -330,7 +336,8 @@ class ApiFoundationTests {
 	}
 
 	private HttpResponse<String> send(String path, boolean withApiVersion) throws Exception {
-		HttpRequest.Builder request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path));
+		HttpRequest.Builder request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
+			.header(HttpHeaders.AUTHORIZATION, AuthenticatedMockMvc.bearer(accessTokens));
 		if (withApiVersion) {
 			request.header("API-Version", "1");
 		}

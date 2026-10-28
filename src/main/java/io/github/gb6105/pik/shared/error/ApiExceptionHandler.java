@@ -46,6 +46,10 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 			long seconds = retryAfter.toSeconds() + (retryAfter.toNanosPart() > 0 ? 1 : 0);
 			headers.set(HttpHeaders.RETRY_AFTER, Long.toString(Math.max(1, seconds)));
 		}
+		// RFC 9110 requires the challenge on 401; the security filter chain sets a more specific one itself.
+		if (ex.getCode() == ErrorCode.UNAUTHENTICATED && !response.containsHeader(HttpHeaders.WWW_AUTHENTICATE)) {
+			headers.set(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
+		}
 		ApiError error = new ApiError(ex.getCode(), ex.getReason(), ex.isRetryable());
 		return new ResponseEntity<>(CommandRequests.problem(error, request), headers, error.code().status());
 	}

@@ -47,6 +47,16 @@ pik:
     cleanup-initial-delay: PT1M
     cleanup-interval: PT1H
     cleanup-batch-size: 1000
+  security:
+    jwt:
+      issuer: pik-server
+      access-token-ttl: PT15M
+      clock-skew: PT60S
+      # JWK set JSON: the current ES256 key with its private part, previous keys public only (ADR-0027).
+      # Empty only in the local and test profiles, which then sign with an ephemeral key.
+      jwk-set: ${PIK_SECURITY_JWT_JWK_SET:}
+  account:
+    last-seen-interval: P1D
 
 # Field allow list from ADR-0023 #9; anything else (thread, MDC extras, request data) is dropped.
 logging:

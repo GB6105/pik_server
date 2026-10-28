@@ -1,0 +1,109 @@
+package io.github.gb6105.pik.shared.security;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.springframework.mock.env.MockEnvironment;
+
+class JwtKeysTests {
+
+	@Test
+	void privateKeySignsAndAllKeysVerifyWithoutPrivateParts() throws JOSEException {
+		ECKey current = ec(Curve.P_256, "current");
+		ECKey previous = ec(Curve.P_256, "previous");
+
+		JwtKeys keys = JwtKeys.load(json(current, previous.toPublicJWK()), false);
+
+		assertThat(keys.signingKey().getKeyID()).isEqualTo("current");
+		assertThat(keys.signingKey().isPrivate()).isTrue();
+		assertThat(keys.verificationKeys().getKeys()).extracting(JWK::getKeyID).containsExactly("current", "previous");
+		assertThat(keys.verificationKeys().getKeys()).noneMatch(JWK::isPrivate);
+	}
+
+	@Test
+	void emptySetGeneratesEphemeralKeyOnlyWhenAllowed() {
+		JwtKeys keys = JwtKeys.load("", true);
+
+		assertThat(keys.signingKey().isPrivate()).isTrue();
+		assertThat(keys.verificationKeys().getKeys()).singleElement()
+			.satisfies((key) -> assertThat(key.isPrivate()).isFalse());
+		assertThatIllegalStateException().isThrownBy(() -> JwtKeys.load(null, false))
+			.withMessageContaining("jwk-set is required");
+		assertThatIllegalStateException().isThrownBy(() -> JwtKeys.load(" ", false));
+	}
+
+	@Test
+	void setNeedsExactlyOnePrivateKey() throws JOSEException {
+		ECKey first = ec(Curve.P_256, "first");
+		ECKey second = ec(Curve.P_256, "second");
+
+		assertThatIllegalStateException().isThrownBy(() -> JwtKeys.load(json(first, second), false))
+			.withMessageContaining("exactly one private key");
+		assertThatIllegalStateException()
+			.isThrownBy(() -> JwtKeys.load(json(first.toPublicJWK(), second.toPublicJWK()), false));
+		assertThatIllegalStateException().isThrownBy(() -> JwtKeys.load("{\"keys\": []}", false));
+	}
+
+	@Test
+	void keysNeedDistinctKeyIds() throws JOSEException {
+		ECKey unnamed = new ECKeyGenerator(Curve.P_256).generate();
+		ECKey current = ec(Curve.P_256, "same");
+		ECKey previous = ec(Curve.P_256, "same");
+
+		assertThatIllegalStateException().isThrownBy(() -> JwtKeys.load(json(unnamed), false))
+			.withMessageContaining("key IDs");
+		assertThatIllegalStateException()
+			.isThrownBy(() -> JwtKeys.load(json(current, previous.toPublicJWK()), false));
+	}
+
+	@Test
+	void onlyEcP256KeysAreAccepted() throws JOSEException {
+		JWK rsa = new RSAKeyGenerator(2048).keyID("rsa").generate();
+		ECKey p384 = ec(Curve.P_384, "p384");
+
+		assertThatIllegalStateException().isThrownBy(() -> JwtKeys.load(json(rsa), false))
+			.withMessageContaining("P-256");
+		assertThatIllegalStateException().isThrownBy(() -> JwtKeys.load(json(p384), false));
+	}
+
+	@Test
+	void unparsableSetFailsWithoutEchoingIt() {
+		String secret = "{\"keys\": [{\"kty\": \"EC\", \"d\": \"secret-material\"";
+
+		assertThatIllegalStateException().isThrownBy(() -> JwtKeys.load(secret, false))
+			.withMessageNotContaining("secret-material")
+			.withNoCause();
+	}
+
+	@Test
+	void developmentProfilesAreLocalAndTestOnly() {
+		assertThat(DevelopmentProfiles.active(new MockEnvironment())).isFalse();
+		assertThat(DevelopmentProfiles.active(withProfiles("prod"))).isFalse();
+		assertThat(DevelopmentProfiles.active(withProfiles("local"))).isTrue();
+		assertThat(DevelopmentProfiles.active(withProfiles("prod", "test"))).isTrue();
+	}
+
+	private static MockEnvironment withProfiles(String... profiles) {
+		MockEnvironment environment = new MockEnvironment();
+		environment.setActiveProfiles(profiles);
+		return environment;
+	}
+
+	private static ECKey ec(Curve curve, String keyId) throws JOSEException {
+		return new ECKeyGenerator(curve).keyID(keyId).generate();
+	}
+
+	private static String json(JWK... keys) {
+		return new JWKSet(List.of(keys)).toString(false);
+	}
+
+}

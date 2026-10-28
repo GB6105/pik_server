@@ -30,6 +30,8 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-flyway")
+	implementation("org.springframework.boot:spring-boot-starter-security")
+	implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
 	implementation("org.springframework.modulith:spring-modulith-starter-jdbc")
@@ -43,6 +45,7 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-flyway-test")
+	testImplementation("org.springframework.boot:spring-boot-starter-security-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-validation-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
@@ -61,8 +64,14 @@ dependencyManagement {
 	}
 }
 
+// Fakes (device attestation) and ephemeral JWT keys are allowed only in the local and test profiles (ADR-0027).
 tasks.withType<Test> {
 	useJUnitPlatform()
+	systemProperty("spring.profiles.active", "test")
+}
+
+tasks.withType<org.springframework.boot.gradle.tasks.run.BootRun> {
+	systemProperty("spring.profiles.active", "local")
 }
 
 // Lombok 1.18.48 ignores flagUsage for @SuperBuilder, so lombok.config alone cannot block it (ADR-0012).

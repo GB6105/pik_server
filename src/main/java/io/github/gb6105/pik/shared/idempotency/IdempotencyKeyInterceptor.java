@@ -1,11 +1,9 @@
 package io.github.gb6105.pik.shared.idempotency;
 
-import io.github.gb6105.pik.shared.error.CommandRequests;
 import io.github.gb6105.pik.shared.error.ErrorCode;
 import io.github.gb6105.pik.shared.error.PikException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 /**
@@ -18,12 +16,11 @@ class IdempotencyKeyInterceptor implements HandlerInterceptor {
 
 	@Override
 	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-		if (!(handler instanceof HandlerMethod method) || !method.hasMethodAnnotation(IdempotentCommand.class)) {
+		if (!IdempotentCommands.isCommand(handler)) {
 			return true;
 		}
+		IdempotencyKey key = IdempotentCommands.mark(request);
 		String header = request.getHeader(IdempotencyKey.HEADER);
-		IdempotencyKey key = IdempotencyKey.parse(header);
-		CommandRequests.mark(request, key != null ? key.value() : null);
 		if (header == null || header.isBlank()) {
 			throw new PikException(ErrorCode.INVALID_INPUT, "IDEMPOTENCY_KEY_REQUIRED", false);
 		}

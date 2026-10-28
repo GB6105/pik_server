@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import com.zaxxer.hikari.HikariDataSource;
+import io.github.gb6105.pik.AuthenticatedMockMvc;
 import io.github.gb6105.pik.TestcontainersConfiguration;
 import io.github.gb6105.pik.shared.change.ChangeSequence;
 import io.github.gb6105.pik.shared.error.CommandResult;
@@ -56,8 +57,9 @@ import org.springframework.web.bind.annotation.RestController;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-@Import({ TestcontainersConfiguration.class, IdempotencyTests.CommandProbeController.class,
-		IdempotencyTests.TransactionalProbe.class, IdempotencyTests.EventProbe.class })
+@Import({ TestcontainersConfiguration.class, AuthenticatedMockMvc.class,
+		IdempotencyTests.CommandProbeController.class, IdempotencyTests.TransactionalProbe.class,
+		IdempotencyTests.EventProbe.class })
 @SpringBootTest(properties = { "pik.idempotency.lock-timeout=PT1S", "pik.idempotency.cleanup-batch-size=2" })
 @AutoConfigureMockMvc
 class IdempotencyTests {
