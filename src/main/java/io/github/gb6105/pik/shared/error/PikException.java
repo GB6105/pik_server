@@ -25,6 +25,9 @@ public class PikException extends RuntimeException {
 
 	public PikException(ErrorCode code, String reason, boolean retryable, @Nullable Duration retryAfter) {
 		super(code + "/" + reason);
+		if (code == ErrorCode.RATE_LIMITED && retryAfter == null) {
+			throw new IllegalArgumentException("RATE_LIMITED requires retryAfter");
+		}
 		this.code = code;
 		this.reason = reason;
 		this.retryable = retryable;

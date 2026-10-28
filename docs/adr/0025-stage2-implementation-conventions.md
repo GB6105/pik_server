@@ -25,8 +25,8 @@
 | # | 항목 | 결정 |
 |---|---|---|
 | 9 | 예상하지 못한 예외 | 503 `TEMPORARY_FAILURE` / `INTERNAL_ERROR`, `retryable` = true. 요구사항 오류 표에 500이 없어 표 안에서 대응한다. 원인은 서버 로그 (`stack_trace`)에만 남긴다 |
-| 10 | 프레임워크 오류 대응 | HTTP 상태를 보존해 대응한다. 401·403·404·409·422·429는 그대로 두고, 허용하지 않는 메서드 (405) = 422 `UNSUPPORTED_OPERATION` / `METHOD_NOT_ALLOWED` (`Allow` 헤더 유지), 그 밖의 4xx = 400 `INVALID_INPUT` / `BAD_REQUEST`, 500 = 503 `TEMPORARY_FAILURE` / `INTERNAL_ERROR`, 그 밖의 5xx = 503 `TEMPORARY_FAILURE` / `SERVER_UNAVAILABLE` (5xx는 `retryable` = true). 세부 사유: API 버전 누락 = `API_VERSION_REQUIRED`, 지원하지 않는 버전 = `API_VERSION_UNSUPPORTED`, 검증 실패 = `VALIDATION_FAILED`, 본문 해석 실패 = `MALFORMED_BODY`, 미디어 타입 = `MEDIA_TYPE_NOT_SUPPORTED`, 없는 경로 = `RESOURCE_NOT_FOUND`. 상태만 있는 오류의 기본 사유 = 401 `AUTHENTICATION_REQUIRED`, 403 `ACCESS_DENIED`, 409 `STATE_CONFLICT`, 422 `UNPROCESSABLE`, 429 `TOO_MANY_REQUESTS`. DispatcherServlet 밖의 오류 (필터 예외, `sendError`)도 `/error` 컨트롤러가 같은 대응으로 응답한다 |
-| 11 | 예외 메시지 | `PikException` 메시지는 `code`/`reason`만 담는다. 요청 데이터를 예외 메시지에 넣지 않는다. 라이브러리 예외 메시지에도 요청 데이터가 들어갈 수 있으므로, 로그의 `stack_trace`에는 예외 클래스 이름만 남긴다 (`MessageFreeStackTracePrinter`). PostgreSQL 오류 세부 (`logServerErrorDetail`)와 Tomcat의 요청 줄 해석 실패 INFO 로그도 끈다 |
+| 10 | 프레임워크 오류 대응 | HTTP 상태를 보존해 대응한다. 401·403·404·409·422·429는 그대로 두고, 허용하지 않는 메서드 (405) = 422 `UNSUPPORTED_OPERATION` / `METHOD_NOT_ALLOWED` (`Allow` 헤더 유지), 그 밖의 4xx = 400 `INVALID_INPUT` / `BAD_REQUEST`, 500 = 503 `TEMPORARY_FAILURE` / `INTERNAL_ERROR`, 그 밖의 5xx = 503 `TEMPORARY_FAILURE` / `SERVER_UNAVAILABLE` (5xx는 `retryable` = true). 세부 사유: API 버전 누락 = `API_VERSION_REQUIRED`, 지원하지 않는 버전 = `API_VERSION_UNSUPPORTED`, 검증 실패 = `VALIDATION_FAILED`, 본문 해석 실패 = `MALFORMED_BODY`, 미디어 타입 = `MEDIA_TYPE_NOT_SUPPORTED`, 없는 경로 = `RESOURCE_NOT_FOUND`. 상태만 있는 오류의 기본 사유 = 401 `AUTHENTICATION_REQUIRED`, 403 `ACCESS_DENIED`, 409 `STATE_CONFLICT`, 422 `UNPROCESSABLE`, 429 `TOO_MANY_REQUESTS`. DispatcherServlet 밖의 오류 (필터 예외, `sendError`)도 `/error` 컨트롤러가 같은 대응으로 응답하고, `/error`를 직접 요청하면 404 `RESOURCE_NOT_FOUND`로 응답한다. `RATE_LIMITED`는 `Retry-After` (초 단위 올림)가 필수다 |
+| 11 | 예외 메시지 | `PikException` 메시지는 `code`/`reason`만 담는다. 요청 데이터를 예외 메시지에 넣지 않는다. 라이브러리 예외 메시지에도 요청 데이터가 들어갈 수 있으므로, 로그의 `stack_trace`에는 예외 클래스 이름만 남긴다 (`MessageFreeStackTracePrinter`). PostgreSQL 오류 세부 (`logServerErrorDetail`), Tomcat의 요청 줄 해석 실패 INFO 로그, Tomcat의 필터 예외 로그 (`ContainerBase.[Tomcat].[localhost].[/].[dispatcherServlet]`, 예외 메시지를 `message`에 남김)를 끈다. 정적 리소스 매핑도 끈다 (`spring.web.resources.add-mappings` = false, 리소스 조회 경고에 원본 경로가 남음) |
 | 12 | 요청 로그 | 요청마다 `trace_id`를 MDC에 두고, 끝날 때 `action` (메서드 + 매핑 패턴), `http_status`, `duration_ms`를 한 줄로 남긴다. 원본 URI와 쿼리 문자열은 남기지 않는다 (검색어 포함 가능). 필터 밖으로 나간 예외는 같은 줄을 ERROR (`request failed`, `http_status` = 503, `stack_trace`)로 남긴다. actuator 요청 (`management.endpoints.web.base-path` 아래)은 남기지 않는다. OpenTelemetry를 도입하면 `trace_id`를 추적 ID로 바꾼다 |
 | 13 | 모듈 | `shared`는 Modulith OPEN 모듈 (모든 모듈이 사용), `account`는 일반 모듈. 경계는 `ApplicationModules.verify()` 테스트로 검사한다 |
 
@@ -53,6 +53,7 @@
 - `api-contract.md`에 프레임워크 오류 대응을 추가했다.
 - 2-1 범위의 핸들러는 비동기 요청 (`DeferredResult`·SSE)을 쓰지 않는다. 비동기를 도입하면 요청 로그와 MDC 처리를 다시 확인한다.
 - Spring Security 예외 (`AccessDeniedException`·`AuthenticationException`)는 2-3에서 예상하지 못한 예외 처리와 분리하고, EntryPoint·AccessDeniedHandler가 ProblemDetail을 직접 쓴다. `shared`가 `account` 기능 (주체 조회 등)을 써야 하면 `shared`에 SPI를 두고 `account`가 구현해 모듈 순환을 피한다.
-- 필터 예외는 Tomcat도 `trace_id` 없이 한 번 더 기록한다. `stack_trace`는 같은 printer를 거치므로 예외 메시지는 남지 않는다.
+- Tomcat의 필터 예외 로그를 끄더라도 같은 예외는 `RequestLoggingFilter`가 `trace_id`와 함께 남기므로 잃는 정보가 없다. 다만 Tomcat 로거 이름이 바뀌면 (버전 업그레이드) 예외 메시지가 다시 남을 수 있어, 테스트 (`servletExceptionMessageIsNotLogged`)로 감시한다.
+- `sendError(429)` 경로는 `Retry-After`를 붙일 수 없다. 429는 `PikException`으로만 낸다.
 - 위험: 가상 스레드는 요청 수만큼 늘지만 Hikari 커넥션 풀은 고정 크기라, DB를 기다리는 요청이 풀에 몰린다. 풀 크기와 대기 시간 (`connection-timeout`)은 부하 측정 (D-11) 때 정한다.
 - 출처: 1~8은 시작 보고에서 사용자가 확인했다 (2026-10-28). 9~13은 Claude가 구현하면서 정한 관례이며 종료 보고에서 확인을 받는다.

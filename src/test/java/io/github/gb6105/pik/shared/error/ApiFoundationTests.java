@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.gb6105.pik.TestcontainersConfiguration;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -172,6 +173,24 @@ class ApiFoundationTests {
 	}
 
 	@Test
+	void serverErrorLogKeepsResponseReason(CapturedOutput output) {
+		assertThat(mvc.get().uri("/test-probe/status/502").header("API-Version", "1")).hasStatus(503);
+
+		assertThat(logEvents(output)).anySatisfy((event) -> assertThat(event).containsEntry("level", "ERROR")
+			.containsEntry("message", "server error")
+			.containsEntry("reason", "SERVER_UNAVAILABLE"));
+	}
+
+	@Test
+	void directErrorPathRequestIsNotFound() {
+		assertThat(mvc.get().uri("/error").header("API-Version", "1")).hasStatus(404)
+			.bodyJson()
+			.isLenientlyEqualTo("""
+					{"code": "NOT_FOUND", "reason": "RESOURCE_NOT_FOUND", "retryable": false}
+					""");
+	}
+
+	@Test
 	void unknownPathIsNotFound() {
 		assertThat(mvc.get().uri("/no-such-path").header("API-Version", "1")).hasStatus(404)
 			.bodyJson()
@@ -200,10 +219,12 @@ class ApiFoundationTests {
 					""");
 
 		assertThat(logEvents(output)).anySatisfy((event) -> assertThat(event).containsEntry("level", "ERROR")
-			.containsEntry("message", "unexpected error")
+			.containsEntry("message", "server error")
+			.containsEntry("reason", "INTERNAL_ERROR")
 			.containsKey("trace_id")
-			.hasEntrySatisfying("stack_trace",
-					(trace) -> assertThat((String) trace).startsWith("java.lang.IllegalStateException\n")));
+			.hasEntrySatisfying("stack_trace", (trace) -> assertThat((String) trace)
+				.startsWith("java.lang.IllegalStateException\n")
+				.contains("Caused by: java.lang.IllegalArgumentException\n")));
 		assertThat(output.getAll()).doesNotContain(SECRET);
 	}
 
@@ -216,6 +237,16 @@ class ApiFoundationTests {
 		assertThat(json(response.body())).containsEntry("code", "FORBIDDEN")
 			.containsEntry("reason", "ACCESS_DENIED")
 			.containsEntry("retryable", false);
+	}
+
+	@Test
+	void sendErrorMethodNotAllowedKeepsAllow() throws Exception {
+		HttpResponse<String> response = send("/test-filter/method", true);
+
+		assertThat(response.statusCode()).isEqualTo(422);
+		assertThat(response.headers().firstValue("Allow")).hasValue("GET");
+		assertThat(json(response.body())).containsEntry("code", "UNSUPPORTED_OPERATION")
+			.containsEntry("reason", "METHOD_NOT_ALLOWED");
 	}
 
 	@Test
@@ -245,8 +276,21 @@ class ApiFoundationTests {
 	}
 
 	@Test
+	void servletExceptionMessageIsNotLogged(CapturedOutput output) throws Exception {
+		HttpResponse<String> response = send("/test-filter/servlet-boom", true);
+
+		assertThat(response.statusCode()).isEqualTo(503);
+		assertThat(logEvents(output)).anySatisfy(
+				(event) -> assertThat(event).containsEntry("message", "request failed").containsKey("trace_id"));
+		assertThat(logEvents(output)).noneSatisfy((event) -> assertThat(event).containsEntry("logger_name",
+				"org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/].[dispatcherServlet]"));
+		assertThat(output.getAll()).doesNotContain(SECRET);
+	}
+
+	@Test
 	void actuatorIsOutsideApiVersioningAndRequestLog(CapturedOutput output) {
 		assertThat(mvc.get().uri("/actuator/health")).hasStatus(200);
+		assertThat(mvc.get().uri("/actuator")).hasStatus(200);
 
 		assertThat(logEvents(output)).noneSatisfy(
 				(event) -> assertThat(event).containsEntry("message", "request completed"));
@@ -306,12 +350,12 @@ class ApiFoundationTests {
 
 		@GetMapping("/rate-limited")
 		String rateLimited() {
-			throw new PikException(ErrorCode.RATE_LIMITED, "PROBE_LIMIT", true, Duration.ofSeconds(30));
+			throw new PikException(ErrorCode.RATE_LIMITED, "PROBE_LIMIT", true, Duration.ofMillis(29_500));
 		}
 
 		@GetMapping("/unexpected")
 		String unexpected() {
-			throw new IllegalStateException("probe failure " + SECRET);
+			throw new IllegalStateException("probe failure " + SECRET, new IllegalArgumentException("cause " + SECRET));
 		}
 
 		@GetMapping("/status/{code}")
@@ -349,12 +393,16 @@ class ApiFoundationTests {
 
 				@Override
 				protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-						FilterChain chain) throws IOException {
-					if (request.getRequestURI().equals("/test-filter/denied")) {
-						response.sendError(HttpServletResponse.SC_FORBIDDEN);
-						return;
+						FilterChain chain) throws ServletException, IOException {
+					switch (request.getRequestURI()) {
+						case "/test-filter/denied" -> response.sendError(HttpServletResponse.SC_FORBIDDEN);
+						case "/test-filter/method" -> {
+							response.setHeader("Allow", "GET");
+							response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+						}
+						case "/test-filter/servlet-boom" -> throw new ServletException("servlet failure " + SECRET);
+						default -> throw new IllegalStateException("filter failure " + SECRET);
 					}
-					throw new IllegalStateException("filter failure " + SECRET);
 				}
 
 			};

@@ -47,11 +47,11 @@ class RequestLoggingFilter extends OncePerRequestFilter {
 			throws ServletException, IOException {
 		long startedAt = System.nanoTime();
 		MDC.put(TRACE_ID, UUID.randomUUID().toString().replace("-", ""));
-		Exception failure = null;
+		Throwable failure = null;
 		try {
 			chain.doFilter(request, response);
 		}
-		catch (ServletException | IOException | RuntimeException ex) {
+		catch (Throwable ex) {
 			failure = ex;
 			throw ex;
 		}
@@ -63,7 +63,7 @@ class RequestLoggingFilter extends OncePerRequestFilter {
 
 	// An exception escaping the chain is rendered by the error controller as 503 after this filter returns.
 	private static void logCompletion(HttpServletRequest request, HttpServletResponse response,
-			@Nullable Exception failure, long durationMs) {
+			@Nullable Throwable failure, long durationMs) {
 		boolean failed = failure != null && !DisconnectedClientHelper.isClientDisconnectedException(failure);
 		LoggingEventBuilder event = failed
 				? log.atError().setCause(failure).addKeyValue("reason", "INTERNAL_ERROR") : log.atInfo();

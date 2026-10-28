@@ -17,10 +17,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 class ApiErrorController implements ErrorController {
 
+	// A direct request to the error path has no error status and is treated as an unknown path.
 	@RequestMapping("${server.error.path:/error}")
 	ResponseEntity<ProblemDetail> error(HttpServletRequest request) {
 		HttpStatusCode status = request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE) instanceof Integer code
-				? HttpStatusCode.valueOf(code) : HttpStatus.INTERNAL_SERVER_ERROR;
+				? HttpStatusCode.valueOf(code) : HttpStatus.NOT_FOUND;
 		ApiError error = ApiError.forStatus(status);
 		return new ResponseEntity<>(error.toProblemDetail(), error.code().status());
 	}

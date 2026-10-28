@@ -2,6 +2,7 @@ package io.github.gb6105.pik.shared.error;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.Duration;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
@@ -39,8 +40,10 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 			return null;
 		}
 		HttpHeaders headers = new HttpHeaders();
-		if (ex.getRetryAfter() != null) {
-			headers.set(HttpHeaders.RETRY_AFTER, Long.toString(ex.getRetryAfter().toSeconds()));
+		Duration retryAfter = ex.getRetryAfter();
+		if (retryAfter != null) {
+			long seconds = retryAfter.toSeconds() + (retryAfter.toNanosPart() > 0 ? 1 : 0);
+			headers.set(HttpHeaders.RETRY_AFTER, Long.toString(Math.max(1, seconds)));
 		}
 		ApiError error = new ApiError(ex.getCode(), ex.getReason(), ex.isRetryable());
 		return new ResponseEntity<>(error.toProblemDetail(), headers, error.code().status());
@@ -49,16 +52,16 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 	// No 500 in the requirements' error table: unexpected failures surface as a retryable TEMPORARY_FAILURE.
 	@ExceptionHandler(Exception.class)
 	@Nullable ResponseEntity<ProblemDetail> handleUnexpected(Exception ex, HttpServletRequest request,
-			HttpServletResponse response) throws Exception {
+			HttpServletResponse response) {
 		if (DisconnectedClientHelper.isClientDisconnectedException(ex)) {
 			return null;
 		}
-		logFailure(ex);
+		ApiError error = new ApiError(ErrorCode.TEMPORARY_FAILURE, "INTERNAL_ERROR", true);
+		logFailure(ex, error);
 		request.setAttribute(WebUtils.ERROR_EXCEPTION_ATTRIBUTE, ex);
 		if (response.isCommitted()) {
 			return null;
 		}
-		ApiError error = new ApiError(ErrorCode.TEMPORARY_FAILURE, "INTERNAL_ERROR", true);
 		return new ResponseEntity<>(error.toProblemDetail(), error.code().status());
 	}
 
@@ -67,7 +70,7 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 			HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
 		ApiError error = classify(ex, statusCode);
 		if (error.code() == ErrorCode.TEMPORARY_FAILURE) {
-			logFailure(ex);
+			logFailure(ex, error);
 			request.setAttribute(WebUtils.ERROR_EXCEPTION_ATTRIBUTE, ex, WebRequest.SCOPE_REQUEST);
 		}
 		if (request instanceof ServletWebRequest servletRequest && servletRequest.getResponse() != null
@@ -104,8 +107,8 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 		return ApiError.forStatus(statusCode);
 	}
 
-	private static void logFailure(Exception ex) {
-		log.atError().setCause(ex).addKeyValue("reason", "INTERNAL_ERROR").log("unexpected error");
+	private static void logFailure(Exception ex, ApiError error) {
+		log.atError().setCause(ex).addKeyValue("reason", error.reason()).log("server error");
 	}
 
 }

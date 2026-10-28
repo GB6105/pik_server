@@ -6,6 +6,10 @@ spring:
   threads:
     virtual:
       enabled: true
+  web:
+    resources:
+      # No static content; unknown paths become NoHandlerFoundException instead of a resource lookup log.
+      add-mappings: false
   mvc:
     apiversion:
       use:
@@ -28,6 +32,8 @@ logging:
   level:
     # Malformed request lines are logged at INFO with the raw request target (may contain search terms).
     org.apache.coyote.http11.Http11Processor: WARN
+    # Repeats filter exceptions with getMessage() and no trace_id; RequestLoggingFilter already logs them.
+    "[org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/].[dispatcherServlet]]": OFF
   structured:
     format:
       console: logstash
