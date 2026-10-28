@@ -17,6 +17,11 @@ spring:
       supported: 1
   datasource:
     hikari:
+      # PostgreSQL's default, pinned: IdempotentExecutor must see records committed while it waited for the key lock.
+      # Hikari only applies transaction-isolation when it differs from the default it read on its first connection,
+      # so each new connection also sets it, in case the database default changes later.
+      transaction-isolation: TRANSACTION_READ_COMMITTED
+      connection-init-sql: SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL READ COMMITTED
       data-source-properties:
         # PostgreSQL error details can echo column values into exception messages.
         logServerErrorDetail: false
@@ -26,6 +31,22 @@ spring:
       ddl-auto: validate
   flyway:
     enabled: true
+  modulith:
+    events:
+      # Completed publications carry owner and photo IDs; delete them instead of defining a retention rule.
+      completion-mode: delete
+      jdbc:
+        schema-initialization:
+          enabled: false
+
+pik:
+  idempotency:
+    retention: P7D
+    lock-timeout: PT3S
+    # Short so that instances restarted more often than the interval still clean up; ShedLock prevents overlap.
+    cleanup-initial-delay: PT1M
+    cleanup-interval: PT1H
+    cleanup-batch-size: 1000
 
 # Field allow list from ADR-0023 #9; anything else (thread, MDC extras, request data) is dropped.
 logging:

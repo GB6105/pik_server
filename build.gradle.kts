@@ -24,6 +24,7 @@ repositories {
 }
 
 extra["springModulithVersion"] = "2.1.2"
+extra["shedlockVersion"] = "7.10.1"
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
@@ -31,7 +32,9 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-flyway")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
-	implementation("org.springframework.modulith:spring-modulith-starter-core")
+	implementation("org.springframework.modulith:spring-modulith-starter-jdbc")
+	implementation("net.javacrumbs.shedlock:shedlock-spring")
+	implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template")
 	implementation("org.flywaydb:flyway-database-postgresql")
 	compileOnly("org.projectlombok:lombok")
 	developmentOnly("org.springframework.boot:spring-boot-docker-compose")
@@ -54,6 +57,7 @@ dependencies {
 dependencyManagement {
 	imports {
 		mavenBom("org.springframework.modulith:spring-modulith-bom:${property("springModulithVersion")}")
+		mavenBom("net.javacrumbs.shedlock:shedlock-bom:${property("shedlockVersion")}")
 	}
 }
 

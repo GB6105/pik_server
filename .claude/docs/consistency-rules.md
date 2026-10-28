@@ -14,7 +14,7 @@
 
 - 중단 시 결과 재대조. 미확인 결과 = `확인 필요` 상태 유지
 - 서버 저장과 후속 요청이 분리돼 유실 가능 → 실행 의도를 함께 기록 후 재처리
-- outbox = Spring Modulith event publication registry (JDBC), 작업 큐 = 업무 테이블 + `SKIP LOCKED` (ADR-0014)
+- outbox = Spring Modulith event publication registry (JDBC), 작업 큐 = 업무 테이블 + `SKIP LOCKED` (ADR-0014). 완료된 발행은 즉시 삭제 (ADR-0026)
 
 ## 멱등성
 - 변경 요청 = 작업 식별자 + 데이터 버전
@@ -22,10 +22,13 @@
 - 같은 사진 변경 알림 중복 수신 → 분석·액션·이벤트 중복 생성 금지
 - 키 = `Idempotency-Key` (UUIDv7), 범위 = (주체, 키), 보관 7일 (설정값), 탈퇴 시 삭제 (ADR-0023)
 - 멱등 기록 = 업무 변경과 같은 트랜잭션에 저장. 비정상 종료 시 함께 롤백 (처리 중 기록 없음)
-- 같은 키 동시 요청 = 기록 행 잠금 대기 → 대기 시간 (설정값) 초과 시 409 `CONFLICT`/`IDEMPOTENCY_IN_PROGRESS` (재시도 가능)
-- 저장 = 결과가 확정된 2xx·4xx → 같은 응답 반환. 4xx는 업무 변경 롤백 + 멱등 기록만 커밋. 401·`IDEMPOTENCY_IN_PROGRESS`·429 `RATE_LIMITED` (ADR-0024)·503·처리 중 예외는 저장 안 함. `IDEMPOTENCY_KEY_REUSED`는 원본 기록 유지
+- 같은 키 동시 요청 = 키 단위 advisory 잠금 (트랜잭션 범위) 대기 → 대기 시간 (설정값, 기본 3초) 초과 시 409 `CONFLICT`/`IDEMPOTENCY_IN_PROGRESS` (재시도 가능, ADR-0026)
+- 실행 = `IdempotentExecutor.execute`를 트랜잭션 밖에서 호출 (트랜잭션은 실행기가 시작). 저장 대상 4xx = 업무 트랜잭션 전체 롤백 → 새 트랜잭션에서 잠금·기록 재확인 후 저장, 그 사이 저장된 기록이 있으면 그 기록 반환, 본문이 다르면 `IDEMPOTENCY_KEY_REUSED` (ADR-0026)
+- 커맨드 record = 업무 변경이 의존하는 입력 전부 (경로 변수·쿼리 포함). 나중에 추가하는 필드는 null 허용 (해시에서 빠짐)
+- 커넥션 격리 수준 = READ COMMITTED 고정 (`application.yml`, 풀 설정 + 커넥션 초기화 SQL). 멱등 실행기가 의존
+- 저장 = 결과가 확정된 2xx·4xx → 같은 응답 반환. 4xx는 업무 변경 롤백 + 멱등 기록만 커밋. 401·`IDEMPOTENCY_IN_PROGRESS`·429 `RATE_LIMITED` (ADR-0024)·`Retry-After`가 있는 4xx·503·처리 중 예외는 저장 안 함. `IDEMPOTENCY_KEY_REUSED`는 원본 기록 유지
 - 200 응답 `items[]`의 재시도 가능한 실패 = 그 대상만 새 키로 재전송
-- 같은 키 = 같은 작업의 재전송만. 본문 변경·사용자 재시도 = 새 키. 같은 키·다른 본문 = 400 `INVALID_INPUT`/`IDEMPOTENCY_KEY_REUSED`. 키 누락 = 400 `INVALID_INPUT`/`IDEMPOTENCY_KEY_REQUIRED`
+- 같은 키 = 같은 작업의 재전송만. 본문 변경·사용자 재시도 = 새 키 (저장된 4xx는 `retryable`이어도 같은 키면 같은 응답). 같은 키·다른 본문 = 400 `INVALID_INPUT`/`IDEMPOTENCY_KEY_REUSED`. 키 누락 = 400 `INVALID_INPUT`/`IDEMPOTENCY_KEY_REQUIRED`
 - 장기 작업 접수 재전송 = 저장 응답 대신 현재 작업 상태 + 업로드 URL 재발급. 저장 본문에 업로드 URL 넣지 않음
 - 보관 기간 이후 재전송 = 데이터 버전·`client_ref` 유니크·사진 단위 부분 유니크 (`analysis_job`·`usage_reservation`)로 중복 반영·차감 차단 (ADR-0021·0022·0024)
 
@@ -35,6 +38,7 @@
 
 ## 동기화
 - 로컬 저장 성공 ≠ 서버 보관 성공. 상태 분리
+- 변경 번호 (`change_seq`) = `ChangeSequence.next` (호출자 트랜잭션 필수, 커밋 순서대로 보임). DB 시퀀스 금지 (ADR-0026)
 - 외부 앱 열림 ≠ 통화·구매·예매 완료. 확인 가능한 결과만 반환
 
 ## 구독·결제
