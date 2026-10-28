@@ -56,6 +56,8 @@ class RequestLoggingFilter extends OncePerRequestFilter {
 			throw ex;
 		}
 		finally {
+			// The completion line takes principal_id from the request; the MDC entry would duplicate the field.
+			PrincipalLogging.clear();
 			logCompletion(request, response, failure, (System.nanoTime() - startedAt) / 1_000_000);
 			MDC.remove(TRACE_ID);
 		}
@@ -67,6 +69,10 @@ class RequestLoggingFilter extends OncePerRequestFilter {
 		boolean failed = failure != null && !DisconnectedClientHelper.isClientDisconnectedException(failure);
 		LoggingEventBuilder event = failed
 				? log.atError().setCause(failure).addKeyValue("reason", "INTERNAL_ERROR") : log.atInfo();
+		UUID principalId = PrincipalLogging.principalId(request);
+		if (principalId != null) {
+			event = event.addKeyValue(PrincipalLogging.PRINCIPAL_ID, principalId.toString());
+		}
 		event.addKeyValue("action", action(request))
 			.addKeyValue("http_status", failed ? HttpStatus.SERVICE_UNAVAILABLE.value() : response.getStatus())
 			.addKeyValue("duration_ms", durationMs)

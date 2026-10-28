@@ -50,6 +50,7 @@ Pik(사진 정리 앱) iOS·Android 클라이언트의 백엔드. Java 21 + Spri
 - Java toolchain 21 고정. 21 이후 preview 기능 사용 금지
 - JDK = `mise.toml` (temurin-21). 셸에 mise 미활성 시 `mise exec -- ./gradlew ...`
 - `test`·`build` = Docker 필요 (Testcontainers PostgreSQL). `bootRun` = Docker + `.env.local` 필요 (compose.yaml)
+- `test` = `test` 프로필, `bootRun`·`bootTestRun` = `local` 프로필 자동 적용. 그 밖의 프로필은 기동 실패 (기기 증명 대역·임시 JWT 키, ADR-0027). IDE 실행 시 프로필 직접 지정
 - 같은 프로젝트에서 Gradle 빌드 동시 실행 금지 (테스트 결과 파일 충돌로 `:test` 실패)
 - 병렬 세션 = 세션마다 별도 git worktree. 같은 작업 트리 공유 금지
 - DB 스키마 변경 = Flyway 마이그레이션만 (`ddl-auto: validate`)
