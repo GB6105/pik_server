@@ -93,6 +93,8 @@
 | D-13 | 인프라 비용 선택 | NAT Gateway AZ별 배치 (가용성) / 1개 (비용), RDS 인스턴스 크기, RDS Proxy 도입 여부 (도입하면 커넥션 초기화 SQL 대신 DB·역할 기본 격리 수준 고정, ADR-0026 #18) | 배포 환경 구성 전 | 인프라 코드 |
 | D-14 | ADR-0017·0019의 `(제안)` 항목 확인 (나머지는 ADR-0024에서 확정) | 검색 구현 세부: 폴더마다 Jev `noul` 질문 / 폴더를 선택지로 한 번에 묻는 `choice`, 상대 날짜 토큰, 캐시 단위. Pro LLM 초기값 Haiku 5.5 (설정값). 알림: 분석 완료 화면 갱신 = 상태 조회 (ETag), 장소 알림 서버 확인 때 오프라인이면 마지막 동기화 상태로 판단 (ADR-0019) | 검색은 D-08 확인 후, 알림은 단계 9 전 | FR-S-01·02, FR-I-06, FR-N-02 |
 | D-20 | iCloud 사진 photoId 수렴, 재설치 때 연결 이관 | 두 번째 기기가 만든 photoId를 같은 `cloud_ref`의 서버 photoId로 바꾸는 절차, 이전 설치 (`device` 행)의 `photo_device_link`와 `organize_state` DEVICE 키를 새 설치로 옮기는 방법 (iOS는 기기 식별자 없음). FR-A-04 기술 검증과 함께 결정 | 단계 9 전 | FR-A-02·04, FR-L-05 (ADR-0022) |
+| D-21 | 기기 증명 challenge 방식 (실제 검증 구현 때) | 서버 발급 nonce API (유효 시간·1회 사용) / 요청 해시 기반 (App Attest `clientDataHash`, Play Integrity `requestHash`) | 실제 기기 증명 구현 전 (운영 배포 전) | 운영 배포 (`local`·`test` 밖 기동 불가, ADR-0027) |
+| D-22 | 운영자용 actuator 접근 | 별도 관리 포트 (내부망) / 운영자 인증 (access token과 분리) | 지표·운영 endpoint 노출 전 | 모니터링 연동 (현재 health만 공개, 나머지 403, ADR-0027) |
 
 ## 위험·제약
 - 저장소가 공개 상태라 요구사항 원문 (`docs/spec`)·ADR·`.claude/docs`가 공개된다. 사용자가 수용했다 (2026-10-26). 비공개가 필요해지면 이력에서 제거한 뒤 저장소 재생성 또는 Private 전환을 검토한다 (Free 플랜이면 Private 저장소에 Ruleset 미적용).
