@@ -11,9 +11,10 @@ public record IdempotencyKey(UUID value) {
 
 	public static final String HEADER = "Idempotency-Key";
 
-	// UUID.fromString accepts shortened groups, so the canonical form is checked first.
+	// UUID.fromString accepts shortened groups and upper case, so the canonical form (lower case, as jobId echoes
+	// it back) is checked first.
 	private static final Pattern UUID_V7 = Pattern
-		.compile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}");
+		.compile("[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}");
 
 	static @Nullable IdempotencyKey parse(@Nullable String text) {
 		if (text == null || !UUID_V7.matcher(text).matches()) {

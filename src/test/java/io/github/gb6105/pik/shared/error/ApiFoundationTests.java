@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -53,6 +54,8 @@ import tools.jackson.databind.json.JsonMapper;
 class ApiFoundationTests {
 
 	static final String SECRET = "secret-term";
+
+	static final UUID COMMAND_JOB_ID = UUID.fromString("019a2b3c-4d5e-7f60-8a1b-2c3d4e5f6a7b");
 
 	// Must match logging.structured.json.include in application.yml.
 	static final Set<String> LOG_FIELDS = Set.of("@timestamp", "level", "logger_name", "message", "stack_trace",
@@ -241,6 +244,16 @@ class ApiFoundationTests {
 	}
 
 	@Test
+	void sendErrorOfChangeRequestCarriesJobId() throws Exception {
+		HttpResponse<String> response = send("/test-filter/command-denied", true);
+
+		assertThat(response.statusCode()).isEqualTo(403);
+		assertThat(json(response.body())).containsEntry("code", "FORBIDDEN")
+			.containsEntry("jobId", COMMAND_JOB_ID.toString())
+			.containsEntry("result", "FAILED");
+	}
+
+	@Test
 	void sendErrorMethodNotAllowedKeepsAllow() throws Exception {
 		HttpResponse<String> response = send("/test-filter/method", true);
 
@@ -397,6 +410,10 @@ class ApiFoundationTests {
 						FilterChain chain) throws ServletException, IOException {
 					switch (request.getRequestURI()) {
 						case "/test-filter/denied" -> response.sendError(HttpServletResponse.SC_FORBIDDEN);
+						case "/test-filter/command-denied" -> {
+							CommandRequests.mark(request, COMMAND_JOB_ID);
+							response.sendError(HttpServletResponse.SC_FORBIDDEN);
+						}
 						case "/test-filter/method" -> {
 							response.setHeader("Allow", "GET");
 							response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);

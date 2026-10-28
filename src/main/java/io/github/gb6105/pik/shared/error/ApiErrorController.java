@@ -23,7 +23,7 @@ class ApiErrorController implements ErrorController {
 		HttpStatusCode status = request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE) instanceof Integer code
 				? HttpStatusCode.valueOf(code) : HttpStatus.NOT_FOUND;
 		ApiError error = ApiError.forStatus(status);
-		return new ResponseEntity<>(error.toProblemDetail(), error.code().status());
+		return new ResponseEntity<>(CommandRequests.problem(error, request), error.code().status());
 	}
 
 }

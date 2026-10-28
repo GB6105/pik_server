@@ -153,7 +153,9 @@
       "03h6jvzg07bv5pctizzfeydig",
       "03hlnnu5iae7wujmbxaeadqae",
       "03h8ubyxj764q6dplogninvz7",
-      "03h96tf6luapcjplha68rmshw"
+      "03h96tf6luapcjplha68rmshw",
+      "03hqu1oig4ysptwuplrg52lfk",
+      "03hkai8ej1t3rpyvajrxv4ghy"
     ],
     "memoIds": [
       "03h446hedsmnrwp09ht0scm16",
@@ -828,7 +830,7 @@
       "03h4468ge977zqezlpt9mf2c0": {
         "id": "03h4468ge977zqezlpt9mf2c0",
         "name": "idempotency_record",
-        "comment": "변경 요청 재전송 중복 방지. 업무 변경과 같은 트랜잭션에 저장하고, 같은 키의 동시 요청은 행 잠금 대기 시간을 넘으면 CONFLICT. 결과가 확정된 2xx·4xx만 저장. 보관 7일 (설정값), 탈퇴 시 삭제 (ADR-0023, consistency-rules)",
+        "comment": "변경 요청 재전송 중복 방지. 업무 변경과 같은 트랜잭션에 저장하고, 같은 키의 동시 요청은 키 단위 advisory 잠금 대기 시간을 넘으면 CONFLICT. 4xx는 업무 트랜잭션을 롤백한 뒤 새 트랜잭션에 저장 (ADR-0026). 결과가 확정된 2xx·4xx만 저장. 보관 7일 (설정값), 탈퇴 시 삭제 (ADR-0023, consistency-rules)",
         "columnIds": [
           "03h4468ge977zqezlpv0n6k04",
           "03h4468ge977zqezlpwhvasgx",
@@ -890,7 +892,7 @@
       "03h4468geephs5erx656317ly": {
         "id": "03h4468geephs5erx656317ly",
         "name": "event_publication",
-        "comment": "Spring Modulith JDBC event publication registry (내부 이벤트 outbox). DDL은 Modulith 제공 스크립트 사용. 완료된 발행은 즉시 삭제 (completion-mode = DELETE, ADR-0026)",
+        "comment": "Spring Modulith JDBC event publication registry (내부 이벤트 outbox). DDL은 Modulith 제공 스크립트 사용 (serialized_event 인덱스는 hash). 완료된 발행은 즉시 삭제 (completion-mode = DELETE, ADR-0026)",
         "columnIds": [
           "03h4468geephs5erx65tepfdr",
           "03h4468geephs5erx67irjads",
@@ -5215,6 +5217,24 @@
           "03hcoy5rf264iyb73ghfh34p9"
         ],
         "unique": false
+      },
+      "03hqu1oig4ysptwuplrg52lfk": {
+        "id": "03hqu1oig4ysptwuplrg52lfk",
+        "name": "event_publication_serialized_event_hash_idx",
+        "tableId": "03h4468geephs5erx656317ly",
+        "indexColumnIds": [
+          "03hqxlhr8a29c751540ttig0v"
+        ],
+        "unique": false
+      },
+      "03hkai8ej1t3rpyvajrxv4ghy": {
+        "id": "03hkai8ej1t3rpyvajrxv4ghy",
+        "name": "event_publication_by_completion_date_idx",
+        "tableId": "03h4468geephs5erx656317ly",
+        "indexColumnIds": [
+          "03he27hcddyi48hvjshyeei9n"
+        ],
+        "unique": false
       }
     },
     "indexColumnEntities": {
@@ -5750,6 +5770,18 @@
         "id": "03hcoy5rf264iyb73ghfh34p9",
         "indexId": "03h96tf6luapcjplha68rmshw",
         "columnId": "03h4468ge977zqezlqaixpvhr",
+        "orderType": 1
+      },
+      "03hqxlhr8a29c751540ttig0v": {
+        "id": "03hqxlhr8a29c751540ttig0v",
+        "indexId": "03hqu1oig4ysptwuplrg52lfk",
+        "columnId": "03h4468geephs5erx6cktdrum",
+        "orderType": 1
+      },
+      "03he27hcddyi48hvjshyeei9n": {
+        "id": "03he27hcddyi48hvjshyeei9n",
+        "indexId": "03hkai8ej1t3rpyvajrxv4ghy",
+        "columnId": "03h4468geephs5erx6gl4ars7",
         "orderType": 1
       }
     },

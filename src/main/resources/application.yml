@@ -17,6 +17,8 @@ spring:
       supported: 1
   datasource:
     hikari:
+      # PostgreSQL's default, pinned: IdempotentExecutor must see records committed while it waited for the key lock.
+      transaction-isolation: TRANSACTION_READ_COMMITTED
       data-source-properties:
         # PostgreSQL error details can echo column values into exception messages.
         logServerErrorDetail: false
@@ -38,6 +40,8 @@ pik:
   idempotency:
     retention: P7D
     lock-timeout: PT3S
+    # Short so that instances restarted more often than the interval still clean up; ShedLock prevents overlap.
+    cleanup-initial-delay: PT1M
     cleanup-interval: PT1H
     cleanup-batch-size: 1000
 

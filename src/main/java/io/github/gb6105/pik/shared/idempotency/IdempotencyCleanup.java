@@ -20,7 +20,7 @@ class IdempotencyCleanup {
 	private final IdempotencyProperties properties;
 
 	@Scheduled(fixedDelayString = "${pik.idempotency.cleanup-interval}",
-			initialDelayString = "${pik.idempotency.cleanup-interval}")
+			initialDelayString = "${pik.idempotency.cleanup-initial-delay}")
 	@SchedulerLock(name = "idempotency-cleanup")
 	public void deleteExpired() {
 		long total = 0;

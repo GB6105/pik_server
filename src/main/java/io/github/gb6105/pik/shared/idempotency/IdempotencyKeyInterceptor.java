@@ -24,7 +24,7 @@ class IdempotencyKeyInterceptor implements HandlerInterceptor {
 		String header = request.getHeader(IdempotencyKey.HEADER);
 		IdempotencyKey key = IdempotencyKey.parse(header);
 		CommandRequests.mark(request, key != null ? key.value() : null);
-		if (header == null) {
+		if (header == null || header.isBlank()) {
 			throw new PikException(ErrorCode.INVALID_INPUT, "IDEMPOTENCY_KEY_REQUIRED", false);
 		}
 		if (key == null) {
