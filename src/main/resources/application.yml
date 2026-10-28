@@ -3,9 +3,38 @@ spring:
     name: pik-server
   config:
     import: optional:file:.env.local[.properties]
+  threads:
+    virtual:
+      enabled: true
+  mvc:
+    apiversion:
+      use:
+        header: API-Version
+      supported: 1
   jpa:
     open-in-view: false
     hibernate:
       ddl-auto: validate
   flyway:
     enabled: true
+
+# Field allow list from ADR-0023 #9; anything else (thread, MDC extras, request data) is dropped.
+logging:
+  structured:
+    format:
+      console: logstash
+    json:
+      include:
+        - "@timestamp"
+        - level
+        - logger_name
+        - message
+        - stack_trace
+        - trace_id
+        - principal_id
+        - action
+        - target_id
+        - status
+        - reason
+        - http_status
+        - duration_ms

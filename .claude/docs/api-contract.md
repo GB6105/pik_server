@@ -36,6 +36,8 @@
 - 오류 응답 = RFC 9457 `ProblemDetail` + `code` (위 표, HTTP와 1:1) + `reason` (세부 사유, 기능별 추가) + `retryable`. 장기 작업 응답은 `jobId` 포함
 - 목록 작업 = 200 + `items[]` (대상별 `result`·`code`·`reason`·`retryable`, 버전 충돌이면 `currentVersion`). `items[].code`는 같은 분류를 HTTP 없이 사용
 - 요청 자체가 잘못되면 4xx. 대상별로 처리했으면 모두 실패해도 200 + `items[]`
+- 프레임워크 오류 (ADR-0025): API 버전 누락·미지원 = 400 `INVALID_INPUT` / `API_VERSION_REQUIRED`·`API_VERSION_UNSUPPORTED`, 검증 실패 = `VALIDATION_FAILED`, 본문 해석 실패 = `MALFORMED_BODY`, 없는 경로 = 404 `NOT_FOUND` / `RESOURCE_NOT_FOUND`, 405 = 422 `UNSUPPORTED_OPERATION` / `METHOD_NOT_ALLOWED`, 예상하지 못한 예외 = 503 `TEMPORARY_FAILURE` / `INTERNAL_ERROR` (`retryable` = true)
+- 예외 메시지에 요청 데이터 금지. `PikException` = `code`·`reason`·`retryable`만 (ADR-0025)
 - API 버전 = 요청 헤더 `API-Version`, 첫 값 `1`. 누락 시 400. 폐기 예정 = `Deprecation`·`Sunset` 응답 헤더. actuator 제외
 - 데이터 버전 = 변경 요청 본문의 대상별 `version`. 응답도 대상별 현재 `version`. `If-Match` 미사용
 - 작업 식별자 = `Idempotency-Key` 헤더 (UUIDv7). 세부 규칙은 `consistency-rules.md` 멱등성
