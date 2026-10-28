@@ -3,6 +3,7 @@ package io.github.gb6105.pik.shared.security;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSSigner;
@@ -38,6 +39,7 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
@@ -97,6 +99,7 @@ class SecurityTests {
 		SignedJWT jwt = SignedJWT.parse(accessTokens.issue(principalId, PrincipalKind.ACCOUNT).value());
 
 		assertThat(jwt.getHeader().getAlgorithm()).isEqualTo(JWSAlgorithm.ES256);
+		assertThat(jwt.getHeader().getType()).isEqualTo(JOSEObjectType.JWT);
 		assertThat(jwt.getHeader().getKeyID()).isEqualTo("current");
 		assertThat(jwt.getJWTClaimsSet().getClaims()).containsOnlyKeys("iss", "sub", "kind", "iat", "exp")
 			.containsEntry("sub", principalId.toString())
@@ -122,8 +125,16 @@ class SecurityTests {
 	}
 
 	@Test
+	void tokenOfOtherTypeIsInvalid() {
+		JWTClaimsSet claims = validClaims().build();
+
+		assertInvalid(whoami(bearer(CURRENT, header("current").type(new JOSEObjectType("at+jwt")).build(), claims)));
+		assertInvalid(whoami(bearer(CURRENT, header("current").type(null).build(), claims)));
+	}
+
+	@Test
 	void tokenOfOtherAlgorithmIsInvalid() throws JOSEException {
-		JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.HS256).keyID("current").build();
+		JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.HS256).type(JOSEObjectType.JWT).keyID("current").build();
 		String hmac = sign(header, new MACSigner(new byte[32]), validClaims().build());
 		String unsigned = new PlainJWT(validClaims().build()).serialize();
 
@@ -152,8 +163,11 @@ class SecurityTests {
 
 	@Test
 	void missingTokenIsUnauthenticatedWithChallenge() {
-		assertThat(mvc.get().uri("/test-secure/whoami").header("API-Version", "1")).hasStatus(401)
-			.hasHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer")
+		MvcTestResult result = mvc.get().uri("/test-secure/whoami").header("API-Version", "1").exchange();
+
+		assertThat(result.getResponse().getHeaders(HttpHeaders.WWW_AUTHENTICATE)).containsExactly("Bearer");
+		assertThat(result).hasStatus(401)
+			.hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
 			.bodyJson()
 			.doesNotHavePath("$.jobId")
 			.isLenientlyEqualTo("""
@@ -194,9 +208,32 @@ class SecurityTests {
 	}
 
 	@Test
-	void healthIsPublicButOtherActuatorPathsAreNot() {
+	void failureResponseIgnoresTheHandlersProducibleTypes() {
+		assertThat(mvc.get().uri("/test-secure/csv").header("API-Version", "1")).hasStatus(401)
+			.hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+			.bodyJson()
+			.isLenientlyEqualTo("""
+					{"code": "UNAUTHENTICATED", "reason": "ACCESS_TOKEN_REQUIRED"}
+					""");
+	}
+
+	@Test
+	void healthIsTheOnlyOpenActuatorEndpoint() {
+		String token = accessTokens.issue(principalId, PrincipalKind.ANONYMOUS).value();
+
 		assertThat(mvc.get().uri("/actuator/health")).hasStatus(200);
 		assertThat(mvc.get().uri("/actuator")).hasStatus(401);
+		assertThat(mvc.get().uri("/actuator").header(HttpHeaders.AUTHORIZATION, "Bearer " + token)).hasStatus(403)
+			.hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+			.bodyJson()
+			.isLenientlyEqualTo("""
+					{"code": "FORBIDDEN", "reason": "ACCESS_DENIED", "retryable": false}
+					""");
+	}
+
+	@Test
+	void publicEndpointIgnoresAnInvalidToken() {
+		assertThat(mvc.get().uri("/actuator/health").header(HttpHeaders.AUTHORIZATION, "Bearer x.y.z")).hasStatus(200);
 	}
 
 	@Test
@@ -227,8 +264,9 @@ class SecurityTests {
 	}
 
 	private static void assertInvalid(MvcTestResult result) {
+		assertThat(result.getResponse().getHeaders(HttpHeaders.WWW_AUTHENTICATE))
+			.containsExactly("Bearer error=\"invalid_token\"");
 		assertThat(result).hasStatus(401)
-			.hasHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer error=\"invalid_token\"")
 			.bodyJson()
 			.isLenientlyEqualTo("""
 					{"code": "UNAUTHENTICATED", "reason": "ACCESS_TOKEN_INVALID", "retryable": false}
@@ -236,13 +274,20 @@ class SecurityTests {
 	}
 
 	private String bearer(ECKey key, @Nullable String keyId, UnaryOperator<JWTClaimsSet.Builder> claims) {
-		JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256).keyID(keyId).build();
+		return bearer(key, header(keyId).build(), claims.apply(validClaims()).build());
+	}
+
+	private static String bearer(ECKey key, JWSHeader header, JWTClaimsSet claims) {
 		try {
-			return "Bearer " + sign(header, new ECDSASigner(key), claims.apply(validClaims()).build());
+			return "Bearer " + sign(header, new ECDSASigner(key), claims);
 		}
 		catch (JOSEException ex) {
 			throw new IllegalStateException(ex);
 		}
+	}
+
+	private static JWSHeader.Builder header(@Nullable String keyId) {
+		return new JWSHeader.Builder(JWSAlgorithm.ES256).type(JOSEObjectType.JWT).keyID(keyId);
 	}
 
 	// iat must stay before exp, or the token is rejected as malformed rather than expired.
@@ -294,6 +339,11 @@ class SecurityTests {
 		CurrentPrincipal whoami(CurrentPrincipal principal) {
 			log.info("probe");
 			return principal;
+		}
+
+		@GetMapping(path = "/csv", produces = "text/csv")
+		String csv() {
+			return "a,b";
 		}
 
 		@IdempotentCommand

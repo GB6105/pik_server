@@ -37,7 +37,7 @@
 - 목록 작업 = 200 + `items[]` (대상별 `result`·`code`·`reason`·`retryable`, 버전 충돌이면 `currentVersion`). `items[].code`는 같은 분류를 HTTP 없이 사용
 - 요청 자체가 잘못되면 4xx. 대상별로 처리했으면 모두 실패해도 200 + `items[]`
 - 프레임워크 오류 (ADR-0025 #10): HTTP 상태 보존 (401·403·404·409·422·429 그대로), 405 = 422 `UNSUPPORTED_OPERATION` / `METHOD_NOT_ALLOWED` (`Allow` 유지), 그 밖의 4xx = 400 `INVALID_INPUT` / `BAD_REQUEST`, 500·예상하지 못한 예외 = 503 `TEMPORARY_FAILURE` / `INTERNAL_ERROR`, 그 밖의 5xx = 503 / `SERVER_UNAVAILABLE` (5xx는 `retryable` = true)
-- 프레임워크 세부 사유: `API_VERSION_REQUIRED`·`API_VERSION_UNSUPPORTED`·`VALIDATION_FAILED`·`MALFORMED_BODY`·`MEDIA_TYPE_NOT_SUPPORTED`·`RESOURCE_NOT_FOUND`. 필터 예외·`sendError`도 같은 형식 (`/error` 컨트롤러), `/error` 직접 요청 = 404
+- 프레임워크 세부 사유: `API_VERSION_REQUIRED`·`API_VERSION_UNSUPPORTED`·`VALIDATION_FAILED`·`MALFORMED_BODY`·`MEDIA_TYPE_NOT_SUPPORTED`·`RESOURCE_NOT_FOUND`. 필터 예외·`sendError`도 같은 형식 (`/error` 컨트롤러), `/error` 직접 요청 = 404 (토큰이 없으면 401, ADR-0027)
 - 변경 요청 = 컨트롤러 메서드 `@IdempotentCommand` + `IdempotencyKey` 파라미터 + `IdempotentExecutor` (ADR-0026). 키 = 소문자 정규 형식 UUIDv7, 아니면 400 `INVALID_INPUT` / `IDEMPOTENCY_KEY_INVALID` (빈 헤더 = `IDEMPOTENCY_KEY_REQUIRED`). 키 검사는 본문 검증보다 먼저. 오류 응답 `jobId` = 유효한 키 (없거나 형식 오류면 null). `/error`로 렌더링하는 오류와 보안 필터 단계 거부 (401·403, 처리기가 핸들러를 찾아 판별, ADR-0027)도 포함
 - 예외 메시지에 요청 데이터 금지. `PikException` = `code`·`reason`·`retryable` (+ `Retry-After`)만. `RATE_LIMITED`는 `retryAfter` 필수 (초 단위 올림), 429는 `PikException`으로만. 로그 `stack_trace` = 예외 클래스 이름만 (ADR-0025 #11)
 - API 버전 = 요청 헤더 `API-Version`, 첫 값 `1`. 누락 시 400. 폐기 예정 = `Deprecation`·`Sunset` 응답 헤더. actuator 제외
@@ -56,14 +56,14 @@
 |---|---|---|
 | `POST /installs` | `{platform: IOS / ANDROID, appVersion?, attestation: {token, keyId?}}` | 201 `{installId, installToken}` |
 | `POST /auth/token` | `{grantType: "install_token", installToken}` | 200 `{accessToken, tokenType: "Bearer", expiresIn}` (초) |
-- 둘 다 access token 불필요, 멱등 키 미사용 (Command 공통 필드 없음). 재전송 = 새 주체 (ADR-0025 #2)
+- 둘 다 access token 불필요 (`Authorization` 헤더가 있어도 무시), 멱등 키 미사용 (Command 공통 필드 없음). 재전송 = 새 주체 (ADR-0025 #2)
 - 기기 증명 종류 = `platform`에서 도출. 실패 = 403 `FORBIDDEN` / `ATTESTATION_FAILED`
 - 오류: 모르는 `grantType` = 400 `UNSUPPORTED_GRANT_TYPE`, `installToken` 누락 = 400 `VALIDATION_FAILED`, 없는·폐기된 토큰과 비활성 주체 = 401 `INSTALL_TOKEN_INVALID` (구분 안 함)
 
 ### 접근 제어 (ADR-0027)
-- 기본 거부. 공개 = `PublicEndpoints` 구현 (모듈별), 오류 디스패치, actuator health. 나머지 (없는 경로, `/actuator` 목록 포함) = `Authorization: Bearer <access JWT>`
+- 기본 거부. 공개 = `PublicEndpoints` 구현 (모듈별), 오류 디스패치, actuator health (공개 경로는 `Authorization` 무시). health 밖의 actuator = 403. 나머지 (없는 경로 포함) = `Authorization: Bearer <access JWT>`
 - 401 사유: 토큰 없음 = `ACCESS_TOKEN_REQUIRED` (`WWW-Authenticate: Bearer`), 잘못됨·만료 = `ACCESS_TOKEN_INVALID` (`WWW-Authenticate: Bearer error="invalid_token"`). 컨트롤러의 401도 `WWW-Authenticate: Bearer`. 권한 부족 = 403 `ACCESS_DENIED`
-- JWT 검증: ES256만, `kid` 필수, `iss`·`exp`·`sub` (UUID)·`kind` 확인, 만료 허용 오차 60초 (설정값)
+- JWT 검증: ES256만, `kid` 필수, `typ` = `JWT`, `iss`·`exp`·`sub` (UUID)·`kind` 확인, 만료 허용 오차 60초 (설정값)
 - 요청 주체 = 컨트롤러 파라미터 `CurrentPrincipal`. 요청 본문·경로의 ID로 소유권 판단 금지
 
 ## 정상 결과로 취급

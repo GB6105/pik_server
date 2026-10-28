@@ -1,10 +1,17 @@
 package io.github.gb6105.pik.shared.security;
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSObject;
+import com.nimbusds.jose.Payload;
+import com.nimbusds.jose.crypto.ECDSASigner;
+import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -45,6 +52,7 @@ final class JwtKeys {
 		List<ECKey> keys = parse(jwkSet);
 		List<ECKey> signing = keys.stream().filter(ECKey::isPrivate).toList();
 		Assert.state(signing.size() == 1, "The JWT key set must hold exactly one private key, the signing key");
+		checkKeyPair(signing.get(0));
 		return new JwtKeys(signing.get(0), keys);
 	}
 
@@ -73,9 +81,26 @@ final class JwtKeys {
 					"JWT keys must be EC P-256 keys (ES256)");
 			Assert.state(StringUtils.hasText(key.getKeyID()) && keyIds.add(key.getKeyID()),
 					"JWT keys need distinct key IDs (kid)");
+			Assert.state(key.getKeyUse() == null || KeyUse.SIGNATURE.equals(key.getKeyUse()),
+					"JWT keys must be signing keys (use = sig)");
+			Assert.state(key.getAlgorithm() == null || JWSAlgorithm.ES256.equals(key.getAlgorithm()),
+					"JWT keys must be ES256 keys (alg)");
 			keys.add((ECKey) key);
 		}
 		return keys;
+	}
+
+	// A private part that does not match its public key would otherwise surface only when every token fails.
+	private static void checkKeyPair(ECKey key) {
+		try {
+			JWSObject probe = new JWSObject(new JWSHeader(JWSAlgorithm.ES256), new Payload("key check"));
+			probe.sign(new ECDSASigner(key));
+			Assert.state(probe.verify(new ECDSAVerifier(key.toPublicJWK())),
+					"The JWT signing key does not match its public key");
+		}
+		catch (JOSEException ex) {
+			throw new IllegalStateException("The JWT signing key cannot sign");
+		}
 	}
 
 	private static ECKey generate() {

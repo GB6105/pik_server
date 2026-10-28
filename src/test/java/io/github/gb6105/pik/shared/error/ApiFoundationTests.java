@@ -310,7 +310,7 @@ class ApiFoundationTests {
 	@Test
 	void actuatorIsOutsideApiVersioningAndRequestLog(CapturedOutput output) {
 		assertThat(mvc.get().uri("/actuator/health")).hasStatus(200);
-		assertThat(mvc.get().uri("/actuator")).hasStatus(200);
+		assertThat(mvc.get().uri("/actuator")).hasStatus(403);
 
 		assertThat(logEvents(output)).noneSatisfy(
 				(event) -> assertThat(event).containsEntry("message", "request completed"));

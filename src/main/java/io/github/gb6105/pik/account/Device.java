@@ -63,9 +63,4 @@ class Device {
 		return new Device(principalId, UuidV7.generate(), platform, appVersion, now);
 	}
 
-	void markSeen(Instant now) {
-		lastSeenAt = now;
-		updatedAt = now;
-	}
-
 }

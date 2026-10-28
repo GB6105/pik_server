@@ -4,7 +4,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -53,18 +52,6 @@ class AnonymousInstall {
 
 	boolean isRevoked() {
 		return revokedAt != null;
-	}
-
-	/**
-	 * Records use at most once per {@code interval}, so token exchanges do not write on every call.
-	 * @return whether {@code lastSeenAt} moved
-	 */
-	boolean markSeen(Instant now, Duration interval) {
-		if (lastSeenAt != null && lastSeenAt.plus(interval).isAfter(now)) {
-			return false;
-		}
-		lastSeenAt = now;
-		return true;
 	}
 
 }

@@ -5,6 +5,7 @@ import io.github.gb6105.pik.shared.error.PikException;
 import io.github.gb6105.pik.shared.idempotency.IdempotentCommands;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.HandlerExecutionChain;
 import org.springframework.web.servlet.HandlerMapping;
+import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.util.ServletRequestPathUtils;
 
 /**
@@ -39,7 +41,8 @@ class SecurityProblemHandler implements AuthenticationEntryPoint, AccessDeniedHa
 	}
 
 	@Override
-	public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException ex) {
+	public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException ex)
+			throws IOException {
 		if (ex instanceof OAuth2AuthenticationException invalid) {
 			// RFC 6750 error codes from Spring Security (invalid_token, invalid_request), never request data.
 			response.setHeader(HttpHeaders.WWW_AUTHENTICATE,
@@ -52,13 +55,19 @@ class SecurityProblemHandler implements AuthenticationEntryPoint, AccessDeniedHa
 	}
 
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException ex) {
+	public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException ex)
+			throws IOException {
 		render(request, response, new PikException(ErrorCode.FORBIDDEN, "ACCESS_DENIED", false));
 	}
 
-	private void render(HttpServletRequest request, HttpServletResponse response, PikException failure) {
+	private void render(HttpServletRequest request, HttpServletResponse response, PikException failure)
+			throws IOException {
 		markIfCommand(request);
-		exceptionResolver.getObject().resolveException(request, response, null, failure);
+		ModelAndView rendered = exceptionResolver.getObject().resolveException(request, response, null, failure);
+		if (rendered == null && !response.isCommitted()) {
+			// The error controller renders the status instead; error dispatches are permitted.
+			response.sendError(failure.getCode().status().value());
+		}
 	}
 
 	private void markIfCommand(HttpServletRequest request) {
@@ -70,6 +79,8 @@ class SecurityProblemHandler implements AuthenticationEntryPoint, AccessDeniedHa
 			if (chain != null) {
 				IdempotentCommands.markIfCommand(request, chain.getHandler());
 			}
+			// As DispatcherServlet does before exception handling: the problem response ignores the handler's produces.
+			request.removeAttribute(HandlerMapping.PRODUCIBLE_MEDIA_TYPES_ATTRIBUTE);
 		}
 		catch (Exception ex) {
 			// No handler (unknown path, method or API version): the response goes out without jobId.

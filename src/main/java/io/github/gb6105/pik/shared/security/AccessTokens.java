@@ -14,13 +14,16 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.stereotype.Component;
 
 /**
- * Issues access tokens: ES256 JWTs with {@code kid} and the claims {@code iss}, {@code sub} (principal ID),
- * {@code kind}, {@code iat} and {@code exp}, without personal data (ADR-0023 #8).
+ * Issues access tokens: ES256 JWTs with {@code typ} and {@code kid} headers and the claims {@code iss}, {@code sub}
+ * (principal ID), {@code kind}, {@code iat} and {@code exp}, without personal data (ADR-0023 #8).
  */
 @Component
 public class AccessTokens {
 
 	static final String KIND_CLAIM = "kind";
+
+	/** {@code typ} header, checked on every request so that other JWTs signed with these keys are not accepted. */
+	static final String TYPE = "JWT";
 
 	private final JwtEncoder encoder;
 
@@ -36,7 +39,7 @@ public class AccessTokens {
 
 	public AccessToken issue(UUID principalId, PrincipalKind kind) {
 		Instant now = Instant.now();
-		JwsHeader header = JwsHeader.with(SignatureAlgorithm.ES256).keyId(keyId).build();
+		JwsHeader header = JwsHeader.with(SignatureAlgorithm.ES256).type(TYPE).keyId(keyId).build();
 		JwtClaimsSet claims = JwtClaimsSet.builder()
 			.issuer(properties.issuer())
 			.subject(principalId.toString())

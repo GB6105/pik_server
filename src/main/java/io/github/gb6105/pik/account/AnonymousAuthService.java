@@ -61,9 +61,7 @@ class AnonymousAuthService {
 			.filter(Principal::isActive)
 			.orElseThrow(AnonymousAuthService::invalidInstallToken);
 		Instant now = Instant.now();
-		if (install.markSeen(now, properties.lastSeenInterval())) {
-			records.findDevices(principal.getId()).forEach((device) -> device.markSeen(now));
-		}
+		records.touchLastSeen(principal.getId(), now, now.minus(properties.lastSeenInterval()));
 		return new IssuedToken(principal.getId(), accessTokens.issue(principal.getId(), PrincipalKind.ANONYMOUS));
 	}
 

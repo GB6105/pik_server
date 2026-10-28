@@ -21,4 +21,11 @@ record JwtProperties(String issuer, Duration accessTokenTtl, Duration clockSkew,
 		Assert.isTrue(!clockSkew.isNegative(), "clock-skew must not be negative");
 	}
 
+	// The key set holds the private signing key.
+	@Override
+	public String toString() {
+		return "JwtProperties[issuer=" + issuer + ", accessTokenTtl=" + accessTokenTtl + ", clockSkew=" + clockSkew
+				+ ", jwkSet=" + (jwkSet != null ? "(hidden)" : "null") + "]";
+	}
+
 }

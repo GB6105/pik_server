@@ -4,12 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
+import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
@@ -76,6 +79,50 @@ class JwtKeysTests {
 	}
 
 	@Test
+	void keysMustBeForEs256Signatures() throws JOSEException {
+		ECKey encryption = new ECKeyGenerator(Curve.P_256).keyID("enc").keyUse(KeyUse.ENCRYPTION).generate();
+		ECKey es384 = new ECKeyGenerator(Curve.P_256).keyID("es384").algorithm(JWSAlgorithm.ES384).generate();
+		ECKey declared = new ECKeyGenerator(Curve.P_256).keyID("sig")
+			.keyUse(KeyUse.SIGNATURE)
+			.algorithm(JWSAlgorithm.ES256)
+			.generate();
+
+		assertThatIllegalStateException().isThrownBy(() -> JwtKeys.load(json(encryption), false))
+			.withMessageContaining("use = sig");
+		assertThatIllegalStateException().isThrownBy(() -> JwtKeys.load(json(es384), false))
+			.withMessageContaining("alg");
+		assertThat(JwtKeys.load(json(declared), false).signingKey().getKeyID()).isEqualTo("sig");
+	}
+
+	@Test
+	void signingKeyMustMatchItsPublicKey() throws JOSEException {
+		ECKey key = ec(Curve.P_256, "current");
+		ECKey other = ec(Curve.P_256, "other");
+		ECKey mismatched = new ECKey.Builder(key.toPublicJWK()).d(other.getD()).build();
+
+		assertThatIllegalStateException().isThrownBy(() -> JwtKeys.load(json(mismatched), false))
+			.withMessageContaining("does not match");
+	}
+
+	@Test
+	void securityConfigUsesEphemeralKeyOnlyInDevelopmentProfiles() {
+		JwtProperties properties = new JwtProperties("pik-server", Duration.ofMinutes(15), Duration.ofSeconds(60), "");
+
+		assertThatIllegalStateException()
+			.isThrownBy(() -> new SecurityConfig().jwtKeys(properties, new MockEnvironment()));
+		assertThat(new SecurityConfig().jwtKeys(properties, withProfiles("test")).signingKey().isPrivate()).isTrue();
+	}
+
+	@Test
+	void propertiesHideTheKeySet() {
+		String secret = "{\"keys\": [\"secret-material\"]}";
+
+		assertThat(new JwtProperties("pik-server", Duration.ofMinutes(15), Duration.ofSeconds(60), secret))
+			.asString()
+			.doesNotContain("secret-material");
+	}
+
+	@Test
 	void unparsableSetFailsWithoutEchoingIt() {
 		String secret = "{\"keys\": [{\"kty\": \"EC\", \"d\": \"secret-material\"";
 
@@ -90,6 +137,10 @@ class JwtKeysTests {
 		assertThat(DevelopmentProfiles.active(withProfiles("prod"))).isFalse();
 		assertThat(DevelopmentProfiles.active(withProfiles("local"))).isTrue();
 		assertThat(DevelopmentProfiles.active(withProfiles("prod", "test"))).isTrue();
+
+		MockEnvironment defaultLocal = new MockEnvironment();
+		defaultLocal.setDefaultProfiles("local");
+		assertThat(DevelopmentProfiles.active(defaultLocal)).isFalse();
 	}
 
 	private static MockEnvironment withProfiles(String... profiles) {

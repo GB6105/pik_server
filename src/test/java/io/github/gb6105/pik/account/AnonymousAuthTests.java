@@ -2,14 +2,25 @@ package io.github.gb6105.pik.account;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 
 import io.github.gb6105.pik.TestcontainersConfiguration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,8 +35,10 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import tools.jackson.databind.json.JsonMapper;
 
 @Import(TestcontainersConfiguration.class)
@@ -44,6 +57,9 @@ class AnonymousAuthTests {
 
 	@Autowired
 	JwtDecoder jwtDecoder;
+
+	@MockitoSpyBean
+	AttestationVerifier attestationVerifier;
 
 	@Test
 	void installStoresPrincipalInstallAndDeviceWithHashedToken() {
@@ -90,6 +106,41 @@ class AnonymousAuthTests {
 		Jwt jwt = jwtDecoder.decode((String) json(result).get("accessToken"));
 		assertThat(jwt.getSubject()).isEqualTo(installed.principalId().toString());
 		assertThat(jwt.getClaimAsString("kind")).isEqualTo("ANONYMOUS");
+	}
+
+	@Test
+	void attestationRunsOutsideTheTransaction() {
+		AtomicBoolean inTransaction = new AtomicBoolean(true);
+		doAnswer((invocation) -> {
+			inTransaction.set(TransactionSynchronizationManager.isActualTransactionActive());
+			return invocation.callRealMethod();
+		}).when(attestationVerifier).verify(any(), any());
+
+		installAndroid();
+
+		assertThat(inTransaction).isFalse();
+	}
+
+	@Test
+	void tokenEndpointsIgnoreAnInvalidAccessToken() {
+		Installed installed = installAndroid();
+
+		assertThat(mvc.post()
+			.uri("/auth/token")
+			.header("API-Version", "1")
+			.header(HttpHeaders.AUTHORIZATION, "Bearer x.y.z")
+			.contentType(MediaType.APPLICATION_JSON)
+			.content("""
+					{"grantType": "install_token", "installToken": "%s"}
+					""".formatted(installed.token()))).hasStatusOk();
+		assertThat(mvc.post()
+			.uri("/installs")
+			.header("API-Version", "1")
+			.header(HttpHeaders.AUTHORIZATION, "Bearer x.y.z")
+			.contentType(MediaType.APPLICATION_JSON)
+			.content("""
+					{"platform": "IOS", "attestation": {"token": "%s"}}
+					""".formatted(FakeAttestationVerifier.VALID_TOKEN))).hasStatus(201);
 	}
 
 	@Test
@@ -148,17 +199,10 @@ class AnonymousAuthTests {
 	}
 
 	@Test
-	void lastSeenMovesAtMostOncePerInterval() {
+	void lastSeenMovesAtMostOncePerIntervalWithoutDeviceVersion() {
 		Installed installed = installAndroid();
-		OffsetDateTime stale = OffsetDateTime.now(ZoneOffset.UTC).minusDays(2).truncatedTo(ChronoUnit.MICROS);
-		jdbc.sql("UPDATE anonymous_install SET last_seen_at = :at WHERE principal_id = :id")
-			.param("at", stale)
-			.param("id", installed.principalId())
-			.update();
-		jdbc.sql("UPDATE device SET last_seen_at = :at WHERE principal_id = :id")
-			.param("at", stale)
-			.param("id", installed.principalId())
-			.update();
+		OffsetDateTime stale = makeStale(installed.principalId());
+		long deviceVersion = deviceVersion(installed.principalId());
 
 		assertThat(token(installed.token())).hasStatusOk();
 		Instant installSeen = lastSeen("anonymous_install", installed.principalId());
@@ -169,6 +213,18 @@ class AnonymousAuthTests {
 		assertThat(token(installed.token())).hasStatusOk();
 		assertThat(lastSeen("anonymous_install", installed.principalId())).isEqualTo(installSeen);
 		assertThat(lastSeen("device", installed.principalId())).isEqualTo(deviceSeen);
+		assertThat(deviceVersion(installed.principalId())).isEqualTo(deviceVersion);
+	}
+
+	@Test
+	void concurrentExchangesOfAStaleInstallAllSucceed() throws Exception {
+		Installed installed = installAndroid();
+
+		for (int round = 0; round < 5; round++) {
+			makeStale(installed.principalId());
+			List<Integer> statuses = parallel(8, () -> token(installed.token()).getResponse().getStatus());
+			assertThat(statuses).containsOnly(200);
+		}
 	}
 
 	@Test
@@ -230,12 +286,49 @@ class AnonymousAuthTests {
 	}
 
 	private static void assertInstallTokenInvalid(MvcTestResult result) {
+		assertThat(result.getResponse().getHeaders(HttpHeaders.WWW_AUTHENTICATE)).containsExactly("Bearer");
 		assertThat(result).hasStatus(401)
-			.hasHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer")
 			.bodyJson()
 			.isLenientlyEqualTo("""
 					{"code": "UNAUTHENTICATED", "reason": "INSTALL_TOKEN_INVALID", "retryable": false}
 					""");
+	}
+
+	private OffsetDateTime makeStale(UUID principalId) {
+		OffsetDateTime stale = OffsetDateTime.now(ZoneOffset.UTC).minusDays(2).truncatedTo(ChronoUnit.MICROS);
+		for (String table : List.of("anonymous_install", "device")) {
+			jdbc.sql("UPDATE " + table + " SET last_seen_at = :at WHERE principal_id = :id")
+				.param("at", stale)
+				.param("id", principalId)
+				.update();
+		}
+		return stale;
+	}
+
+	private long deviceVersion(UUID principalId) {
+		return jdbc.sql("SELECT version FROM device WHERE principal_id = :id")
+			.param("id", principalId)
+			.query(Long.class)
+			.single();
+	}
+
+	private static <T> List<T> parallel(int count, Callable<T> task) throws Exception {
+		CountDownLatch start = new CountDownLatch(1);
+		try (ExecutorService executor = Executors.newFixedThreadPool(count)) {
+			List<Future<T>> futures = new ArrayList<>();
+			for (int i = 0; i < count; i++) {
+				futures.add(executor.submit(() -> {
+					start.await();
+					return task.call();
+				}));
+			}
+			start.countDown();
+			List<T> results = new ArrayList<>();
+			for (Future<T> future : futures) {
+				results.add(future.get(30, TimeUnit.SECONDS));
+			}
+			return results;
+		}
 	}
 
 	private Instant lastSeen(String table, UUID principalId) {
