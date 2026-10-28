@@ -21,7 +21,7 @@
 | 7 | 엔드포인트 | `POST /installs` (설치 토큰 발급), `POST /auth/token` (설치 토큰 → access JWT, 계정 로그인은 grant 종류로 추가) |
 | 8 | springdoc-openapi | 단계 2에서 제외하고 클라이언트 연동 전에 추가한다 |
 
-### 구현하면서 정한 관례 (Claude 제안)
+### 구현하면서 정한 관례 (Claude 제안, 종료 보고에서 사용자 확인)
 | # | 항목 | 결정 |
 |---|---|---|
 | 9 | 예상하지 못한 예외 | 503 `TEMPORARY_FAILURE` / `INTERNAL_ERROR`, `retryable` = true. 요구사항 오류 표에 500이 없어 표 안에서 대응한다. 원인은 서버 로그 (`stack_trace`)에만 남긴다 |
@@ -56,4 +56,4 @@
 - Tomcat의 필터 예외 로그를 끄더라도 같은 예외는 `RequestLoggingFilter`가 `trace_id`와 함께 남기므로 잃는 정보가 없다. 다만 Tomcat 로거 이름이 바뀌면 (버전 업그레이드) 예외 메시지가 다시 남을 수 있어, 테스트 (`servletExceptionMessageIsNotLogged`)로 감시한다.
 - `sendError(429)` 경로는 `Retry-After`를 붙일 수 없다. 429는 `PikException`으로만 낸다.
 - 위험: 가상 스레드는 요청 수만큼 늘지만 Hikari 커넥션 풀은 고정 크기라, DB를 기다리는 요청이 풀에 몰린다. 풀 크기와 대기 시간 (`connection-timeout`)은 부하 측정 (D-11) 때 정한다.
-- 출처: 1~8은 시작 보고에서 사용자가 확인했다 (2026-10-28). 9~13은 Claude가 구현하면서 정한 관례이며 종료 보고에서 확인을 받는다.
+- 출처: 1~8은 시작 보고에서 사용자가 확인했다 (2026-10-28). 9~13은 Claude가 구현하면서 정한 관례이며, 코드 검토 2회 (APPROVE) 후 종료 보고에서 사용자가 확인했다 (2026-10-28).
