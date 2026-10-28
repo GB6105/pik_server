@@ -29,9 +29,9 @@
 | 10 | 기본 거부 | `PublicEndpoints`가 나열한 경로, 오류 디스패치, actuator health만 토큰 없이 허용한다. 공개 경로에서는 `Authorization` 헤더를 무시해, 만료된 토큰을 붙인 요청도 토큰을 새로 받을 수 있다. health 밖의 actuator (`/actuator` 목록 포함)는 토큰이 있어도 거부한다 (403). 그 밖의 경로는 access token이 필요하다. 그래서 없는 경로와 `/error` 직접 요청도 토큰이 없으면 404가 아니라 401로 응답한다 |
 | 11 | 인증 실패 응답 | 토큰이 없으면 401 `ACCESS_TOKEN_REQUIRED` + `WWW-Authenticate: Bearer`, 토큰이 잘못됐거나 만료됐으면 401 `ACCESS_TOKEN_INVALID` + `WWW-Authenticate: Bearer error="invalid_token"`이다. 권한 부족 (actuator 등)은 403 `FORBIDDEN` / `ACCESS_DENIED`이다. 컨트롤러가 낸 401 (`INSTALL_TOKEN_INVALID`)에도 `WWW-Authenticate: Bearer`를 붙인다 |
 | 12 | 실패 응답 렌더링 | 보안 필터의 실패 처리기는 `ProblemDetail`을 직접 쓰지 않고, `PikException`을 `HandlerExceptionResolver`에 넘겨 컨트롤러 오류와 같은 `ApiExceptionHandler`가 쓰게 한다 (ADR-0025 결과의 "직접 쓴다"를 대체). 핸들러를 찾을 때 남는 `produces` 속성은 지워, 응답이 항상 `application/problem+json`이 되게 한다. 렌더링하지 못하면 `sendError`로 `/error` 컨트롤러에 넘긴다 |
-| 13 | JWT 검증 | ES256만 받는다 (`alg: none`·HS256 거부). `kid`가 없으면 거부한다. 헤더 `typ` = `JWT`로 발급하고, 다르거나 없으면 거부한다. `iss`, `exp` (필수), `sub` (정규 형식 UUID), `kind` (ACCOUNT / ANONYMOUS)를 확인한다. 만료 허용 오차는 60초 (`pik.security.jwt.clock-skew`), 발급자는 `pik-server` (`pik.security.jwt.issuer`)이다 |
+| 13 | JWT 검증 | ES256만 받는다 (`alg: none`·HS256 거부). `kid`가 없으면 거부한다. 헤더 `typ` = `JWT`로 발급하고, 다르거나 없으면 거부한다. 이 키 집합으로는 access token만 서명한다. 서버가 다른 종류의 JWT를 발급하게 되면 별도 키를 쓴다. `iss`, `exp` (필수), `sub` (정규 형식 UUID), `kind` (ACCOUNT / ANONYMOUS)를 확인한다. 만료 허용 오차는 60초 (`pik.security.jwt.clock-skew`), 발급자는 `pik-server` (`pik.security.jwt.issuer`)이다 |
 | 14 | 키 집합 검증 | 모든 키는 EC P-256이고, `kid`가 비어 있지 않으며 중복되지 않아야 한다. `use`·`alg`가 있으면 `sig`·`ES256`이어야 한다. 개인 키는 정확히 1개 (서명 키)이고, 기동할 때 서명·검증을 한 번 해 공개 키와 짝이 맞는지 확인한다. 어기면 기동을 실패시킨다. 설정 객체의 `toString`은 키 집합을 가린다. JSON 해석 오류 메시지에는 키 원문이 들어갈 수 있어 원인 예외를 연결하지 않는다 |
-| 15 | 마지막 사용 시각 | 토큰을 교환할 때 `anonymous_install.last_seen_at`이 1일 (`pik.account.last-seen-interval`) 넘게 지났을 때만 그 주체의 `anonymous_install`·`device` 행을 갱신한다. 엔티티 도메인 메서드가 아니라 조건부 UPDATE 문 (`last_seen_at <= 기준 시각`)으로 갱신하고, `device.version`은 올리지 않는다. 엔티티 상태 변경을 도메인 메서드로만 하는 규칙 (CLAUDE.md)의 예외다 |
+| 15 | 마지막 사용 시각 | 토큰을 교환할 때 `anonymous_install.last_seen_at`이 1일 (`pik.account.last-seen-interval`) 넘게 지났을 때만 그 주체의 `anonymous_install`·`device` 행을 갱신한다. 엔티티 도메인 메서드가 아니라 조건부 UPDATE 문 (`last_seen_at <= 기준 시각`)으로 갱신하고, `device.version`·`device.updated_at`은 바꾸지 않는다. 엔티티 상태 변경을 도메인 메서드로만 하는 규칙 (CLAUDE.md)의 예외다. 갱신한 트랜잭션에서는 이미 읽은 설치 엔티티를 고치지 않는다 (Hibernate가 옛 `last_seen_at`을 다시 씀) |
 | 16 | 기기 증명 대역 | 정해진 토큰 하나만 통과시키고, 나머지는 403 `FORBIDDEN` / `ATTESTATION_FAILED`로 거부한다. `attestation_kind`는 `platform`에서 도출해 저장한다. 기기 증명은 DB 트랜잭션 밖에서 실행하고, 주체·설치·기기 행은 한 트랜잭션에서 저장한다 |
 | 17 | 로그 | access token을 검증한 뒤 `principal_id`를 MDC에 두고, 요청 완료 로그에도 남긴다. `/installs`·`/auth/token`은 처리한 주체 ID를 완료 로그에 남긴다. 토큰 값과 `Authorization` 헤더는 남기지 않는다 |
 | 18 | ID 생성 | 서버가 만드는 ID는 `shared.id.UuidV7` (RFC 9562, `SecureRandom`)로 만든다. ID를 미리 정하므로 새 엔티티는 `EntityManager.persist`로 저장한다 (Spring Data `save`는 merge로 처리해 조회가 한 번 더 생김) |
@@ -45,7 +45,7 @@
 - 9: 사유를 나누면 토큰이 존재하는지, 주체가 탈퇴했는지를 응답으로 알아낼 수 있다. 단말은 어느 경우든 새 설치 토큰을 받아야 하므로 구분할 필요가 없다.
 - 10: 공개 경로를 명시적으로 나열하면, 새 엔드포인트가 인증 없이 열리는 실수를 막는다. 없는 경로의 401은 경로 존재를 드러내지 않는 효과도 있다.
 - 12: 오류 형식 (`type`·`title`·`code`·`reason`·`retryable`·`jobId`)을 한 곳에서만 만들면, 형식을 바꿀 때 보안 경로가 어긋나지 않는다.
-- 13: `kid`가 없으면 Nimbus는 집합의 모든 키로 검증을 시도한다. 이 서버가 발급한 토큰은 항상 `kid`를 가지므로, 없는 토큰은 다른 곳에서 만든 것이다. `typ`을 검사하지 않으면 같은 키로 다른 종류의 JWT를 서명하게 됐을 때 access token으로 받아들인다. 직접 만든 검증기로 바꾸면서 Spring Security 기본 검증기의 `typ` 검사가 빠져 따로 넣었다.
+- 13: `kid`가 없으면 Nimbus는 집합의 모든 키로 검증을 시도한다. 이 서버가 발급한 토큰은 항상 `kid`를 가지므로, 없는 토큰은 다른 곳에서 만든 것이다. `typ` 검사는 `typ`이 없거나 다른 토큰을 막는다. 다만 `JWT`는 범용 값이라, 같은 키로 서명한 다른 종류의 JWT가 `typ: JWT`를 달면 막지 못한다. 그래서 키 집합을 access token 전용으로 정했다. `at+jwt` (RFC 9068)는 `aud`·`client_id`·`jti` 클레임이 필요해 지금 클레임 구성 (ADR-0023 #8)과 맞지 않는다. 직접 만든 검증기로 바꾸면서 Spring Security 기본 검증기의 `typ` 검사가 빠져 따로 넣었다.
 - 15: 엔티티를 읽어 고치면, 하루의 첫 교환이 동시에 여러 건 오면 `device` 낙관적 잠금 충돌로 하나만 성공하고 나머지는 503이 됐다 (코드 검토에서 재현). 조건부 UPDATE는 먼저 온 요청만 쓰고 나머지는 0행을 갱신하므로 충돌이 없다. 마지막 사용 시각은 단말이 바꾸는 데이터가 아니므로, 이 값 때문에 `device.version`이 올라 단말의 변경 요청이 거짓 충돌을 내지 않게 한다.
 
 | 대안 | 버린 이유 |

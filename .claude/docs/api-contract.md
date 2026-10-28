@@ -61,7 +61,7 @@
 - 오류: 모르는 `grantType` = 400 `UNSUPPORTED_GRANT_TYPE`, `installToken` 누락 = 400 `VALIDATION_FAILED`, 없는·폐기된 토큰과 비활성 주체 = 401 `INSTALL_TOKEN_INVALID` (구분 안 함)
 
 ### 접근 제어 (ADR-0027)
-- 기본 거부. 공개 = `PublicEndpoints` 구현 (모듈별), 오류 디스패치, actuator health (공개 경로는 `Authorization` 무시). health 밖의 actuator = 403. 나머지 (없는 경로 포함) = `Authorization: Bearer <access JWT>`
+- 기본 거부. 공개 = `PublicEndpoints` 구현 (모듈별), 오류 디스패치, actuator health (공개 경로는 `Authorization` 무시). health 밖의 actuator = 토큰이 있어도 403 (없으면 401). 나머지 (없는 경로 포함) = `Authorization: Bearer <access JWT>`
 - 401 사유: 토큰 없음 = `ACCESS_TOKEN_REQUIRED` (`WWW-Authenticate: Bearer`), 잘못됨·만료 = `ACCESS_TOKEN_INVALID` (`WWW-Authenticate: Bearer error="invalid_token"`). 컨트롤러의 401도 `WWW-Authenticate: Bearer`. 권한 부족 = 403 `ACCESS_DENIED`
 - JWT 검증: ES256만, `kid` 필수, `typ` = `JWT`, `iss`·`exp`·`sub` (UUID)·`kind` 확인, 만료 허용 오차 60초 (설정값)
 - 요청 주체 = 컨트롤러 파라미터 `CurrentPrincipal`. 요청 본문·경로의 ID로 소유권 판단 금지

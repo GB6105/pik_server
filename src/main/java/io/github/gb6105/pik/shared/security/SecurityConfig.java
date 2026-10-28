@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
@@ -68,8 +69,11 @@ class SecurityConfig implements WebMvcConfigurer {
 
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http, List<PublicEndpoints> publicEndpoints,
-			SecurityProblemHandler problemHandler) throws Exception {
-		RequestMatcher publicRequests = publicRequests(publicEndpoints);
+			ObjectProvider<PathPatternRequestMatcher.Builder> pathMatchers, SecurityProblemHandler problemHandler)
+			throws Exception {
+		// Boot's builder applies spring.mvc.servlet.path, as requestMatchers(method, path) would.
+		RequestMatcher publicRequests = publicRequests(publicEndpoints,
+				pathMatchers.getIfAvailable(PathPatternRequestMatcher::withDefaults));
 		return http.csrf(AbstractHttpConfigurer::disable)
 			.logout(AbstractHttpConfigurer::disable)
 			.requestCache(AbstractHttpConfigurer::disable)
@@ -94,12 +98,13 @@ class SecurityConfig implements WebMvcConfigurer {
 			.build();
 	}
 
-	private static RequestMatcher publicRequests(List<PublicEndpoints> publicEndpoints) {
+	private static RequestMatcher publicRequests(List<PublicEndpoints> publicEndpoints,
+			PathPatternRequestMatcher.Builder pathMatchers) {
 		List<RequestMatcher> matchers = new ArrayList<>();
 		matchers.add(EndpointRequest.to("health"));
 		publicEndpoints.stream()
 			.flatMap((module) -> module.publicEndpoints().stream())
-			.map((endpoint) -> PathPatternRequestMatcher.pathPattern(endpoint.method(), endpoint.path()))
+			.map((endpoint) -> pathMatchers.matcher(endpoint.method(), endpoint.path()))
 			.forEach(matchers::add);
 		return new OrRequestMatcher(matchers);
 	}

@@ -22,7 +22,10 @@ public class AccessTokens {
 
 	static final String KIND_CLAIM = "kind";
 
-	/** {@code typ} header, checked on every request so that other JWTs signed with these keys are not accepted. */
+	/**
+	 * {@code typ} header, required on every request. Only access tokens are signed with these keys; another kind of
+	 * JWT needs its own keys (ADR-0027 #13).
+	 */
 	static final String TYPE = "JWT";
 
 	private final JwtEncoder encoder;

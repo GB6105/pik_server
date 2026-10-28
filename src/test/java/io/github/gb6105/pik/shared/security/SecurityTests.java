@@ -215,6 +215,13 @@ class SecurityTests {
 			.isLenientlyEqualTo("""
 					{"code": "UNAUTHENTICATED", "reason": "ACCESS_TOKEN_REQUIRED"}
 					""");
+		// Matching fails on the API version after it has recorded the producible types.
+		assertThat(mvc.get().uri("/test-secure/csv")).hasStatus(401)
+			.hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+			.bodyJson()
+			.isLenientlyEqualTo("""
+					{"code": "UNAUTHENTICATED", "reason": "ACCESS_TOKEN_REQUIRED"}
+					""");
 	}
 
 	@Test

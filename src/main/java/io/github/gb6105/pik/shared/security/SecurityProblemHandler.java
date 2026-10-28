@@ -79,13 +79,14 @@ class SecurityProblemHandler implements AuthenticationEntryPoint, AccessDeniedHa
 			if (chain != null) {
 				IdempotentCommands.markIfCommand(request, chain.getHandler());
 			}
-			// As DispatcherServlet does before exception handling: the problem response ignores the handler's produces.
-			request.removeAttribute(HandlerMapping.PRODUCIBLE_MEDIA_TYPES_ATTRIBUTE);
 		}
 		catch (Exception ex) {
 			// No handler (unknown path, method or API version): the response goes out without jobId.
 		}
 		finally {
+			// As DispatcherServlet does before exception handling: the problem response ignores the handler's
+			// produces. Matching sets it even when it then fails, for example on the API version.
+			request.removeAttribute(HandlerMapping.PRODUCIBLE_MEDIA_TYPES_ATTRIBUTE);
 			ServletRequestPathUtils.setParsedRequestPath(previous, request);
 		}
 	}
