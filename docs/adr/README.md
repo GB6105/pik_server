@@ -36,3 +36,4 @@
 | [0022](0022-schema-rules-analysis-request-and-photo-identity.md) | 스키마 공통 규칙·분석 접수 단위·기기 간 사진 식별 범위 | 채택 (D-19·벡터 보관 확정, 재접수 유니크 변경: ADR-0024) | 2026-10-26 |
 | [0023](0023-stage2-foundation-details.md) | 단계 2 공통 기반 세부 결정 (API·오류·멱등·인증·로그) | 채택 (429 확정: ADR-0024) | 2026-10-26 |
 | [0024](0024-pre-implementation-decisions.md) | 구현 전 미결 결정 일괄 확정 (서버 우선 원칙, 체험·분석·이벤트·구독·알림·검색·장소) | 채택 | 2026-10-27 |
+| [0025](0025-stage2-implementation-conventions.md) | 단계 2 구현 규약 (하위 작업 분할·오류 대응·로그·토큰 발급) | 채택 | 2026-10-28 |

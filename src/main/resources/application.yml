@@ -3,9 +3,54 @@ spring:
     name: pik-server
   config:
     import: optional:file:.env.local[.properties]
+  threads:
+    virtual:
+      enabled: true
+  web:
+    resources:
+      # No static content; unknown paths become NoHandlerFoundException instead of a resource lookup log.
+      add-mappings: false
+  mvc:
+    apiversion:
+      use:
+        header: API-Version
+      supported: 1
+  datasource:
+    hikari:
+      data-source-properties:
+        # PostgreSQL error details can echo column values into exception messages.
+        logServerErrorDetail: false
   jpa:
     open-in-view: false
     hibernate:
       ddl-auto: validate
   flyway:
     enabled: true
+
+# Field allow list from ADR-0023 #9; anything else (thread, MDC extras, request data) is dropped.
+logging:
+  level:
+    # Malformed request lines are logged at INFO with the raw request target (may contain search terms).
+    org.apache.coyote.http11.Http11Processor: WARN
+    # Repeats filter exceptions with getMessage() and no trace_id; RequestLoggingFilter already logs them.
+    "[org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/].[dispatcherServlet]]": OFF
+  structured:
+    format:
+      console: logstash
+    json:
+      include:
+        - "@timestamp"
+        - level
+        - logger_name
+        - message
+        - stack_trace
+        - trace_id
+        - principal_id
+        - action
+        - target_id
+        - status
+        - reason
+        - http_status
+        - duration_ms
+      stacktrace:
+        printer: io.github.gb6105.pik.shared.logging.MessageFreeStackTracePrinter

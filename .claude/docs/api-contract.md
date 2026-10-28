@@ -36,6 +36,9 @@
 - 오류 응답 = RFC 9457 `ProblemDetail` + `code` (위 표, HTTP와 1:1) + `reason` (세부 사유, 기능별 추가) + `retryable`. 장기 작업 응답은 `jobId` 포함
 - 목록 작업 = 200 + `items[]` (대상별 `result`·`code`·`reason`·`retryable`, 버전 충돌이면 `currentVersion`). `items[].code`는 같은 분류를 HTTP 없이 사용
 - 요청 자체가 잘못되면 4xx. 대상별로 처리했으면 모두 실패해도 200 + `items[]`
+- 프레임워크 오류 (ADR-0025 #10): HTTP 상태 보존 (401·403·404·409·422·429 그대로), 405 = 422 `UNSUPPORTED_OPERATION` / `METHOD_NOT_ALLOWED` (`Allow` 유지), 그 밖의 4xx = 400 `INVALID_INPUT` / `BAD_REQUEST`, 500·예상하지 못한 예외 = 503 `TEMPORARY_FAILURE` / `INTERNAL_ERROR`, 그 밖의 5xx = 503 / `SERVER_UNAVAILABLE` (5xx는 `retryable` = true)
+- 프레임워크 세부 사유: `API_VERSION_REQUIRED`·`API_VERSION_UNSUPPORTED`·`VALIDATION_FAILED`·`MALFORMED_BODY`·`MEDIA_TYPE_NOT_SUPPORTED`·`RESOURCE_NOT_FOUND`. 필터 예외·`sendError`도 같은 형식 (`/error` 컨트롤러), `/error` 직접 요청 = 404
+- 예외 메시지에 요청 데이터 금지. `PikException` = `code`·`reason`·`retryable` (+ `Retry-After`)만. `RATE_LIMITED`는 `retryAfter` 필수 (초 단위 올림), 429는 `PikException`으로만. 로그 `stack_trace` = 예외 클래스 이름만 (ADR-0025 #11)
 - API 버전 = 요청 헤더 `API-Version`, 첫 값 `1`. 누락 시 400. 폐기 예정 = `Deprecation`·`Sunset` 응답 헤더. actuator 제외
 - 데이터 버전 = 변경 요청 본문의 대상별 `version`. 응답도 대상별 현재 `version`. `If-Match` 미사용
 - 작업 식별자 = `Idempotency-Key` 헤더 (UUIDv7). 세부 규칙은 `consistency-rules.md` 멱등성
