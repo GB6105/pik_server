@@ -4,7 +4,7 @@
 > 결정 근거는 `adr/`, 날짜별 진행 기록은 `devlog/`에 둔다.
 
 - 최종 갱신: 2026-10-28
-- 현재 단계: **1. 프로젝트 골격 완료** → 단계 2 착수 전 (도메인 코드 없음)
+- 현재 단계: **2. 공통 기반 진행 중** (2-1 검토 반영 완료·PR 대기, 2-2·2-3 대기)
 
 ## 기록 체계
 | 문서 | 경로 | 용도 | 갱신 시점 |
@@ -57,7 +57,7 @@
 - ER 설계안을 ADR-0020·0021에 맞춤 (38개 테이블). 스키마 공통 판단 (D-15 해소)·분석 접수 단위·기기 간 사진 식별 범위 결정 ([ADR-0022](adr/0022-schema-rules-analysis-request-and-photo-identity.md))
 - 단계 2 공통 기반 세부 값: 데이터 버전 위치, 오류 응답 구조·오류 코드 해석·공통 응답 필드, 토큰 수명·익명 토큰·refresh 재사용 유예, API 버전, 멱등 기록, JWT, 로그, 기기 증명 대역, 모듈 골격 ([ADR-0023](adr/0023-stage2-foundation-details.md))
 - 구현 전 미결 결정 일괄 확정: 서버 우선 원칙, 체험 반환·교체 없음·3회 클릭 집계 (P01), 비로그인 이벤트 서버 판단·액션 모듈·정리 상태 동기화 (D-16 해소), 재접수·배치 귀속 (D-19 해소), 벡터 보관·수정 사진·대표 삭제 (P05), 웹 탐색 모델·RevenueCat·알림 제안 확정 (D-14 일부), 발송 대상 기기 (P09, D-18 해소), 빈 이벤트 숨김 (P11), 검색 호출 제한 (D-17 해소), 지도 연결·번역·장소 좌표 (D-10 해소). ER 41개 테이블 ([ADR-0024](adr/0024-pre-implementation-decisions.md))
-- 단계 2-1 공통 기반: Modulith `shared`·`account` 모듈 골격과 경계 검증, `API-Version` 헤더, ProblemDetail 오류 형식, 구조화 로그 허용 목록, 가상 스레드 ([ADR-0025](adr/0025-stage2-implementation-conventions.md))
+- 단계 2-1 공통 기반: Modulith `shared`·`account` 모듈 골격과 경계 검증, `API-Version` 헤더, ProblemDetail 오류 형식 (`/error` 컨트롤러 포함), 구조화 로그 허용 목록·예외 메시지를 뺀 stack trace, 가상 스레드 ([ADR-0025](adr/0025-stage2-implementation-conventions.md))
 
 ## 다음 할 일
 - [ ] 단계 2-2: 첫 Flyway 마이그레이션 (멱등 기록·outbox·변경 번호 카운터), 멱등 실행기, 만료 기록 정리 배치, 변경 요청 오류 응답의 `jobId`·`result` (ADR-0023·0025)
