@@ -152,7 +152,8 @@
       "03hq8751kxx725f793dglfpkz",
       "03h6jvzg07bv5pctizzfeydig",
       "03hlnnu5iae7wujmbxaeadqae",
-      "03h8ubyxj764q6dplogninvz7"
+      "03h8ubyxj764q6dplogninvz7",
+      "03h96tf6luapcjplha68rmshw"
     ],
     "memoIds": [
       "03h446hedsmnrwp09ht0scm16",
@@ -889,7 +890,7 @@
       "03h4468geephs5erx656317ly": {
         "id": "03h4468geephs5erx656317ly",
         "name": "event_publication",
-        "comment": "Spring Modulith JDBC event publication registry (내부 이벤트 outbox). DDL은 Modulith 제공 스크립트 사용",
+        "comment": "Spring Modulith JDBC event publication registry (내부 이벤트 outbox). DDL은 Modulith 제공 스크립트 사용. 완료된 발행은 즉시 삭제 (completion-mode = DELETE, ADR-0026)",
         "columnIds": [
           "03h4468geephs5erx65tepfdr",
           "03h4468geephs5erx67irjads",
@@ -3400,7 +3401,7 @@
         "id": "03h4468geephs5erx6hukefst",
         "tableId": "03h4468geephs5erx656317ly",
         "name": "status",
-        "comment": "Modulith 2.x 컬럼, 버전 확인 필요",
+        "comment": "Modulith 2.1.2 v2 스키마 컬럼 (ADR-0026)",
         "dataType": "text",
         "options": 0
       },
@@ -3408,7 +3409,7 @@
         "id": "03h4468geephs5erx6jc5rg8b",
         "tableId": "03h4468geephs5erx656317ly",
         "name": "completion_attempts",
-        "comment": "Modulith 2.x 컬럼, 버전 확인 필요",
+        "comment": "Modulith 2.1.2 v2 스키마 컬럼 (ADR-0026)",
         "dataType": "int",
         "options": 0
       },
@@ -3416,7 +3417,7 @@
         "id": "03h4468geephs5erx6lo66oo1",
         "tableId": "03h4468geephs5erx656317ly",
         "name": "last_resubmission_date",
-        "comment": "Modulith 2.x 컬럼, 버전 확인 필요",
+        "comment": "Modulith 2.1.2 v2 스키마 컬럼 (ADR-0026)",
         "dataType": "timestamptz",
         "options": 0
       },
@@ -3431,15 +3432,17 @@
         "id": "03h4468geephs5erx6rn1axf6",
         "tableId": "03h4468geephs5erx6nws4bod",
         "name": "lock_until",
-        "dataType": "timestamptz",
-        "options": 8
+        "dataType": "timestamp",
+        "options": 8,
+        "comment": "UTC 시각 (ShedLock usingDbTime이 timezone('utc', CURRENT_TIMESTAMP)로 기록, ADR-0026)"
       },
       "03h4468geephs5erx6uw2x6ad": {
         "id": "03h4468geephs5erx6uw2x6ad",
         "tableId": "03h4468geephs5erx6nws4bod",
         "name": "locked_at",
-        "dataType": "timestamptz",
-        "options": 8
+        "dataType": "timestamp",
+        "options": 8,
+        "comment": "UTC 시각 (ShedLock usingDbTime이 timezone('utc', CURRENT_TIMESTAMP)로 기록, ADR-0026)"
       },
       "03h4468geephs5erx6w8l5evo": {
         "id": "03h4468geephs5erx6w8l5evo",
@@ -5203,6 +5206,15 @@
           "03h3us3xxggcc0kv2rxd8kp1y"
         ],
         "unique": false
+      },
+      "03h96tf6luapcjplha68rmshw": {
+        "id": "03h96tf6luapcjplha68rmshw",
+        "name": "ix_idempotency_record_expires_at",
+        "tableId": "03h4468ge977zqezlpt9mf2c0",
+        "indexColumnIds": [
+          "03hcoy5rf264iyb73ghfh34p9"
+        ],
+        "unique": false
       }
     },
     "indexColumnEntities": {
@@ -5732,6 +5744,12 @@
         "id": "03h3us3xxggcc0kv2rxd8kp1y",
         "indexId": "03h8ubyxj764q6dplogninvz7",
         "columnId": "03hc3v6x6j7cqxiyz8y4eqbtd",
+        "orderType": 1
+      },
+      "03hcoy5rf264iyb73ghfh34p9": {
+        "id": "03hcoy5rf264iyb73ghfh34p9",
+        "indexId": "03h96tf6luapcjplha68rmshw",
+        "columnId": "03h4468ge977zqezlqaixpvhr",
         "orderType": 1
       }
     },

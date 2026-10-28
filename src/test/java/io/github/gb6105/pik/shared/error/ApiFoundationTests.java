@@ -96,6 +96,7 @@ class ApiFoundationTests {
 	void pikExceptionKeepsCodeReasonAndRetryable() {
 		assertThat(mvc.get().uri("/test-probe/conflict").header("API-Version", "1")).hasStatus(409)
 			.bodyJson()
+			.doesNotHavePath("$.result")
 			.isLenientlyEqualTo("""
 					{"status": 409, "code": "CONFLICT", "reason": "PROBE_CONFLICT", "retryable": true}
 					""");

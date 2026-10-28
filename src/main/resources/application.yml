@@ -26,6 +26,20 @@ spring:
       ddl-auto: validate
   flyway:
     enabled: true
+  modulith:
+    events:
+      # Completed publications carry owner and photo IDs; delete them instead of defining a retention rule.
+      completion-mode: delete
+      jdbc:
+        schema-initialization:
+          enabled: false
+
+pik:
+  idempotency:
+    retention: P7D
+    lock-timeout: PT3S
+    cleanup-interval: PT1H
+    cleanup-batch-size: 1000
 
 # Field allow list from ADR-0023 #9; anything else (thread, MDC extras, request data) is dropped.
 logging:

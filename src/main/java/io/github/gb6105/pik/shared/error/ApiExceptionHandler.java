@@ -35,7 +35,8 @@ import org.springframework.web.util.WebUtils;
 class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
 	@ExceptionHandler(PikException.class)
-	@Nullable ResponseEntity<ProblemDetail> handlePikException(PikException ex, HttpServletResponse response) {
+	@Nullable ResponseEntity<ProblemDetail> handlePikException(PikException ex, HttpServletRequest request,
+			HttpServletResponse response) {
 		if (response.isCommitted()) {
 			return null;
 		}
@@ -46,7 +47,7 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 			headers.set(HttpHeaders.RETRY_AFTER, Long.toString(Math.max(1, seconds)));
 		}
 		ApiError error = new ApiError(ex.getCode(), ex.getReason(), ex.isRetryable());
-		return new ResponseEntity<>(error.toProblemDetail(), headers, error.code().status());
+		return new ResponseEntity<>(CommandRequests.problem(error, request), headers, error.code().status());
 	}
 
 	// No 500 in the requirements' error table: unexpected failures surface as a retryable TEMPORARY_FAILURE.
@@ -62,7 +63,7 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 		if (response.isCommitted()) {
 			return null;
 		}
-		return new ResponseEntity<>(error.toProblemDetail(), error.code().status());
+		return new ResponseEntity<>(CommandRequests.problem(error, request), error.code().status());
 	}
 
 	@Override
@@ -73,13 +74,15 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 			logFailure(ex, error);
 			request.setAttribute(WebUtils.ERROR_EXCEPTION_ATTRIBUTE, ex, WebRequest.SCOPE_REQUEST);
 		}
-		if (request instanceof ServletWebRequest servletRequest && servletRequest.getResponse() != null
-				&& servletRequest.getResponse().isCommitted()) {
+		ServletWebRequest servletRequest = (ServletWebRequest) request;
+		HttpServletResponse response = servletRequest.getResponse();
+		if (response != null && response.isCommitted()) {
 			return null;
 		}
 		HttpHeaders responseHeaders = new HttpHeaders();
 		responseHeaders.addAll(headers);
-		return new ResponseEntity<>(error.toProblemDetail(), responseHeaders, error.code().status());
+		return new ResponseEntity<>(CommandRequests.problem(error, servletRequest.getRequest()), responseHeaders,
+				error.code().status());
 	}
 
 	private static ApiError classify(Exception ex, HttpStatusCode statusCode) {
