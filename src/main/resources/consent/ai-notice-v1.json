@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "draft": true,
+  "title": "외부 AI 분석을 위한 정보 전송 동의",
+  "transfers": [
+    {
+      "data": "사진 축소본, 사진 속 텍스트",
+      "recipient": "Anthropic (Claude)",
+      "purpose": "사진 분석, 액션·이벤트 만들기, 사진 속 텍스트 번역",
+      "country": null,
+      "retention": null
+    },
+    {
+      "data": "검색어, 앨범 이름",
+      "recipient": "TypeSafe (Jev)",
+      "purpose": "검색어와 관련 있는 앨범 판단",
+      "country": null,
+      "retention": null
+    },
+    {
+      "data": "검색어 (Pro 이용 시)",
+      "recipient": "Anthropic (Claude)",
+      "purpose": "검색어에서 검색 조건 추출",
+      "country": null,
+      "retention": null
+    },
+    {
+      "data": "이벤트 장소 문구 (장소 이름이나 주소)",
+      "recipient": "Google (Places)",
+      "purpose": "장소 알림에 쓸 장소 위치 확인",
+      "country": null,
+      "retention": null
+    }
+  ],
+  "notes": [
+    "Pik은 사진 원본을 백업하지 않습니다. 분석에 필요한 축소본과 텍스트만 보내고, 분석이 끝나면 서버에 임시로 저장한 이미지를 지웁니다.",
+    "동의하지 않아도 수동 정리, 메모, 태그, 속성 검색은 그대로 쓸 수 있습니다. 사진 분석과 자연어 검색은 제공되지 않습니다.",
+    "동의는 언제든 철회할 수 있습니다. 철회하면 아직 보내지 않은 분석은 취소되고, 이미 만든 분석 결과는 그대로 남습니다."
+  ]
+}
