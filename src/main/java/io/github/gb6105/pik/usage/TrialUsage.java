@@ -49,9 +49,8 @@ public class TrialUsage {
 	 * Records in the DeviceCheck bits that an iOS device starts its trial, before the job that would use it is
 	 * accepted (ADR-0029 #5·18). Does nothing when the device is not iOS, is already recorded or cannot cover the
 	 * photos for the principal, even while an earlier write is unconfirmed. A device whose bits another install has
-	 * set gets no trial. Calls Apple, so it runs
-	 * outside database transactions; once the bits are set, the device has started its trial even if the job is then
-	 * not accepted.
+	 * set gets no trial. Calls Apple, so it runs outside database transactions; once the bits are set, the device has
+	 * started its trial even if the job is then not accepted.
 	 * @param photos the photos of the job about to be accepted
 	 * @param deviceCheckToken a token the app has just generated; required while the start is not recorded
 	 * @throws PikException {@code INVALID_INPUT} / {@code DEVICE_CHECK_TOKEN_REQUIRED} without a token while one is
@@ -213,7 +212,8 @@ public class TrialUsage {
 	}
 
 	/**
-	 * The principal and device mark a transaction has changed usage for, released when it completes.
+	 * The principal and device mark a transaction has changed usage for, released before it completes so that
+	 * after-commit callbacks may change usage again in a new transaction.
 	 */
 	private static final class Scope implements TransactionSynchronization {
 
@@ -232,6 +232,11 @@ public class TrialUsage {
 			if (trialMarkId != null) {
 				this.trialMarkId = trialMarkId;
 			}
+		}
+
+		@Override
+		public void beforeCompletion() {
+			TransactionSynchronizationManager.unbindResourceIfPossible(SCOPE);
 		}
 
 		@Override

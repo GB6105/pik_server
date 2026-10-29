@@ -49,6 +49,8 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -427,13 +429,17 @@ class TrialUsageTests {
 	}
 
 	@Test
-	void startFollowsTheLimitTheMarkWasCreatedWith() {
-		UUID mark = installIos(deviceCheckToken());
-		jdbc.sql("UPDATE device_trial_mark SET limit_count = 2 WHERE id = :id").param("id", mark).update();
+	void startNeedsTheLimitsOfTheMarkAndOfANewQuota() {
+		UUID smaller = installIos(deviceCheckToken());
+		UUID larger = installIos(deviceCheckToken());
+		jdbc.sql("UPDATE device_trial_mark SET limit_count = 2 WHERE id = :id").param("id", smaller).update();
+		jdbc.sql("UPDATE device_trial_mark SET limit_count = 10 WHERE id = :id").param("id", larger).update();
 
-		trialUsage.recordStart(UuidV7.generate(), mark, 3, null);
+		trialUsage.recordStart(UuidV7.generate(), smaller, 3, null);
+		trialUsage.recordStart(UuidV7.generate(), larger, 6, null);
 
-		assertThat(mark(mark)).containsEntry("device_check_state", null);
+		assertThat(mark(smaller)).containsEntry("device_check_state", null);
+		assertThat(mark(larger)).containsEntry("device_check_state", null);
 		verify(deviceCheck, never()).recordTrialStarted(any());
 	}
 
@@ -517,6 +523,30 @@ class TrialUsageTests {
 			nested.executeWithoutResult((inner) -> trialUsage.reserve(principal, mark, UuidV7.generate(), photos(1)));
 		})).withMessageContaining("nested");
 		assertThat(reserve(principal, mark, UuidV7.generate(), photos(1))).isEqualTo(new Reservation.Reserved(1));
+	}
+
+	@Test
+	void afterCommitCallbackMayChangeTheUsageInANewTransaction() {
+		UUID principal = UuidV7.generate();
+		UUID mark = androidMark();
+		UUID job = UuidV7.generate();
+		TransactionTemplate next = new TransactionTemplate(transaction.getTransactionManager());
+		next.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+
+		transaction.executeWithoutResult((status) -> {
+			trialUsage.reserve(principal, mark, job, photos(1));
+			TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+
+				@Override
+				public void afterCommit() {
+					next.executeWithoutResult((inner) -> trialUsage.release(principal, job));
+				}
+
+			});
+		});
+
+		assertThat(quota(principal)).containsEntry("reserved_count", 0);
+		assertThat(reservations(principal)).extracting((row) -> row.get("status")).containsExactly("RELEASED");
 	}
 
 	@Test

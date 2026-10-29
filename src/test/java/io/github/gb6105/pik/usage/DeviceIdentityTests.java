@@ -41,6 +41,9 @@ class DeviceIdentityTests {
 		assertThatIllegalStateException().isThrownBy(() -> DeviceKeys.load(KEY + ":1", false))
 			.withMessageNotContaining(KEY)
 			.withNoCause();
+		assertThatIllegalStateException().isThrownBy(() -> DeviceKeys.load("1:not-base64!", false))
+			.withMessageNotContaining("not-base64")
+			.withNoCause();
 	}
 
 	@Test
