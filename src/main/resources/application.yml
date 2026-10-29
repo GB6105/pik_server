@@ -57,6 +57,12 @@ pik:
       jwk-set: ${PIK_SECURITY_JWT_JWK_SET:}
   account:
     last-seen-interval: P1D
+  consent:
+    ai:
+      # Notice served with the consent state (classpath:consent/ai-notice-v<N>.json); new consents must be given on it.
+      notice-version: 1
+      # Consents given on older notices no longer count. Raise it only when the transfers widen (ADR-0028 #4).
+      minimum-notice-version: 1
 
 # Field allow list from ADR-0023 #9; anything else (thread, MDC extras, request data) is dropped.
 logging:

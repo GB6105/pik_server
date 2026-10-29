@@ -66,6 +66,19 @@
 - JWT 검증: ES256만, `kid` 필수, `typ` = `JWT`, `iss`·`exp`·`sub` (UUID)·`kind` 확인, 만료 허용 오차 60초 (설정값)
 - 요청 주체 = 컨트롤러 파라미터 `CurrentPrincipal`. 요청 본문·경로의 ID로 소유권 판단 금지
 
+### 외부 전송 동의 (FR-O-02, ADR-0028)
+| 엔드포인트 | 요청 | 응답 |
+|---|---|---|
+| `GET /consents/ai` | - | 200 `{consent, notice}` |
+| `PUT /consents/ai` (변경 요청, `Idempotency-Key`) | `{decision: GRANTED / DENIED, noticeVersion, version}` | 200 `{jobId, result, retryable, consent}` |
+- `consent` = `{purpose, status (NONE / GRANTED / DENIED / WITHDRAWN), version, noticeVersion, decidedAt, reconsentRequired, features}`. `status`·`noticeVersion`·`decidedAt` = 마지막 결정 기준 (처음 동의 시각은 이력에만). `notice` = 현재 안내 `{version, title, transfers[{data, recipient, purpose, country, retention}], notes[]}`
+- `version` = 주체·목적별 동의 순번 (기록 없음 = 0). 받아들인 결정마다 1 증가 (같은 결정 반복 포함). 다르면 409 `VERSION_CONFLICT`
+- 동의 = 현재 안내 버전만 (아니면 409 `NOTICE_OUTDATED`). 거절 = 서버가 제공한 버전이면 기록. 제공한 적 없는 버전 = 409 `UNKNOWN_NOTICE_VERSION`
+- `VERSION_CONFLICT`·`NOTICE_OUTDATED`·`UNKNOWN_NOTICE_VERSION` = 조회해 현재 상태·안내를 보여 줌. 동의는 사용자가 현재 상태·안내를 보고 다시 고른 경우에만 새 키로 전송 (자동 재전송 금지). 거절은 전송 범위를 넓히지 않으므로 자동 재전송 허용 (새 키·조회한 현재 순번). `IDEMPOTENCY_IN_PROGRESS` = 같은 키로 재시도
+- 직전이 동의인 거절 = `WITHDRAWN`, 그 밖의 거절 = `DENIED`
+- `features` = 동의 기준 (기본 4개 + 유효한 동의 시 `PHOTO_ANALYSIS`·`NATURAL_LANGUAGE_SEARCH`). 체험·구독 자격은 별도. 분석 가능 여부는 `status`가 아니라 `features`로 판단
+- `reconsentRequired` = 최소 안내 버전 (설정값) 미만에서 받은 동의 → 현재 안내로 다시 묻기
+
 ## 정상 결과로 취급
 - 빈 검색 결과
 - 사용자 취소
