@@ -3589,7 +3589,7 @@
         "id": "03h46ggks8ij6t1ezl8lkhrhm",
         "tableId": "03h46ggkrxnffv4hjizyj1crb",
         "name": "device_check_state",
-        "comment": "iOS만. DeviceCheck 시작 기록 (bit0)이 있으면 TRIAL_STARTED: 설치 때 이미 있었거나 첫 체험 접수 전에 기록. 소진은 기록하지 않음 (ADR-0029 #5·14)",
+        "comment": "iOS만. STARTING = Apple에 시작을 쓰는 중 (확인하지 못하면 재시도가 조회 없이 다시 씀), TRIAL_STARTED = 시작 기록 있음 (설치 전에 이미 있었거나, 다른 설치가 먼저 시작했거나, 이 설치가 기록함). 소진은 기록하지 않음 (ADR-0029 #5·14·18)",
         "dataType": "text",
         "options": 0
       },

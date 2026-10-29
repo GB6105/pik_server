@@ -6,6 +6,12 @@ package io.github.gb6105.pik.usage;
  */
 enum DeviceCheckState {
 
+	/**
+	 * The start is about to be written to Apple. If the write cannot be confirmed, a retry writes again without
+	 * reading the bits first, which this install may have set itself (ADR-0029 #18).
+	 */
+	STARTING,
+
 	TRIAL_STARTED
 
 }

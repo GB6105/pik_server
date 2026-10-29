@@ -10,6 +10,7 @@ import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 /**
  * One consent decision. Rows are only added; a principal's consent for a purpose is its row with the highest
@@ -25,8 +26,8 @@ class AiConsent {
 
 	private UUID principalId;
 
-	/** The device the decision came from (ADR-0029). */
-	private UUID deviceId;
+	/** The device the decision came from (ADR-0029); empty on rows recorded before devices were identified. */
+	private @Nullable UUID deviceId;
 
 	@Enumerated(EnumType.STRING)
 	private ConsentPurpose purpose;

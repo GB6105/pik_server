@@ -27,7 +27,8 @@ record InstallRequest(@NotNull Platform platform, @Size(max = 32) @Nullable Stri
 		String deviceCheckToken = trialDevice.deviceCheckToken();
 		return switch (platform) {
 			case ANDROID -> {
-				if (!StringUtils.hasText(androidId) || deviceCheckToken != null) {
+				if (androidId == null || !TrialDevices.Evidence.Android.isWellFormed(androidId)
+						|| deviceCheckToken != null) {
 					throw trialDeviceInvalid();
 				}
 				yield new TrialDevices.Evidence.Android(androidId);
@@ -54,11 +55,19 @@ record InstallRequest(@NotNull Platform platform, @Size(max = 32) @Nullable Stri
 
 	/**
 	 * Exactly one value, the platform's. Neither is stored or logged.
-	 * @param androidId {@code Settings.Secure.ANDROID_ID}; Android only
+	 * @param androidId {@code Settings.Secure.ANDROID_ID}, a hex number; Android only
 	 * @param deviceCheckToken a token from {@code DCDevice.generateToken}; iOS only
 	 */
 	record TrialDevice(@Size(max = 64) @Nullable String androidId,
 			@Size(max = 16384) @Nullable String deviceCheckToken) {
+
+		// Both values identify the device and must not reach logs.
+		@Override
+		public String toString() {
+			return "TrialDevice[androidId=" + (androidId != null ? "(hidden)" : "null") + ", deviceCheckToken="
+					+ (deviceCheckToken != null ? "(hidden)" : "null") + "]";
+		}
+
 	}
 
 }

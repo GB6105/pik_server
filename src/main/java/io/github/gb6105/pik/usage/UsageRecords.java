@@ -105,26 +105,36 @@ class UsageRecords {
 		return Optional.empty();
 	}
 
+	/**
+	 * Key versions of stored Android marks.
+	 */
+	List<Integer> androidKeyVersions() {
+		return entityManager
+			.createQuery("SELECT DISTINCT m.keyVersion FROM DeviceTrialMark m WHERE m.keyVersion IS NOT NULL",
+					Integer.class)
+			.getResultList();
+	}
+
+	// The status is a literal so that the plan can use the partial unique index (WHERE status <> 'RELEASED').
 	List<UsageReservation> findUnreleased(UUID principalId, Collection<UUID> photoIds) {
 		return entityManager.createQuery("""
 				SELECT r FROM UsageReservation r
 				WHERE r.principalId = :principalId AND r.photoId IN :photoIds
-				  AND r.status <> :released
+				  AND r.status <> io.github.gb6105.pik.usage.ReservationStatus.RELEASED
 				""", UsageReservation.class)
 			.setParameter("principalId", principalId)
 			.setParameter("photoIds", photoIds)
-			.setParameter("released", ReservationStatus.RELEASED)
 			.getResultList();
 	}
 
 	List<UsageReservation> findReserved(UUID principalId, UUID jobId) {
 		return entityManager.createQuery("""
 				SELECT r FROM UsageReservation r
-				WHERE r.principalId = :principalId AND r.jobId = :jobId AND r.status = :reserved
+				WHERE r.principalId = :principalId AND r.jobId = :jobId
+				  AND r.status = io.github.gb6105.pik.usage.ReservationStatus.RESERVED
 				""", UsageReservation.class)
 			.setParameter("principalId", principalId)
 			.setParameter("jobId", jobId)
-			.setParameter("reserved", ReservationStatus.RESERVED)
 			.getResultList();
 	}
 

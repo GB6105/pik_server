@@ -180,6 +180,7 @@ class AnonymousAuthTests {
 
 		for (String body : List.of(android.formatted(FakeAttestationVerifier.VALID_TOKEN, "{}"),
 				android.formatted(FakeAttestationVerifier.VALID_TOKEN, "{\"androidId\": \" \"}"),
+				android.formatted(FakeAttestationVerifier.VALID_TOKEN, "{\"androidId\": \"not-hex\"}"),
 				android.formatted(FakeAttestationVerifier.VALID_TOKEN, "{\"deviceCheckToken\": \"fake-device-check:a\"}"),
 				android.formatted(FakeAttestationVerifier.VALID_TOKEN,
 						"{\"androidId\": \"%s\", \"deviceCheckToken\": \"fake-device-check:a\"}".formatted(androidId())),

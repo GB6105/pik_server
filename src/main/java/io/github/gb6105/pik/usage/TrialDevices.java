@@ -2,7 +2,9 @@ package io.github.gb6105.pik.usage;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -64,12 +66,30 @@ public class TrialDevices {
 
 		/**
 		 * @param deviceId {@code Settings.Secure.ANDROID_ID}, the same for the app across reinstalls until a factory
-		 * reset
+		 * reset; stored in lower case without surrounding spaces
 		 */
 		record Android(String deviceId) implements Evidence {
 
+			// A 64-bit number in hex.
+			private static final Pattern FORMAT = Pattern.compile("[0-9a-f]{1,16}");
+
 			public Android {
-				Assert.hasText(deviceId, "deviceId must not be empty");
+				deviceId = normalize(deviceId);
+				Assert.isTrue(FORMAT.matcher(deviceId).matches(), "deviceId must be a 64-bit hex number");
+			}
+
+			public static boolean isWellFormed(String deviceId) {
+				return FORMAT.matcher(normalize(deviceId)).matches();
+			}
+
+			private static String normalize(String deviceId) {
+				return deviceId.strip().toLowerCase(Locale.ROOT);
+			}
+
+			// The device ID must not reach logs.
+			@Override
+			public String toString() {
+				return "Android[deviceId=(hidden)]";
 			}
 
 		}
@@ -81,6 +101,12 @@ public class TrialDevices {
 
 			public Ios {
 				Assert.hasText(deviceCheckToken, "deviceCheckToken must not be empty");
+			}
+
+			// The token identifies the device and must not reach logs.
+			@Override
+			public String toString() {
+				return "Ios[deviceCheckToken=(hidden)]";
 			}
 
 		}

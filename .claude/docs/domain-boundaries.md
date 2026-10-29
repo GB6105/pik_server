@@ -35,7 +35,7 @@
 - Modulith 모듈 = 도메인 후보 + `shared` (ERD 그룹 '공통 인프라': 오류·멱등·로그·보안)
 - 단계 2 = `shared`, `account` ('계정과 구독' 중 주체·설치·기기·토큰). 구독·이용량 경계와 나머지 모듈은 해당 단계에서 결정
 - `action` 모듈 = 사진별 액션·웹페이지 후보·번역. `analysis`의 분석 완료 이벤트를 `action`과 `event`가 각자 구독 (ADR-0024)
-- `usage` 모듈 = 무료 체험 이용량 (`usage_quota`·`usage_reservation`·`device_trial_mark`, ERD 그룹 '계정과 구독'). `account`가 설치 등록 때 `TrialDevices`로 기기 기록을 만들고 `device.trial_mark_id`에 둠. 분석 접수는 `TrialUsage`로 접수 트랜잭션 안에서 예약·완료·반환. 잠금 순서 = 주체 할당량 → 기기 기록. Pro 한도·3회 클릭은 해당 단계에서 추가 (ADR-0029)
+- `usage` 모듈 = 무료 체험 이용량 (`usage_quota`·`usage_reservation`·`device_trial_mark`, ERD 그룹 '계정과 구독'). `account`가 설치 등록 때 `TrialDevices`로 기기 기록을 만들고 `device.trial_mark_id`에 둠. 분석 접수는 `TrialUsage`로 접수 트랜잭션 안에서 예약·완료·반환. 잠금 순서 = 주체 할당량 → 기기 기록, 트랜잭션 하나에 주체 하나·기기 기록 하나만 (일괄 처리는 주체·기기마다 트랜잭션 분리, 어기면 `IllegalStateException`). Pro 한도·3회 클릭은 해당 단계에서 추가 (ADR-0029)
 - `consent` 모듈 = 외부 전송 동의 (`ai_consent`, ERD 그룹 '계정과 구독'). 다른 모듈은 `AiConsents.isGranted`로 전송 직전·결과 저장 직전에 확인, 철회 이벤트 없음 (ADR-0028)
 
 ## 스키마 공통 규칙 (ADR-0022)

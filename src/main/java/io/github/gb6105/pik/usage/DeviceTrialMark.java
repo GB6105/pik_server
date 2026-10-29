@@ -35,7 +35,7 @@ class DeviceTrialMark {
 
 	private @Nullable Integer keyVersion;
 
-	/** iOS only: set once the DeviceCheck bits record a started trial. */
+	/** iOS only: whether the DeviceCheck bits record a started trial. */
 	@Enumerated(EnumType.STRING)
 	private @Nullable DeviceCheckState deviceCheckState;
 
@@ -55,12 +55,10 @@ class DeviceTrialMark {
 	@Version
 	private long version;
 
-	private DeviceTrialMark(boolean startedBefore, int limit, Instant now) {
+	private DeviceTrialMark(int limit, Instant now) {
 		this.id = UuidV7.generate();
 		this.platform = DevicePlatform.IOS;
-		this.deviceCheckState = startedBefore ? DeviceCheckState.TRIAL_STARTED : null;
 		this.limitCount = limit;
-		this.exhaustedAt = startedBefore ? now : null;
 		this.createdAt = now;
 		this.updatedAt = now;
 	}
@@ -70,7 +68,11 @@ class DeviceTrialMark {
 	 * (ADR-0029 #5).
 	 */
 	static DeviceTrialMark ios(boolean startedBefore, int limit, Instant now) {
-		return new DeviceTrialMark(startedBefore, limit, now);
+		DeviceTrialMark mark = new DeviceTrialMark(limit, now);
+		if (startedBefore) {
+			mark.startedElsewhere(now);
+		}
+		return mark;
 	}
 
 	boolean covers(int photos) {
@@ -81,12 +83,50 @@ class DeviceTrialMark {
 	 * Whether the DeviceCheck bits must record the start before the device's first trial reservation.
 	 */
 	boolean needsDeviceCheck() {
-		return platform == DevicePlatform.IOS && deviceCheckState == null;
+		return platform == DevicePlatform.IOS && deviceCheckState != DeviceCheckState.TRIAL_STARTED;
+	}
+
+	boolean isStarting() {
+		return deviceCheckState == DeviceCheckState.STARTING;
+	}
+
+	/**
+	 * This install is about to write the start to Apple.
+	 */
+	void startDeviceCheck(Instant now) {
+		if (deviceCheckState == null) {
+			deviceCheckState = DeviceCheckState.STARTING;
+			updatedAt = now;
+		}
+	}
+
+	/**
+	 * Apple refused the token, so nothing was written.
+	 */
+	void cancelDeviceCheck(Instant now) {
+		if (deviceCheckState == DeviceCheckState.STARTING) {
+			deviceCheckState = null;
+			updatedAt = now;
+		}
 	}
 
 	void recordDeviceCheck(Instant now) {
-		deviceCheckState = DeviceCheckState.TRIAL_STARTED;
-		updatedAt = now;
+		if (deviceCheckState != DeviceCheckState.TRIAL_STARTED) {
+			deviceCheckState = DeviceCheckState.TRIAL_STARTED;
+			updatedAt = now;
+		}
+	}
+
+	/**
+	 * Another install of the device started the trial: this one gets none. A mark that is starting wrote the bits
+	 * itself and keeps its trial.
+	 */
+	void startedElsewhere(Instant now) {
+		if (deviceCheckState == null) {
+			deviceCheckState = DeviceCheckState.TRIAL_STARTED;
+			exhaustedAt = now;
+			updatedAt = now;
+		}
 	}
 
 	void reserve(int photos, Instant now) {

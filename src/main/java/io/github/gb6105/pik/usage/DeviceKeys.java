@@ -7,6 +7,7 @@ import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -17,7 +18,8 @@ import org.springframework.util.StringUtils;
 /**
  * HMAC-SHA256 keys for Android device IDs, which are never stored in plain form (ADR-0020, ADR-0021 #8). The highest
  * version hashes new devices; older versions stay so that devices they hashed are still found. Removing a version
- * forgets those devices, so a key leaves the set only after every mark is hashed again.
+ * would forget those devices, so startup fails while stored marks use a version that is not configured
+ * ({@link DeviceKeyCheck}).
  */
 final class DeviceKeys {
 
@@ -62,6 +64,10 @@ final class DeviceKeys {
 
 	int currentVersion() {
 		return currentVersion;
+	}
+
+	Set<Integer> versions() {
+		return keys.keySet();
 	}
 
 	/**
