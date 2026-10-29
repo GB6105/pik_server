@@ -18,6 +18,8 @@ public class AuthenticatedMockMvc {
 
 	public static final UUID PRINCIPAL_ID = UUID.fromString("019a2b3c-4d5e-7f60-8a1b-000000000001");
 
+	public static final UUID DEVICE_ID = UUID.fromString("019a2b3c-4d5e-7f60-8a1b-000000000002");
+
 	@Bean
 	MockMvcBuilderCustomizer authenticatedRequests(AccessTokens accessTokens) {
 		return (builder) -> builder.defaultRequest(MockMvcRequestBuilders.get("/").with((request) -> {
@@ -29,7 +31,7 @@ public class AuthenticatedMockMvc {
 	}
 
 	public static String bearer(AccessTokens accessTokens) {
-		return "Bearer " + accessTokens.issue(PRINCIPAL_ID, PrincipalKind.ANONYMOUS).value();
+		return "Bearer " + accessTokens.issue(PRINCIPAL_ID, PrincipalKind.ANONYMOUS, DEVICE_ID).value();
 	}
 
 }

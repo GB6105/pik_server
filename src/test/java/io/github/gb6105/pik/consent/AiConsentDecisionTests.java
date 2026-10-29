@@ -35,11 +35,13 @@ class AiConsentDecisionTests {
 
 	final UUID principal = UuidV7.generate();
 
+	final UUID device = UuidV7.generate();
+
 	@Test
 	void grantMustBeGivenOnTheCurrentNotice() {
 		latest(null);
 
-		assertRejected(() -> consents(2, 1).decide(principal, request(Choice.GRANTED, 1, 0)), ErrorCode.CONFLICT,
+		assertRejected(() -> consents(2, 1).decide(principal, device, request(Choice.GRANTED, 1, 0)), ErrorCode.CONFLICT,
 				"NOTICE_OUTDATED");
 		verify(records, never()).insert(any());
 	}
@@ -48,7 +50,7 @@ class AiConsentDecisionTests {
 	void refusalOnAnOlderNoticeIsRecorded() {
 		latest(null);
 
-		ConsentState state = consents(2, 1).decide(principal, request(Choice.DENIED, 1, 0));
+		ConsentState state = consents(2, 1).decide(principal, device, request(Choice.DENIED, 1, 0));
 
 		assertThat(state.status()).isEqualTo(ConsentStatus.DENIED);
 		assertThat(state.version()).isEqualTo(1);
@@ -60,7 +62,7 @@ class AiConsentDecisionTests {
 	void noticeTheServerHasNotServedIsUnknown() {
 		latest(null);
 
-		assertRejected(() -> consents(2, 1).decide(principal, request(Choice.DENIED, 3, 0)), ErrorCode.CONFLICT,
+		assertRejected(() -> consents(2, 1).decide(principal, device, request(Choice.DENIED, 3, 0)), ErrorCode.CONFLICT,
 				"UNKNOWN_NOTICE_VERSION");
 	}
 
@@ -76,7 +78,7 @@ class AiConsentDecisionTests {
 		assertThat(state.features()).isEqualTo(Feature.BASIC);
 		assertThat(consents.isGranted(principal)).isFalse();
 
-		ConsentState regranted = consents.decide(principal, request(Choice.GRANTED, 2, 1));
+		ConsentState regranted = consents.decide(principal, device, request(Choice.GRANTED, 2, 1));
 		assertThat(regranted.version()).isEqualTo(2);
 		assertThat(regranted.granted()).isTrue();
 		assertThat(regranted.reconsentRequired()).isFalse();
@@ -90,7 +92,7 @@ class AiConsentDecisionTests {
 
 		assertThat(consents.isGranted(principal)).isTrue();
 		assertThat(consents.state(principal).reconsentRequired()).isFalse();
-		ConsentState renewed = consents.decide(principal, request(Choice.GRANTED, 2, 1));
+		ConsentState renewed = consents.decide(principal, device, request(Choice.GRANTED, 2, 1));
 		assertThat(renewed.version()).isEqualTo(2);
 		assertThat(renewed.latest().getNoticeVersion()).isEqualTo(2);
 	}
@@ -99,7 +101,7 @@ class AiConsentDecisionTests {
 	void refusingAGrantThatNoLongerCountsIsStillAWithdrawal() {
 		latest(consent(ConsentDecision.GRANTED, 1, 1));
 
-		ConsentState state = consents(2, 2).decide(principal, request(Choice.DENIED, 2, 1));
+		ConsentState state = consents(2, 2).decide(principal, device, request(Choice.DENIED, 2, 1));
 
 		assertThat(state.status()).isEqualTo(ConsentStatus.WITHDRAWN);
 	}
@@ -121,7 +123,7 @@ class AiConsentDecisionTests {
 	void refusingAgainAfterAWithdrawalIsADenial() {
 		latest(consent(ConsentDecision.WITHDRAWN, 1, 2));
 
-		ConsentState state = consents(2, 1).decide(principal, request(Choice.DENIED, 2, 2));
+		ConsentState state = consents(2, 1).decide(principal, device, request(Choice.DENIED, 2, 2));
 
 		assertThat(state.status()).isEqualTo(ConsentStatus.DENIED);
 		assertThat(state.version()).isEqualTo(3);
@@ -133,7 +135,7 @@ class AiConsentDecisionTests {
 		// PostgreSQL reporting in another language: Hibernate finds no constraint name, only the kind.
 		doThrow(violation(ConstraintKind.UNIQUE, null)).when(records).insert(any());
 
-		assertRejected(() -> consents(1, 1).decide(principal, request(Choice.GRANTED, 1, 0)), ErrorCode.CONFLICT,
+		assertRejected(() -> consents(1, 1).decide(principal, device, request(Choice.GRANTED, 1, 0)), ErrorCode.CONFLICT,
 				"VERSION_CONFLICT");
 	}
 
@@ -143,7 +145,7 @@ class AiConsentDecisionTests {
 		DataIntegrityViolationException other = violation(ConstraintKind.NOT_NULL, "principal_id");
 		doThrow(other).when(records).insert(any());
 
-		assertThatThrownBy(() -> consents(1, 1).decide(principal, request(Choice.GRANTED, 1, 0))).isSameAs(other);
+		assertThatThrownBy(() -> consents(1, 1).decide(principal, device, request(Choice.GRANTED, 1, 0))).isSameAs(other);
 	}
 
 	@Test
@@ -161,7 +163,7 @@ class AiConsentDecisionTests {
 	}
 
 	private AiConsent consent(ConsentDecision decision, int noticeVersion, long version) {
-		return AiConsent.of(principal, PURPOSE, decision, noticeVersion, version, Instant.now());
+		return AiConsent.of(principal, device, PURPOSE, decision, noticeVersion, version, Instant.now());
 	}
 
 	private static DecisionRequest request(Choice decision, int noticeVersion, long version) {

@@ -1,0 +1,504 @@
+package io.github.gb6105.pik.usage;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
+import io.github.gb6105.pik.TestcontainersConfiguration;
+import io.github.gb6105.pik.shared.error.ErrorCode;
+import io.github.gb6105.pik.shared.error.PikException;
+import io.github.gb6105.pik.shared.id.UuidV7;
+import io.github.gb6105.pik.usage.TrialUsage.Photo;
+import io.github.gb6105.pik.usage.TrialUsage.Reservation;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HexFormat;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.mock.env.MockEnvironment;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.servlet.assertj.MvcTestResult;
+import org.springframework.transaction.IllegalTransactionStateException;
+import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.databind.json.JsonMapper;
+
+@Import(TestcontainersConfiguration.class)
+@SpringBootTest(properties = "pik.usage.trial.limit=5")
+@AutoConfigureMockMvc
+class TrialUsageTests {
+
+	static final JsonMapper JSON = JsonMapper.builder().build();
+
+	@Autowired
+	TrialUsage trialUsage;
+
+	@Autowired
+	TrialDevices trialDevices;
+
+	@Autowired
+	UsageRecords records;
+
+	@Autowired
+	TransactionTemplate transaction;
+
+	@Autowired
+	JdbcClient jdbc;
+
+	@Autowired
+	MockMvcTester mvc;
+
+	@MockitoSpyBean
+	DeviceCheck deviceCheck;
+
+	@Test
+	void reservationCountsOnThePrincipalAndTheDevice() {
+		UUID principal = UuidV7.generate();
+		UUID mark = androidMark();
+		UUID job = UuidV7.generate();
+		List<Photo> photos = photos(3);
+
+		assertThat(reserve(principal, mark, job, photos)).isEqualTo(new Reservation.Reserved(3));
+
+		assertThat(quota(principal)).containsEntry("limit_count", 5)
+			.containsEntry("reserved_count", 3)
+			.containsEntry("consumed_count", 0);
+		assertThat(mark(mark)).containsEntry("reserved_count", 3).containsEntry("consumed_count", 0);
+		assertThat(reservations(principal)).hasSize(3)
+			.allSatisfy((row) -> assertThat(row).containsEntry("status", "RESERVED")
+				.containsEntry("job_id", job)
+				.containsEntry("trial_mark_id", mark)
+				.containsEntry("quota_kind", "TRIAL")
+				.containsEntry("period_key", "ONCE"));
+	}
+
+	@Test
+	void resultConsumesTheReservationsOnce() {
+		UUID principal = UuidV7.generate();
+		UUID mark = androidMark();
+		UUID job = UuidV7.generate();
+		reserve(principal, mark, job, photos(3));
+
+		consume(principal, job);
+		consume(principal, job);
+		release(principal, job);
+
+		assertThat(quota(principal)).containsEntry("reserved_count", 0).containsEntry("consumed_count", 3);
+		assertThat(mark(mark)).containsEntry("reserved_count", 0)
+			.containsEntry("consumed_count", 3)
+			.containsEntry("exhausted_at", null);
+		assertThat(reservations(principal)).extracting((row) -> row.get("status")).containsOnly("CONSUMED");
+	}
+
+	@Test
+	void failedJobReturnsItsReservationsAndThePhotosCanBeReservedAgain() {
+		UUID principal = UuidV7.generate();
+		UUID mark = androidMark();
+		UUID failed = UuidV7.generate();
+		List<Photo> photos = photos(3);
+		reserve(principal, mark, failed, photos);
+
+		release(principal, failed);
+		release(principal, failed);
+
+		assertThat(quota(principal)).containsEntry("reserved_count", 0).containsEntry("consumed_count", 0);
+		assertThat(mark(mark)).containsEntry("reserved_count", 0);
+		assertThat(reserve(principal, mark, UuidV7.generate(), photos)).isEqualTo(new Reservation.Reserved(3));
+		assertThat(reservations(principal)).extracting((row) -> row.get("status"))
+			.containsExactlyInAnyOrder("RELEASED", "RELEASED", "RELEASED", "RESERVED", "RESERVED", "RESERVED");
+	}
+
+	@Test
+	void bundleLargerThanWhatIsLeftIsNotReserved() {
+		UUID principal = UuidV7.generate();
+		UUID mark = androidMark();
+		reserve(principal, mark, UuidV7.generate(), photos(3));
+
+		assertThat(reserve(principal, mark, UuidV7.generate(), photos(3))).isEqualTo(new Reservation.NotCovered());
+		assertThat(quota(principal)).containsEntry("reserved_count", 3);
+		assertThat(mark(mark)).containsEntry("reserved_count", 3);
+		assertThat(reservations(principal)).hasSize(3);
+
+		assertThat(reserve(principal, mark, UuidV7.generate(), photos(2))).isEqualTo(new Reservation.Reserved(2));
+	}
+
+	@Test
+	void exhaustedDeviceGivesNoTrialToAnotherPrincipal() {
+		UUID first = UuidV7.generate();
+		UUID mark = androidMark();
+		UUID job = UuidV7.generate();
+		reserve(first, mark, job, photos(5));
+		consume(first, job);
+
+		assertThat(mark(mark).get("exhausted_at")).isNotNull();
+		assertThat(reserve(UuidV7.generate(), mark, UuidV7.generate(), photos(1)))
+			.isEqualTo(new Reservation.NotCovered());
+	}
+
+	@Test
+	void exhaustedPrincipalGetsNoTrialOnAnotherDevice() {
+		UUID principal = UuidV7.generate();
+		UUID job = UuidV7.generate();
+		reserve(principal, androidMark(), job, photos(5));
+		consume(principal, job);
+
+		assertThat(reserve(principal, androidMark(), UuidV7.generate(), photos(1)))
+			.isEqualTo(new Reservation.NotCovered());
+	}
+
+	@Test
+	void photoWithAnUnreleasedReservationIsNotReservedAgainWhateverItsVersion() {
+		UUID principal = UuidV7.generate();
+		UUID mark = androidMark();
+		UUID first = UuidV7.generate();
+		Photo photo = new Photo(UuidV7.generate(), "v1");
+		reserve(principal, mark, first, List.of(photo));
+
+		Reservation again = reserve(principal, mark, UuidV7.generate(),
+				List.of(new Photo(photo.id(), "v2"), new Photo(UuidV7.generate(), "v1")));
+
+		assertThat(again).isEqualTo(new Reservation.AlreadyReserved(Map.of(photo.id(), first)));
+		assertThat(quota(principal)).containsEntry("reserved_count", 1);
+		consume(principal, first);
+		assertThat(reserve(principal, mark, UuidV7.generate(), List.of(new Photo(photo.id(), "v2"))))
+			.isEqualTo(new Reservation.AlreadyReserved(Map.of(photo.id(), first)));
+	}
+
+	@Test
+	void concurrentReservationsOfAPrincipalStayWithinTheLimit() throws Exception {
+		UUID principal = UuidV7.generate();
+		UUID mark = androidMark();
+
+		List<Reservation> results = parallel(8, () -> reserve(principal, mark, UuidV7.generate(), photos(1)));
+
+		assertThat(results).filteredOn(Reservation.Reserved.class::isInstance).hasSize(5);
+		assertThat(results).filteredOn(Reservation.NotCovered.class::isInstance).hasSize(3);
+		assertThat(quota(principal)).containsEntry("reserved_count", 5);
+		assertThat(mark(mark)).containsEntry("reserved_count", 5);
+	}
+
+	@Test
+	void concurrentReservationsOnADeviceStayWithinItsLimit() throws Exception {
+		UUID mark = androidMark();
+
+		List<Reservation> results = parallel(8,
+				() -> reserve(UuidV7.generate(), mark, UuidV7.generate(), photos(1)));
+
+		assertThat(results).filteredOn(Reservation.Reserved.class::isInstance).hasSize(5);
+		assertThat(mark(mark)).containsEntry("reserved_count", 5);
+	}
+
+	@Test
+	void reservationsJoinTheCallersTransaction() {
+		assertThatExceptionOfType(IllegalTransactionStateException.class).isThrownBy(
+				() -> trialUsage.reserve(UuidV7.generate(), androidMark(), UuidV7.generate(), photos(1)));
+		assertThatExceptionOfType(IllegalTransactionStateException.class)
+			.isThrownBy(() -> trialUsage.consume(UuidV7.generate(), UuidV7.generate()));
+		assertThatExceptionOfType(IllegalTransactionStateException.class)
+			.isThrownBy(() -> trialUsage.release(UuidV7.generate(), UuidV7.generate()));
+	}
+
+	@Test
+	void reinstalledAndroidDeviceKeepsItsMarkAndWhatItUsed() {
+		String androidId = androidId();
+		UUID first = installAndroid(androidId);
+		UUID principal = UuidV7.generate();
+		UUID job = UuidV7.generate();
+		reserve(principal, first, job, photos(2));
+		consume(principal, job);
+
+		UUID reinstalled = installAndroid(androidId);
+
+		assertThat(reinstalled).isEqualTo(first);
+		assertThat(mark(first)).containsEntry("platform", "ANDROID")
+			.containsEntry("key_version", 1)
+			.containsEntry("consumed_count", 2);
+		assertThat((byte[]) mark(first).get("device_key_hmac")).hasSize(32)
+			.isNotEqualTo(androidId.getBytes());
+		assertThat(reserve(UuidV7.generate(), reinstalled, UuidV7.generate(), photos(4)))
+			.isEqualTo(new Reservation.NotCovered());
+	}
+
+	@Test
+	void concurrentInstallsOfAnAndroidDeviceShareOneMark() throws Exception {
+		String androidId = androidId();
+
+		List<UUID> marks = parallel(8, () -> installAndroid(androidId));
+
+		assertThat(marks).hasSize(8).containsOnly(marks.get(0));
+	}
+
+	@Test
+	void olderKeyVersionStillFindsTheDeviceAfterRotation() {
+		String androidId = androidId();
+		String first = key();
+		String second = key();
+
+		UUID mark = androidMark(keys("1:" + first), androidId);
+
+		assertThat(androidMark(keys("1:" + first + ", 2:" + second), androidId)).isEqualTo(mark);
+		assertThat(mark(mark)).containsEntry("key_version", 1);
+		assertThat(androidMark(keys("2:" + second), androidId)).isNotEqualTo(mark);
+	}
+
+	@Test
+	void iosDeviceRecordsTheStartBeforeItsFirstReservation() {
+		String token = deviceCheckToken();
+		UUID mark = installIos(token);
+		UUID principal = UuidV7.generate();
+		assertThat(mark(mark)).containsEntry("device_check_state", null).containsEntry("exhausted_at", null);
+
+		assertThatIllegalStateException()
+			.isThrownBy(() -> reserve(principal, mark, UuidV7.generate(), photos(1)))
+			.withMessageContaining("recordStart");
+		assertRejected(() -> trialUsage.recordStart(principal, mark, null), ErrorCode.INVALID_INPUT,
+				"DEVICE_CHECK_TOKEN_REQUIRED");
+
+		trialUsage.recordStart(principal, mark, token);
+
+		assertThat(mark(mark)).containsEntry("device_check_state", "TRIAL_STARTED");
+		assertThat(reserve(principal, mark, UuidV7.generate(), photos(1))).isEqualTo(new Reservation.Reserved(1));
+		trialUsage.recordStart(principal, mark, null);
+		verify(deviceCheck).recordTrialStarted(token);
+	}
+
+	@Test
+	void iosReinstallAfterTheStartGetsNoTrial() {
+		String token = deviceCheckToken();
+		UUID first = installIos(token);
+		trialUsage.recordStart(UuidV7.generate(), first, token);
+
+		UUID reinstalled = installIos(token);
+
+		assertThat(reinstalled).isNotEqualTo(first);
+		assertThat(mark(reinstalled)).containsEntry("device_check_state", "TRIAL_STARTED");
+		assertThat(mark(reinstalled).get("exhausted_at")).isNotNull();
+		trialUsage.recordStart(UuidV7.generate(), reinstalled, null);
+		assertThat(reserve(UuidV7.generate(), reinstalled, UuidV7.generate(), photos(1)))
+			.isEqualTo(new Reservation.NotCovered());
+	}
+
+	@Test
+	void iosReinstallBeforeTheStartKeepsTheTrial() {
+		String token = deviceCheckToken();
+		installIos(token);
+
+		UUID reinstalled = installIos(token);
+
+		assertThat(mark(reinstalled)).containsEntry("device_check_state", null).containsEntry("exhausted_at", null);
+	}
+
+	@Test
+	void startIsNotRecordedWithoutTrialLeftForThePrincipal() {
+		UUID principal = UuidV7.generate();
+		UUID job = UuidV7.generate();
+		reserve(principal, androidMark(), job, photos(5));
+		consume(principal, job);
+		UUID mark = installIos(deviceCheckToken());
+
+		trialUsage.recordStart(principal, mark, null);
+
+		assertThat(mark(mark)).containsEntry("device_check_state", null);
+		verify(deviceCheck, never()).recordTrialStarted(any());
+	}
+
+	@Test
+	void deviceCheckFailureLeavesTheStartUnrecorded() {
+		String token = deviceCheckToken();
+		UUID mark = installIos(token);
+		PikException unavailable = new PikException(ErrorCode.TEMPORARY_FAILURE, "DEVICE_CHECK_UNAVAILABLE", true);
+		doThrow(unavailable).when(deviceCheck).recordTrialStarted(token);
+
+		assertThatThrownBy(() -> trialUsage.recordStart(UuidV7.generate(), mark, token)).isSameAs(unavailable);
+		assertThat(mark(mark)).containsEntry("device_check_state", null);
+	}
+
+	@Test
+	void deviceCheckFailureAtInstallCreatesNothing() {
+		String token = deviceCheckToken();
+		doThrow(new PikException(ErrorCode.TEMPORARY_FAILURE, "DEVICE_CHECK_UNAVAILABLE", true)).when(deviceCheck)
+			.trialStarted(token);
+		long principals = count("principal");
+		long marks = count("device_trial_mark");
+
+		assertThat(install("IOS", "{\"deviceCheckToken\": \"%s\"}".formatted(token))).hasStatus(503)
+			.bodyJson()
+			.isLenientlyEqualTo("""
+					{"code": "TEMPORARY_FAILURE", "reason": "DEVICE_CHECK_UNAVAILABLE", "retryable": true}
+					""");
+		assertThat(install("IOS", "{\"deviceCheckToken\": \"forged\"}")).hasStatus(403)
+			.bodyJson()
+			.isLenientlyEqualTo("""
+					{"code": "FORBIDDEN", "reason": "DEVICE_CHECK_FAILED", "retryable": false}
+					""");
+		assertThat(count("principal")).isEqualTo(principals);
+		assertThat(count("device_trial_mark")).isEqualTo(marks);
+	}
+
+	@Test
+	void deviceCallsRunOutsideTransactions() {
+		UUID mark = installIos(deviceCheckToken());
+
+		assertThatIllegalStateException().isThrownBy(() -> transaction.executeWithoutResult(
+				(status) -> trialUsage.recordStart(UuidV7.generate(), mark, deviceCheckToken())));
+		assertThatIllegalStateException().isThrownBy(() -> transaction.executeWithoutResult(
+				(status) -> trialDevices.identify(new TrialDevices.Evidence.Ios(deviceCheckToken()))));
+	}
+
+	@Test
+	void fakeDeviceCheckAndEphemeralKeysAreRefusedOutsideDevelopmentProfiles() {
+		MockEnvironment production = new MockEnvironment();
+		production.setActiveProfiles("prod");
+		MockEnvironment local = new MockEnvironment();
+		local.setActiveProfiles("local");
+		UsageProperties withoutKeys = new UsageProperties(new UsageProperties.Trial(100), null);
+
+		assertThatIllegalStateException().isThrownBy(() -> new UsageConfig().deviceCheck(production));
+		assertThat(new UsageConfig().deviceCheck(local)).isInstanceOf(FakeDeviceCheck.class);
+		assertThatIllegalStateException().isThrownBy(() -> new UsageConfig().deviceKeys(withoutKeys, production));
+		assertThat(new UsageConfig().deviceKeys(withoutKeys, local).currentVersion()).isEqualTo(1);
+	}
+
+	private Reservation reserve(UUID principal, UUID mark, UUID job, List<Photo> photos) {
+		return transaction.execute((status) -> trialUsage.reserve(principal, mark, job, photos));
+	}
+
+	private void consume(UUID principal, UUID job) {
+		transaction.executeWithoutResult((status) -> trialUsage.consume(principal, job));
+	}
+
+	private void release(UUID principal, UUID job) {
+		transaction.executeWithoutResult((status) -> trialUsage.release(principal, job));
+	}
+
+	private UUID androidMark() {
+		TrialDevices.IdentifiedDevice device = trialDevices.identify(new TrialDevices.Evidence.Android(androidId()));
+		return transaction.execute((status) -> trialDevices.register(device));
+	}
+
+	private UUID androidMark(DeviceKeys keys, String androidId) {
+		return transaction.execute((status) -> records.androidMark(keys.hashes(androidId), 5, Instant.now()));
+	}
+
+	private UUID installAndroid(String androidId) {
+		return installedMark(install("ANDROID", "{\"androidId\": \"%s\"}".formatted(androidId)));
+	}
+
+	private UUID installIos(String deviceCheckToken) {
+		return installedMark(install("IOS", "{\"deviceCheckToken\": \"%s\"}".formatted(deviceCheckToken)));
+	}
+
+	private MvcTestResult install(String platform, String trialDevice) {
+		return mvc.post()
+			.uri("/installs")
+			.header("API-Version", "1")
+			.contentType(MediaType.APPLICATION_JSON)
+			.content("""
+					{"platform": "%s", "attestation": {"token": "fake-attestation"}, "trialDevice": %s}
+					""".formatted(platform, trialDevice))
+			.exchange();
+	}
+
+	private UUID installedMark(MvcTestResult result) {
+		assertThat(result).hasStatus(201);
+		String installId = (String) JSON.readValue(result.getResponse().getContentAsByteArray(), Map.class)
+			.get("installId");
+		return jdbc.sql("SELECT trial_mark_id FROM device WHERE install_id = :id")
+			.param("id", UUID.fromString(installId))
+			.query(UUID.class)
+			.single();
+	}
+
+	private Map<String, Object> quota(UUID principal) {
+		return jdbc.sql("SELECT * FROM usage_quota WHERE principal_id = :id").param("id", principal).query().singleRow();
+	}
+
+	private Map<String, Object> mark(UUID mark) {
+		return jdbc.sql("SELECT * FROM device_trial_mark WHERE id = :id").param("id", mark).query().singleRow();
+	}
+
+	private List<Map<String, Object>> reservations(UUID principal) {
+		return jdbc.sql("SELECT * FROM usage_reservation WHERE principal_id = :id")
+			.param("id", principal)
+			.query()
+			.listOfRows();
+	}
+
+	private long count(String table) {
+		return jdbc.sql("SELECT count(*) FROM " + table).query(Long.class).single();
+	}
+
+	private static List<Photo> photos(int count) {
+		return IntStream.range(0, count).mapToObj((i) -> new Photo(UuidV7.generate(), "v1")).toList();
+	}
+
+	private static String androidId() {
+		byte[] id = new byte[8];
+		ThreadLocalRandom.current().nextBytes(id);
+		return HexFormat.of().formatHex(id);
+	}
+
+	private static String deviceCheckToken() {
+		return FakeDeviceCheck.TOKEN_PREFIX + UUID.randomUUID();
+	}
+
+	private static DeviceKeys keys(String configured) {
+		return DeviceKeys.load(configured, false);
+	}
+
+	private static String key() {
+		byte[] key = new byte[32];
+		ThreadLocalRandom.current().nextBytes(key);
+		return Base64.getEncoder().encodeToString(key);
+	}
+
+	private static void assertRejected(Runnable action, ErrorCode code, String reason) {
+		assertThatThrownBy(action::run).isInstanceOfSatisfying(PikException.class, (ex) -> {
+			assertThat(ex.getCode()).isEqualTo(code);
+			assertThat(ex.getReason()).isEqualTo(reason);
+			assertThat(ex.isRetryable()).isFalse();
+		});
+	}
+
+	private static <T> List<T> parallel(int count, Callable<T> task) throws Exception {
+		CountDownLatch start = new CountDownLatch(1);
+		try (ExecutorService executor = Executors.newFixedThreadPool(count)) {
+			List<Future<T>> futures = new ArrayList<>();
+			for (int i = 0; i < count; i++) {
+				futures.add(executor.submit(() -> {
+					start.await();
+					return task.call();
+				}));
+			}
+			start.countDown();
+			List<T> results = new ArrayList<>();
+			for (Future<T> future : futures) {
+				results.add(future.get(30, TimeUnit.SECONDS));
+			}
+			return results;
+		}
+	}
+
+}

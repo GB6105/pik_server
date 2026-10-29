@@ -63,7 +63,8 @@ class SecurityConfig implements WebMvcConfigurer {
 				new JwtTimestampValidator(properties.clockSkew()), new JwtIssuerValidator(properties.issuer()),
 				new JwtClaimValidator<>(JwtClaimNames.EXP, Objects::nonNull),
 				new JwtClaimValidator<>(JwtClaimNames.SUB, SecurityConfig::isUuid),
-				new JwtClaimValidator<>(AccessTokens.KIND_CLAIM, SecurityConfig::isKind)));
+				new JwtClaimValidator<>(AccessTokens.KIND_CLAIM, SecurityConfig::isKind),
+				new JwtClaimValidator<>(AccessTokens.DEVICE_CLAIM, SecurityConfig::isUuid)));
 		return decoder;
 	}
 

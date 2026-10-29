@@ -41,7 +41,7 @@ class AiConsentController {
 			@Valid @RequestBody DecisionRequest body) {
 		return executor.execute(new IdempotentRequest(principal.id(), key, "consent.ai.decide", body),
 				() -> new DecisionResponse(key.value(), CommandResult.SUCCEEDED, false,
-						ConsentView.of(consents.decide(principal.id(), body))))
+						ConsentView.of(consents.decide(principal.id(), principal.deviceId(), body))))
 			.toResponseEntity();
 	}
 

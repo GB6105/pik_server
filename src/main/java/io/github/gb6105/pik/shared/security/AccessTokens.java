@@ -15,12 +15,15 @@ import org.springframework.stereotype.Component;
 
 /**
  * Issues access tokens: ES256 JWTs with {@code typ} and {@code kid} headers and the claims {@code iss}, {@code sub}
- * (principal ID), {@code kind}, {@code iat} and {@code exp}, without personal data (ADR-0023 #8).
+ * (principal ID), {@code kind}, {@code did} (device ID), {@code iat} and {@code exp}, without personal data (ADR-0023
+ * #8, ADR-0029).
  */
 @Component
 public class AccessTokens {
 
 	static final String KIND_CLAIM = "kind";
+
+	static final String DEVICE_CLAIM = "did";
 
 	/**
 	 * {@code typ} header, required on every request. Only access tokens are signed with these keys; another kind of
@@ -40,13 +43,14 @@ public class AccessTokens {
 		this.properties = properties;
 	}
 
-	public AccessToken issue(UUID principalId, PrincipalKind kind) {
+	public AccessToken issue(UUID principalId, PrincipalKind kind, UUID deviceId) {
 		Instant now = Instant.now();
 		JwsHeader header = JwsHeader.with(SignatureAlgorithm.ES256).type(TYPE).keyId(keyId).build();
 		JwtClaimsSet claims = JwtClaimsSet.builder()
 			.issuer(properties.issuer())
 			.subject(principalId.toString())
 			.claim(KIND_CLAIM, kind.name())
+			.claim(DEVICE_CLAIM, deviceId.toString())
 			.issuedAt(now)
 			.expiresAt(now.plus(properties.accessTokenTtl()))
 			.build();

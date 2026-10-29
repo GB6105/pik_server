@@ -11,6 +11,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -19,6 +20,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
@@ -64,8 +66,9 @@ class AnonymousAuthTests {
 	@Test
 	void installStoresPrincipalInstallAndDeviceWithHashedToken() {
 		MvcTestResult result = install("""
-				{"platform": "IOS", "appVersion": "1.0.0", "attestation": {"token": "%s", "keyId": "k"}}
-				""".formatted(FakeAttestationVerifier.VALID_TOKEN));
+				{"platform": "IOS", "appVersion": "1.0.0", "attestation": {"token": "%s", "keyId": "k"},
+				 "trialDevice": {"deviceCheckToken": "fake-device-check:%s"}}
+				""".formatted(FakeAttestationVerifier.VALID_TOKEN, UUID.randomUUID()));
 
 		assertThat(result).hasStatus(201);
 		Map<String, Object> body = json(result);
@@ -80,6 +83,10 @@ class AnonymousAuthTests {
 			.singleRow();
 		UUID principalId = (UUID) device.get("principal_id");
 		assertThat(device).containsEntry("platform", "IOS").containsEntry("app_version", "1.0.0");
+		assertThat(jdbc.sql("SELECT platform, exhausted_at FROM device_trial_mark WHERE id = :id")
+			.param("id", device.get("trial_mark_id"))
+			.query()
+			.singleRow()).containsEntry("platform", "IOS").containsEntry("exhausted_at", null);
 		assertThat(jdbc.sql("SELECT kind, status FROM principal WHERE id = :id")
 			.param("id", principalId)
 			.query()
@@ -106,6 +113,11 @@ class AnonymousAuthTests {
 		Jwt jwt = jwtDecoder.decode((String) json(result).get("accessToken"));
 		assertThat(jwt.getSubject()).isEqualTo(installed.principalId().toString());
 		assertThat(jwt.getClaimAsString("kind")).isEqualTo("ANONYMOUS");
+		assertThat(jwt.getClaimAsString("did")).isEqualTo(jdbc.sql("SELECT id FROM device WHERE principal_id = :id")
+			.param("id", installed.principalId())
+			.query(UUID.class)
+			.single()
+			.toString());
 	}
 
 	@Test
@@ -139,8 +151,9 @@ class AnonymousAuthTests {
 			.header(HttpHeaders.AUTHORIZATION, "Bearer x.y.z")
 			.contentType(MediaType.APPLICATION_JSON)
 			.content("""
-					{"platform": "IOS", "attestation": {"token": "%s"}}
-					""".formatted(FakeAttestationVerifier.VALID_TOKEN))).hasStatus(201);
+					{"platform": "IOS", "attestation": {"token": "%s"},
+					 "trialDevice": {"deviceCheckToken": "fake-device-check:%s"}}
+					""".formatted(FakeAttestationVerifier.VALID_TOKEN, UUID.randomUUID()))).hasStatus(201);
 	}
 
 	@Test
@@ -148,10 +161,38 @@ class AnonymousAuthTests {
 		long principals = count("principal");
 
 		assertThat(install("""
-				{"platform": "ANDROID", "attestation": {"token": "forged"}}
-				""")).hasStatus(403).bodyJson().isLenientlyEqualTo("""
+				{"platform": "ANDROID", "attestation": {"token": "forged"}, "trialDevice": {"androidId": "%s"}}
+				""".formatted(androidId()))).hasStatus(403).bodyJson().isLenientlyEqualTo("""
 				{"code": "FORBIDDEN", "reason": "ATTESTATION_FAILED", "retryable": false}
 				""");
+		assertThat(count("principal")).isEqualTo(principals);
+	}
+
+	@Test
+	void trialDeviceMustBeThePlatformsValueOnly() {
+		long principals = count("principal");
+		String android = """
+				{"platform": "ANDROID", "attestation": {"token": "%s"}, "trialDevice": %s}
+				""";
+		String ios = """
+				{"platform": "IOS", "attestation": {"token": "%s"}, "trialDevice": %s}
+				""";
+
+		for (String body : List.of(android.formatted(FakeAttestationVerifier.VALID_TOKEN, "{}"),
+				android.formatted(FakeAttestationVerifier.VALID_TOKEN, "{\"androidId\": \" \"}"),
+				android.formatted(FakeAttestationVerifier.VALID_TOKEN, "{\"deviceCheckToken\": \"fake-device-check:a\"}"),
+				android.formatted(FakeAttestationVerifier.VALID_TOKEN,
+						"{\"androidId\": \"%s\", \"deviceCheckToken\": \"fake-device-check:a\"}".formatted(androidId())),
+				ios.formatted(FakeAttestationVerifier.VALID_TOKEN, "{\"androidId\": \"%s\"}".formatted(androidId())))) {
+			assertThat(install(body)).hasStatus(400).bodyJson().isLenientlyEqualTo("""
+					{"code": "INVALID_INPUT", "reason": "TRIAL_DEVICE_INVALID", "retryable": false}
+					""");
+		}
+		assertThat(install(android.formatted(FakeAttestationVerifier.VALID_TOKEN, "null"))).hasStatus(400)
+			.bodyJson()
+			.isLenientlyEqualTo("""
+					{"code": "INVALID_INPUT", "reason": "VALIDATION_FAILED"}
+					""");
 		assertThat(count("principal")).isEqualTo(principals);
 	}
 
@@ -229,12 +270,13 @@ class AnonymousAuthTests {
 
 	@Test
 	void logsCarryThePrincipalButNoTokens(CapturedOutput output) {
-		Installed installed = installAndroid();
+		String androidId = androidId();
+		Installed installed = installAndroid(androidId);
 		String accessToken = (String) json(token(installed.token())).get("accessToken");
 
 		assertThat(output.getOut().lines().filter((line) -> line.contains("\"request completed\""))
 			.filter((line) -> line.contains(installed.principalId().toString()))).hasSize(2);
-		assertThat(output.getAll()).doesNotContain(installed.token(), accessToken);
+		assertThat(output.getAll()).doesNotContain(installed.token(), accessToken, androidId);
 	}
 
 	@Test
@@ -249,9 +291,13 @@ class AnonymousAuthTests {
 	}
 
 	private Installed installAndroid() {
+		return installAndroid(androidId());
+	}
+
+	private Installed installAndroid(String androidId) {
 		MvcTestResult result = install("""
-				{"platform": "ANDROID", "attestation": {"token": "%s"}}
-				""".formatted(FakeAttestationVerifier.VALID_TOKEN));
+				{"platform": "ANDROID", "attestation": {"token": "%s"}, "trialDevice": {"androidId": "%s"}}
+				""".formatted(FakeAttestationVerifier.VALID_TOKEN, androidId));
 		assertThat(result).hasStatus(201);
 		Map<String, Object> body = json(result);
 		UUID principalId = jdbc.sql("SELECT principal_id FROM device WHERE install_id = :id")
@@ -259,6 +305,12 @@ class AnonymousAuthTests {
 			.query(UUID.class)
 			.single();
 		return new Installed(principalId, (String) body.get("installToken"));
+	}
+
+	private static String androidId() {
+		byte[] id = new byte[8];
+		ThreadLocalRandom.current().nextBytes(id);
+		return HexFormat.of().formatHex(id);
 	}
 
 	private MvcTestResult install(String body) {

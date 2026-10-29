@@ -25,6 +25,9 @@ class AiConsent {
 
 	private UUID principalId;
 
+	/** The device the decision came from (ADR-0029). */
+	private UUID deviceId;
+
 	@Enumerated(EnumType.STRING)
 	private ConsentPurpose purpose;
 
@@ -38,10 +41,11 @@ class AiConsent {
 
 	private Instant decidedAt;
 
-	private AiConsent(UUID principalId, ConsentPurpose purpose, ConsentDecision decision, int noticeVersion,
-			long version, Instant now) {
+	private AiConsent(UUID principalId, UUID deviceId, ConsentPurpose purpose, ConsentDecision decision,
+			int noticeVersion, long version, Instant now) {
 		this.id = UuidV7.generate();
 		this.principalId = principalId;
+		this.deviceId = deviceId;
 		this.purpose = purpose;
 		this.decision = decision;
 		this.noticeVersion = noticeVersion;
@@ -49,9 +53,9 @@ class AiConsent {
 		this.decidedAt = now;
 	}
 
-	static AiConsent of(UUID principalId, ConsentPurpose purpose, ConsentDecision decision, int noticeVersion,
-			long version, Instant now) {
-		return new AiConsent(principalId, purpose, decision, noticeVersion, version, now);
+	static AiConsent of(UUID principalId, UUID deviceId, ConsentPurpose purpose, ConsentDecision decision,
+			int noticeVersion, long version, Instant now) {
+		return new AiConsent(principalId, deviceId, purpose, decision, noticeVersion, version, now);
 	}
 
 }
