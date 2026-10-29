@@ -955,13 +955,14 @@
       "03h46ggkrxnffv4hjizyj1crb": {
         "id": "03h46ggkrxnffv4hjizyj1crb",
         "name": "device_trial_mark",
-        "comment": "재설치 체험 차단용 기기 판별 기록 (ADR-0020). 탈퇴 후에도 남고 원본 식별자 없이 HMAC만 저장. 기기·계정 이용량 중 하나라도 소진하면 체험 없음. uk_device_trial_mark_key는 WHERE device_key_hmac IS NOT NULL (FR-B-01, P08)",
+        "comment": "재설치 체험 차단용 기기 판별 기록 (ADR-0020). 탈퇴 후에도 남고 원본 식별자 없이 HMAC만 저장. 기기·계정 이용량 중 하나라도 소진하면 체험 없음. Android는 HMAC으로 같은 행을 다시 찾고, iOS는 설치마다 새 행. uk_device_trial_mark_key는 WHERE device_key_hmac IS NOT NULL. reserved + consumed ≤ limit은 CHECK (FR-B-01, P08, ADR-0029)",
         "columnIds": [
           "03h46ggkrxnffv4hjj4ssm18h",
           "03h46ggks30n8gsin8mdrlc2f",
           "03h46ggks30n8gsin8psp7e9e",
           "03h46ggks30n8gsin8uksber0",
           "03h46ggks8ij6t1ezl8lkhrhm",
+          "03hf02v88ewn127imw1oboyby",
           "03h46ggks8ij6t1ezlcypq0jj",
           "03h46ggks8ij6t1ezlf9ls4dl",
           "03h46ggks8ij6t1ezljcwosbp",
@@ -1416,7 +1417,7 @@
         "name": "device_id",
         "dataType": "uuid",
         "options": 0,
-        "comment": "단계 4에서 요청의 기기 식별을 정할 때까지 비움 (ADR-0028 #13)"
+        "comment": "결정을 보낸 기기 (access token did, ADR-0029). 단계 3 구현 기간에 만든 행은 비어 있음"
       },
       "03h4468ge3qzlp0kxj08yn0md": {
         "id": "03h4468ge3qzlp0kxj08yn0md",
@@ -1635,7 +1636,7 @@
         "id": "03h4468ge3qzlp0kxkfsmwjn7",
         "tableId": "03h4468ge3qzlp0kxk9r388k6",
         "name": "period_key",
-        "comment": "TRIAL은 고정값, PRO_DAILY는 날짜",
+        "comment": "TRIAL은 고정값 ONCE, PRO_DAILY는 날짜",
         "dataType": "text",
         "options": 2
       },
@@ -3580,7 +3581,7 @@
         "id": "03h46ggks30n8gsin8uksber0",
         "tableId": "03h46ggkrxnffv4hjizyj1crb",
         "name": "key_version",
-        "comment": "device_key_hmac에 쓴 HMAC 키 버전",
+        "comment": "device_key_hmac에 쓴 HMAC 키 버전. 이전 버전 키는 그 버전 행이 남아 있는 동안 유지 (ADR-0029 #12)",
         "dataType": "int",
         "options": 0
       },
@@ -3588,7 +3589,7 @@
         "id": "03h46ggks8ij6t1ezl8lkhrhm",
         "tableId": "03h46ggkrxnffv4hjizyj1crb",
         "name": "device_check_state",
-        "comment": "iOS만. DeviceCheck 비트에 기록한 상태: TRIAL_STARTED / TRIAL_EXHAUSTED",
+        "comment": "iOS만. DeviceCheck 시작 기록 (bit0)이 있으면 TRIAL_STARTED: 설치 때 이미 있었거나 첫 체험 접수 전에 기록. 소진은 기록하지 않음 (ADR-0029 #5·14)",
         "dataType": "text",
         "options": 0
       },
@@ -3612,7 +3613,8 @@
         "tableId": "03h46ggkrxnffv4hjizyj1crb",
         "name": "exhausted_at",
         "dataType": "timestamptz",
-        "options": 0
+        "options": 0,
+        "comment": "마지막 사진을 완료한 시각, 또는 이전 설치에서 체험을 시작한 iOS 기기의 설치 시각 (체험 없음)"
       },
       "03h46ggks8ij6t1ezlncrcoju": {
         "id": "03h46ggks8ij6t1ezlncrcoju",
@@ -4081,6 +4083,14 @@
         "name": "version",
         "comment": "주체·목적별 동의 순번 (데이터 버전). 결정마다 1 증가, 행은 수정하지 않음. 요청의 version과 다르면 409 (ADR-0028 #2)",
         "dataType": "bigint",
+        "options": 8
+      },
+      "03hf02v88ewn127imw1oboyby": {
+        "id": "03hf02v88ewn127imw1oboyby",
+        "tableId": "03h46ggkrxnffv4hjizyj1crb",
+        "name": "limit_count",
+        "comment": "생성 시 설정값(P01)을 기록 (ADR-0029 #15)",
+        "dataType": "int",
         "options": 8
       }
     },
@@ -5245,6 +5255,16 @@
           "03he27hcddyi48hvjshyeei9n"
         ],
         "unique": false
+      },
+      "03hu5ds1pp8c4b796qcsgundh": {
+        "id": "03hu5ds1pp8c4b796qcsgundh",
+        "name": "ix_usage_reservation_job",
+        "tableId": "03h4468ge3qzlp0kxktbzseyu",
+        "indexColumnIds": [
+          "03hgv1gyiegimgdx5bwhktte4",
+          "03hdm446963llhx2z7xj5b77i"
+        ],
+        "unique": false
       }
     },
     "indexColumnEntities": {
@@ -5792,6 +5812,18 @@
         "id": "03he27hcddyi48hvjshyeei9n",
         "indexId": "03hkai8ej1t3rpyvajrxv4ghy",
         "columnId": "03h4468geephs5erx6gl4ars7",
+        "orderType": 1
+      },
+      "03hgv1gyiegimgdx5bwhktte4": {
+        "id": "03hgv1gyiegimgdx5bwhktte4",
+        "indexId": "03hu5ds1pp8c4b796qcsgundh",
+        "columnId": "03h4468ge3qzlp0kxkw3vc1jr",
+        "orderType": 1
+      },
+      "03hdm446963llhx2z7xj5b77i": {
+        "id": "03hdm446963llhx2z7xj5b77i",
+        "indexId": "03hu5ds1pp8c4b796qcsgundh",
+        "columnId": "03h4468ge3qzlp0kxl57mkayr",
         "orderType": 1
       }
     },

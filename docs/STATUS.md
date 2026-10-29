@@ -20,8 +20,8 @@
 | 0 | 협업 기반: SSOT 배치, CLAUDE.md, 보조 문서, 권한·훅, 기록 체계, Git Flow | 완료 |
 | 1 | 프로젝트 골격: Gradle·Spring Boot 초기화, `.env.example`, CI | 완료 |
 | 2 | 공통 기반 (모듈 골격, ProblemDetail, 멱등 기록, 보안, 구조화 로그) + 익명 주체 발급 (ADR-0020) | 완료 (ADR-0025~0027) |
-| 3 | 동의 기록 (FR-O-02): 단일 동의 + 목적 필드, 철회 처리 | 진행 중 (`feature/FR-O-02-ai-consent`, ADR-0028) |
-| 4 | 이용량 (FR-B-01): 예약·반환, 기기·계정 이중 집계, 재설치 판별 | 대기 |
+| 3 | 동의 기록 (FR-O-02): 단일 동의 + 목적 필드, 철회 처리 | 완료 (ADR-0028) |
+| 4 | 이용량 (FR-B-01): 예약·반환, 기기·계정 이중 집계, 재설치 판별 | 진행 중 (`feature/FR-B-01-usage`, ADR-0029) |
 | 5 | 분석 접수·묶음 판단 (FR-I-01·02) → 분석 (FR-I-03) → 액션·이벤트 생성 (FR-G-01~03, 웹 연결 제외) | 대기. 선행: 유사도 벡터 모델 클라이언트 합의, D-09 |
 | 6 | 3회 클릭 집계 (FR-B-01), 웹 연결 (FR-X-06), FR-G-04 | 대기 |
 | 7 | 로그인·로그아웃 (FR-A-01·03) | 대기 |
@@ -62,9 +62,11 @@
 - 단계 2-3 익명 인증: V2 마이그레이션 (주체·설치·기기), ES256 access JWT 발급·검증 (JWK Set, 이전 키 검증, `kid` 필수), `POST /installs` (기기 증명 대역, 서버 발급 설치 ID)·`POST /auth/token`, 기본 거부 보안 필터 체인, 인증 실패 응답 (`WWW-Authenticate`, 변경 요청 `jobId`), 로그 `principal_id`. 대역·임시 키는 `local`·`test` 프로필에서만 기동 ([ADR-0027](adr/0027-anonymous-auth-implementation.md))
 
 - 단계 3 동의 기록: V3 마이그레이션 (`ai_consent`), `consent` 모듈, `GET`·`PUT /consents/ai` (동의 순번 필수·결정마다 증가, 직전 동의의 거절 = 철회, 서버 제공 안내 (Google 장소 조회 포함)·최소 안내 버전), 다른 모듈용 `AiConsents.isGranted`. 안내 v1은 초안이라 `local`·`test` 밖 기동 불가 ([ADR-0028](adr/0028-ai-consent-implementation.md))
+- 단계 4 무료 체험 이용량: V4 마이그레이션 (`usage_quota`·`device_trial_mark`·`usage_reservation`), `usage` 모듈 (주체·기기 이중 집계, 묶음 전체가 들어갈 때만 예약, 사진당 1회 차감, 완료·반환), 설치 등록의 기기 판별 (Android ID HMAC·키 버전, iOS DeviceCheck 대역), 첫 체험 접수 전 DeviceCheck 시작 기록, access token `did`·`ai_consent.device_id` ([ADR-0029](adr/0029-trial-usage-implementation.md))
 
 ## 다음 할 일
-- [ ] 단계 3 PR 병합 (`feature/FR-O-02-ai-consent`, 검토 APPROVE, ADR-0028 확정)
+- [ ] 단계 4 PR 병합 (`feature/FR-B-01-usage`, ADR-0029)
+- [ ] 운영 Android ID HMAC 키 (`PIK_USAGE_DEVICE_KEYS`) 생성·SSM 등록, 키 교체 때 이전 키 유지 (배포 환경 구성 때, ADR-0029)
 - [ ] 동의 안내 확정: 받는 곳별 처리 국가·보관 기간 (Anthropic·TypeSafe·Google, D-08·P08) 확인, 법률 검토 (`notes` 문구, 국외 이전 고지의 그 밖의 항목) 후 `draft` 해제 (운영 배포 전, ADR-0028)
 - [ ] 실제 기기 증명 검증 (App Attest·Play Integrity)과 challenge 발급 API 구현: 단계 2는 대역만 사용하며, 구현 전에는 `local`·`test` 밖에서 기동이 실패한다. Apple 키·Google Cloud 서비스 계정 준비 후, 클라이언트 연동·운영 배포 전 (ADR-0020·0023·0027)
 - [ ] 운영 JWK Set (ES256) 생성·보관·교체 절차 (배포 환경 구성 때, D-13과 함께, ADR-0027)
@@ -73,7 +75,7 @@
 - [ ] Haiku 5.5·Jev 측정용 실제 사진·검색어 표본 구성 (D-07)
 - [ ] 분석 작업·접수 단위 상태명 확정 (단계 5 구현 시, ADR-0016·0022)
 - [ ] Terraform 인프라 코드·CD 파이프라인 작성 (배포 환경 구성 전, D-13 선행, ADR-0015)
-- [ ] ER 설계안을 Flyway 마이그레이션에 반영: 공통 인프라 4개는 V1 완료 (ADR-0026), 주체·설치·기기는 V2 완료 (ADR-0027), 동의는 V3 완료 (ADR-0028), 나머지는 각 단계 (ADR-0022)
+- [ ] ER 설계안을 Flyway 마이그레이션에 반영: 공통 인프라 4개는 V1 완료 (ADR-0026), 주체·설치·기기는 V2 완료 (ADR-0027), 동의는 V3 완료 (ADR-0028), 체험 이용량은 V4 완료 (ADR-0029), 나머지는 각 단계 (ADR-0022)
 - [ ] FR-A-04 기술 검증: PHCloudIdentifier 신뢰성 (앨범 iCloud 식별자 지원 포함), 같은 기기 재설치 때 이전 연결 찾기 (단계 9 전, D-20, ADR-0022·0024)
 - [ ] Google Places 국내 장소 품질 측정: 공연장·카페·주소 표본 (단계 9 전, D-07 표본과 함께, ADR-0024)
 - [ ] 지도 앱 URL 스킴 확인 (카카오맵·네이버 지도), RevenueCat 복원 동작 기본값 유지 확인 (ADR-0024)
@@ -96,8 +98,9 @@
 | D-13 | 인프라 비용 선택 | NAT Gateway AZ별 배치 (가용성) / 1개 (비용), RDS 인스턴스 크기, RDS Proxy 도입 여부 (도입하면 커넥션 초기화 SQL 대신 DB·역할 기본 격리 수준 고정, ADR-0026 #18) | 배포 환경 구성 전 | 인프라 코드 |
 | D-14 | ADR-0017·0019의 `(제안)` 항목 확인 (나머지는 ADR-0024에서 확정) | 검색 구현 세부: 폴더마다 Jev `noul` 질문 / 폴더를 선택지로 한 번에 묻는 `choice`, 상대 날짜 토큰, 캐시 단위. Pro LLM 초기값 Haiku 5.5 (설정값). 알림: 분석 완료 화면 갱신 = 상태 조회 (ETag), 장소 알림 서버 확인 때 오프라인이면 마지막 동기화 상태로 판단 (ADR-0019) | 검색은 D-08 확인 후, 알림은 단계 9 전 | FR-S-01·02, FR-I-06, FR-N-02 |
 | D-20 | iCloud 사진 photoId 수렴, 재설치 때 연결 이관 | 두 번째 기기가 만든 photoId를 같은 `cloud_ref`의 서버 photoId로 바꾸는 절차, 이전 설치 (`device` 행)의 `photo_device_link`와 `organize_state` DEVICE 키를 새 설치로 옮기는 방법 (iOS는 기기 식별자 없음). FR-A-04 기술 검증과 함께 결정 | 단계 9 전 | FR-A-02·04, FR-L-05 (ADR-0022) |
-| D-21 | 기기 증명 challenge 방식 (실제 검증 구현 때) | 서버 발급 nonce API (유효 시간·1회 사용) / 요청 해시 기반 (App Attest `clientDataHash`, Play Integrity `requestHash`) | 실제 기기 증명 구현 전 (운영 배포 전) | 운영 배포 (`local`·`test` 밖 기동 불가, ADR-0027) |
+| D-21 | 기기 증명 challenge 방식 (실제 검증 구현 때) | 서버 발급 nonce API (유효 시간·1회 사용) / 요청 해시 기반 (App Attest `clientDataHash`, Play Integrity `requestHash`). 체험 기기 판별 값 (Android ID·DeviceCheck 토큰)을 증명에 묶을지도 함께 (ADR-0029) | 실제 기기 증명 구현 전 (운영 배포 전) | 운영 배포 (`local`·`test` 밖 기동 불가, ADR-0027) |
 | D-22 | 운영자용 actuator 접근 | 별도 관리 포트 (내부망) / 운영자 인증 (access token과 분리) | 지표·운영 endpoint 노출 전 | 모니터링 연동 (현재 health만 공개, 나머지 403, ADR-0027) |
+| D-23 | 실제 DeviceCheck 연동의 실패 처리 | 조회 실패 시 설치를 503으로 끝냄 (현재 규약) / 체험 없이 설치 진행 / 체험 판별 보류 후 재조회. Apple 키 준비 포함 | 운영 배포 전 (D-21과 함께) | 운영 배포 (`local`·`test` 밖 기동 불가, ADR-0029) |
 
 ## 위험·제약
 - 저장소가 공개 상태라 요구사항 원문 (`docs/spec`)·ADR·`.claude/docs`가 공개된다. 사용자가 수용했다 (2026-10-26). 비공개가 필요해지면 이력에서 제거한 뒤 저장소 재생성 또는 Private 전환을 검토한다 (Free 플랜이면 Private 저장소에 Ruleset 미적용).
