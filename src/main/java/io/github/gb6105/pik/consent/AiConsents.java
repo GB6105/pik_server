@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
+import org.hibernate.exception.ConstraintViolationException.ConstraintKind;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,8 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class AiConsents {
 
 	private static final ConsentPurpose PURPOSE = ConsentPurpose.AI_ANALYSIS_AND_SEARCH;
-
-	private static final String VERSION_CONSTRAINT = "uk_ai_consent_principal_purpose_version";
 
 	private final ConsentRecords records;
 
@@ -42,9 +41,10 @@ public class AiConsents {
 	}
 
 	/**
-	 * Records the decision unless it repeats the latest one on the same notice. The request must carry the current
-	 * version, so a delayed retransmission cannot overwrite a newer decision (ADR-0028 #2). A grant must be given on
-	 * the current notice; a refusal is recorded on any notice the server has served, since it sends nothing.
+	 * Records the decision and moves the version, also when it repeats the latest one: the request must carry the
+	 * current version, so any request sent before an accepted decision is rejected and a delayed grant cannot
+	 * overwrite a later refusal (ADR-0028 #2·10). A grant must be given on the current notice; a refusal is recorded
+	 * on any notice the server has served, since it sends nothing.
 	 */
 	@Transactional
 	ConsentState decide(UUID principalId, DecisionRequest request) {
@@ -53,8 +53,10 @@ public class AiConsents {
 			throw conflict("VERSION_CONFLICT");
 		}
 		int noticeVersion = request.noticeVersion();
+		// During a rolling deployment the client may have read a newer notice from another instance; it reads the
+		// notice again and asks with a new key.
 		if (noticeVersion > properties.noticeVersion()) {
-			throw new PikException(ErrorCode.INVALID_INPUT, "UNKNOWN_NOTICE_VERSION", false);
+			throw conflict("UNKNOWN_NOTICE_VERSION");
 		}
 		boolean grant = request.decision() == Choice.GRANTED;
 		if (grant && noticeVersion != properties.noticeVersion()) {
@@ -62,9 +64,6 @@ public class AiConsents {
 		}
 		AiConsent latest = current.latest();
 		boolean wasGranted = latest != null && latest.getDecision() == ConsentDecision.GRANTED;
-		if (latest != null && grant == wasGranted && latest.getNoticeVersion() == noticeVersion) {
-			return current;
-		}
 		ConsentDecision decision = grant ? ConsentDecision.GRANTED
 				: wasGranted ? ConsentDecision.WITHDRAWN : ConsentDecision.DENIED;
 		AiConsent next = AiConsent.of(principalId, PURPOSE, decision, noticeVersion, current.version() + 1,
@@ -73,9 +72,11 @@ public class AiConsents {
 			records.insert(next);
 		}
 		catch (DataIntegrityViolationException ex) {
-			// Another decision took this version after it was read.
+			// Another decision took this version after it was read. The kind comes from the SQL state; the
+			// constraint name is parsed from the message and missing when the server does not report in English.
+			// The only other unique key is the UUIDv7 primary key.
 			if (ex.getCause() instanceof ConstraintViolationException violation
-					&& VERSION_CONSTRAINT.equals(violation.getConstraintName())) {
+					&& violation.getKind() == ConstraintKind.UNIQUE) {
 				throw conflict("VERSION_CONFLICT");
 			}
 			throw ex;

@@ -61,11 +61,11 @@
 - 단계 2-2 멱등 기록: V1 마이그레이션 (멱등 기록·변경 번호·outbox·ShedLock), 멱등 실행기 (advisory 잠금, 4xx = 전체 롤백 후 새 트랜잭션에 기록), `@IdempotentCommand`·키 검사, 오류 응답 `jobId`·`result`, 만료 정리 배치, 변경 번호 발급 ([ADR-0026](adr/0026-idempotency-implementation.md))
 - 단계 2-3 익명 인증: V2 마이그레이션 (주체·설치·기기), ES256 access JWT 발급·검증 (JWK Set, 이전 키 검증, `kid` 필수), `POST /installs` (기기 증명 대역, 서버 발급 설치 ID)·`POST /auth/token`, 기본 거부 보안 필터 체인, 인증 실패 응답 (`WWW-Authenticate`, 변경 요청 `jobId`), 로그 `principal_id`. 대역·임시 키는 `local`·`test` 프로필에서만 기동 ([ADR-0027](adr/0027-anonymous-auth-implementation.md))
 
-- 단계 3 동의 기록: V3 마이그레이션 (`ai_consent`), `consent` 모듈, `GET`·`PUT /consents/ai` (동의 순번 필수, 직전 동의의 거절 = 철회, 서버 제공 안내·최소 안내 버전), 다른 모듈용 `AiConsents.isGranted`. 안내 v1은 초안이라 `local`·`test` 밖 기동 불가 ([ADR-0028](adr/0028-ai-consent-implementation.md))
+- 단계 3 동의 기록: V3 마이그레이션 (`ai_consent`), `consent` 모듈, `GET`·`PUT /consents/ai` (동의 순번 필수·결정마다 증가, 직전 동의의 거절 = 철회, 서버 제공 안내 (Google 장소 조회 포함)·최소 안내 버전), 다른 모듈용 `AiConsents.isGranted`. 안내 v1은 초안이라 `local`·`test` 밖 기동 불가 ([ADR-0028](adr/0028-ai-consent-implementation.md))
 
 ## 다음 할 일
 - [ ] 단계 3 검토·PR (`feature/FR-O-02-ai-consent`)
-- [ ] 동의 안내 확정: 받는 곳별 처리 국가·보관 기간 (Anthropic·TypeSafe·Google, D-08·P08) 확인, 법률 검토 후 `draft` 해제 (운영 배포 전, ADR-0028)
+- [ ] 동의 안내 확정: 받는 곳별 처리 국가·보관 기간 (Anthropic·TypeSafe·Google, D-08·P08) 확인, 법률 검토 (`notes` 문구, 국외 이전 고지의 그 밖의 항목) 후 `draft` 해제 (운영 배포 전, ADR-0028)
 - [ ] 실제 기기 증명 검증 (App Attest·Play Integrity)과 challenge 발급 API 구현: 단계 2는 대역만 사용하며, 구현 전에는 `local`·`test` 밖에서 기동이 실패한다. Apple 키·Google Cloud 서비스 계정 준비 후, 클라이언트 연동·운영 배포 전 (ADR-0020·0023·0027)
 - [ ] 운영 JWK Set (ES256) 생성·보관·교체 절차 (배포 환경 구성 때, D-13과 함께, ADR-0027)
 - [ ] 유사도 벡터 모델을 클라이언트와 합의 (단계 5 전, ADR-0021)
@@ -76,7 +76,7 @@
 - [ ] ER 설계안을 Flyway 마이그레이션에 반영: 공통 인프라 4개는 V1 완료 (ADR-0026), 주체·설치·기기는 V2 완료 (ADR-0027), 동의는 V3 완료 (ADR-0028), 나머지는 각 단계 (ADR-0022)
 - [ ] FR-A-04 기술 검증: PHCloudIdentifier 신뢰성 (앨범 iCloud 식별자 지원 포함), 같은 기기 재설치 때 이전 연결 찾기 (단계 9 전, D-20, ADR-0022·0024)
 - [ ] Google Places 국내 장소 품질 측정: 공연장·카페·주소 표본 (단계 9 전, D-07 표본과 함께, ADR-0024)
-- [ ] 동의 안내에 Google (장소 조회) 추가, 지도 앱 URL 스킴 확인 (카카오맵·네이버 지도), RevenueCat 복원 동작 기본값 유지 확인 (ADR-0024)
+- [ ] 지도 앱 URL 스킴 확인 (카카오맵·네이버 지도), RevenueCat 복원 동작 기본값 유지 확인 (ADR-0024)
 - [ ] 유사도 벡터 저장 형식 (pgvector / bytea)·양자화 결정 (단계 5, ADR-0024)
 - [ ] FR-G-03 "원본 변경 시 연결·표시 재검증" 규칙 정의 (단계 5 이벤트 생성 구현 때, ADR-0024 #6-1)
 - [ ] Google Places 후보를 Pik 화면에 보일 때 출처 표기 의무 확인, 자동 숨김 구분 열 (`hidden_reason`) 여부 결정, 게스트 사진 귀속 때 분석 결과·차감 기록을 잇는 방법 (단계 9 전, ADR-0024)

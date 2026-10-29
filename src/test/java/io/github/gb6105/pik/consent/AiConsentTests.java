@@ -98,7 +98,7 @@ class AiConsentTests {
 		assertThat(decide(principal, "GRANTED", 1, 0)).hasStatusOk();
 
 		assertThat(decide(principal, "DENIED", 1, 1)).hasStatusOk().bodyJson().isLenientlyEqualTo("""
-				{"result": "SUCCEEDED", "consent": {"status": "WITHDRAWN", "version": 2,
+				{"result": "SUCCEEDED", "consent": {"status": "WITHDRAWN", "version": 2, "reconsentRequired": false,
 					"features": ["MANUAL_ORGANIZE", "MEMO", "TAG", "ATTRIBUTE_SEARCH"]}}
 				""");
 		assertThat(consents.isGranted(principal)).isFalse();
@@ -109,10 +109,10 @@ class AiConsentTests {
 	void firstRefusalIsADenial() {
 		UUID principal = UuidV7.generate();
 
-		assertThat(decide(principal, "DENIED", 1, 0)).hasStatusOk()
-			.bodyJson()
-			.extractingPath("$.consent.status")
-			.isEqualTo("DENIED");
+		assertThat(decide(principal, "DENIED", 1, 0)).hasStatusOk().bodyJson().isLenientlyEqualTo("""
+				{"consent": {"status": "DENIED", "version": 1, "reconsentRequired": false,
+					"features": ["MANUAL_ORGANIZE", "MEMO", "TAG", "ATTRIBUTE_SEARCH"]}}
+				""");
 		assertThat(consents.isGranted(principal)).isFalse();
 	}
 
@@ -131,22 +131,51 @@ class AiConsentTests {
 	}
 
 	@Test
-	void repeatingTheLatestDecisionOnTheSameNoticeAddsNoRecord() {
+	void versionAheadOfTheCurrentOneIsAConflict() {
+		UUID principal = UuidV7.generate();
+
+		assertThat(decide(principal, "GRANTED", 1, 5)).hasStatus(409)
+			.bodyJson()
+			.extractingPath("$.reason")
+			.isEqualTo("VERSION_CONFLICT");
+		assertThat(rows(principal)).isEmpty();
+	}
+
+	@Test
+	void repeatedDecisionsAreRecordedAndMoveTheVersion() {
 		UUID granting = UuidV7.generate();
 		assertThat(decide(granting, "GRANTED", 1, 0)).hasStatusOk();
-		assertThat(decide(granting, "GRANTED", 1, 1)).hasStatusOk()
-			.bodyJson()
-			.extractingPath("$.consent.version")
-			.isEqualTo(1);
-		assertThat(rows(granting)).hasSize(1);
+		assertThat(decide(granting, "GRANTED", 1, 1)).hasStatusOk().bodyJson().isLenientlyEqualTo("""
+				{"consent": {"status": "GRANTED", "version": 2}}
+				""");
+		assertThat(rows(granting)).extracting((row) -> row.get("decision")).containsExactly("GRANTED", "GRANTED");
 
 		UUID refusing = UuidV7.generate();
 		assertThat(decide(refusing, "DENIED", 1, 0)).hasStatusOk();
-		assertThat(decide(refusing, "DENIED", 1, 1)).hasStatusOk()
+		assertThat(decide(refusing, "DENIED", 1, 1)).hasStatusOk().bodyJson().isLenientlyEqualTo("""
+				{"consent": {"status": "DENIED", "version": 2}}
+				""");
+		assertThat(rows(refusing)).extracting((row) -> row.get("decision")).containsExactly("DENIED", "DENIED");
+	}
+
+	@Test
+	void delayedDecisionCannotOverwriteALaterRepeatedOne() {
+		UUID refusing = UuidV7.generate();
+		assertThat(decide(refusing, "DENIED", 1, 0)).hasStatusOk();
+		// A grant sent on version 1 is delayed; the user refuses again on version 1 and that arrives first.
+		assertThat(decide(refusing, "DENIED", 1, 1)).hasStatusOk();
+
+		assertThat(decide(refusing, "GRANTED", 1, 1)).hasStatus(409)
 			.bodyJson()
-			.extractingPath("$.consent.status")
-			.isEqualTo("DENIED");
-		assertThat(rows(refusing)).hasSize(1);
+			.extractingPath("$.reason")
+			.isEqualTo("VERSION_CONFLICT");
+		assertThat(consents.isGranted(refusing)).isFalse();
+
+		UUID granting = UuidV7.generate();
+		assertThat(decide(granting, "GRANTED", 1, 0)).hasStatusOk();
+		assertThat(decide(granting, "GRANTED", 1, 1)).hasStatusOk();
+		assertThat(decide(granting, "DENIED", 1, 1)).hasStatus(409);
+		assertThat(consents.isGranted(granting)).isTrue();
 	}
 
 	@Test
@@ -163,10 +192,10 @@ class AiConsentTests {
 	void noticeVersionMustBeOneTheServerServed() {
 		UUID principal = UuidV7.generate();
 
-		assertThat(decide(principal, "GRANTED", 2, 0)).hasStatus(400).bodyJson().isLenientlyEqualTo("""
-				{"code": "INVALID_INPUT", "reason": "UNKNOWN_NOTICE_VERSION", "result": "FAILED"}
+		assertThat(decide(principal, "GRANTED", 2, 0)).hasStatus(409).bodyJson().isLenientlyEqualTo("""
+				{"code": "CONFLICT", "reason": "UNKNOWN_NOTICE_VERSION", "retryable": false, "result": "FAILED"}
 				""");
-		assertThat(decide(principal, "DENIED", 2, 0)).hasStatus(400);
+		assertThat(decide(principal, "DENIED", 2, 0)).hasStatus(409);
 		assertThat(rows(principal)).isEmpty();
 	}
 

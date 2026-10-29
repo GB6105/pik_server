@@ -24,10 +24,10 @@
 | # | 항목 | 결정 |
 |---|---|---|
 | 6 | 엔드포인트 | `GET /consents/ai` = 200 `{consent, notice}`. `PUT /consents/ai` = 변경 요청 (`Idempotency-Key`), 200 `{jobId, result, retryable, consent}`. `consent` = `{purpose, status, version, noticeVersion, decidedAt, reconsentRequired, features}`, `status` = `NONE` / `GRANTED` / `DENIED` / `WITHDRAWN` |
-| 7 | 요청 | `{decision: GRANTED / DENIED, noticeVersion, version}`. 다른 `decision` 값은 400 `MALFORMED_BODY`, 누락·범위 밖 (`noticeVersion` < 1, `version` < 0)은 400 `VALIDATION_FAILED`. 직전 결정이 동의면 거절을 `WITHDRAWN`으로 기록한다 (최소 버전에 못 미친 동의 포함) |
-| 8 | 안내 버전 검증 | 서버가 제공한 적 없는 버전 (현재보다 큼)은 400 `INVALID_INPUT` / `UNKNOWN_NOTICE_VERSION`. 동의는 현재 버전이 아니면 409 `CONFLICT` / `NOTICE_OUTDATED`. 거절은 서버가 제공한 어느 버전이든 기록한다 |
-| 9 | 검증 순서·충돌 응답 | 순번을 먼저 확인한다. 다르면 409 `CONFLICT` / `VERSION_CONFLICT`이고 응답에 현재 순번은 넣지 않는다 (단말이 조회로 다시 받는다). 동시에 같은 순번을 기록하다 UNIQUE 위반이 나도 같은 응답이다. 모든 거부는 `retryable` = false이고, 멱등 기록에 저장된다 (ADR-0026) |
-| 10 | 같은 결정 반복 | 의도 (동의 / 거절)와 안내 버전이 모두 직전과 같으면 행을 추가하지 않고 현재 상태를 돌려준다 (순번 그대로) |
+| 7 | 요청 | `{decision: GRANTED / DENIED, noticeVersion, version}`. 다른 `decision` 값은 400 `MALFORMED_BODY`, 누락·범위 밖 (`noticeVersion` < 1, `version` < 0)은 400 `VALIDATION_FAILED`. 직전 결정이 동의면 거절을 `WITHDRAWN`으로 기록한다 (최소 버전에 못 미친 동의 포함). 직전이 거절·철회면 어느 안내에서 거절해도 `DENIED`다 |
+| 8 | 안내 버전 검증 | 서버가 제공한 적 없는 버전 (현재보다 큼)은 409 `CONFLICT` / `UNKNOWN_NOTICE_VERSION` (롤링 배포 중 다른 인스턴스에서 새 안내를 받은 경우). 동의는 현재 버전이 아니면 409 `CONFLICT` / `NOTICE_OUTDATED`. 거절은 서버가 제공한 어느 버전이든 기록한다 |
+| 9 | 검증 순서·충돌 응답 | 순번을 먼저 확인한다. 다르면 409 `CONFLICT` / `VERSION_CONFLICT`이고 응답에 현재 순번은 넣지 않는다 (단말이 조회로 다시 받는다). 동시에 같은 순번을 기록하다 UNIQUE 위반이 나도 같은 응답이다 (위반 판별은 SQLState에서 나온 제약 종류로 한다. 제약 이름은 PostgreSQL 오류 메시지가 영어일 때만 얻을 수 있다). 모든 거부는 `retryable` = false이고, 멱등 기록에 저장된다 (ADR-0026). 409를 받은 단말은 조회한 뒤 새 키로 다시 요청한다 |
+| 10 | 같은 결정 반복 | 직전과 같은 결정도 기록하고 순번을 올린다. 받아들인 결정은 모두 순번을 하나씩 올린다 (코드 검토 반영, 처음 안은 "같은 결정·같은 안내면 기록 안 함") |
 | 11 | 이용 가능한 기능 | `features` = 동의 기준 목록. 항상 `MANUAL_ORGANIZE`·`MEMO`·`TAG`·`ATTRIBUTE_SEARCH`, 유효한 동의가 있으면 `PHOTO_ANALYSIS`·`NATURAL_LANGUAGE_SEARCH`를 더한다. 체험·구독 자격은 따로 판단한다 (FR-B) |
 | 12 | 안내 저장·형식 | `classpath:consent/ai-notice-v<N>.json` (한국어). 필드 = `version`, `draft`, `title`, `transfers[]` (`data`·`recipient`·`purpose`·`country`·`retention`), `notes[]`. 기동할 때 읽어 검증한다 (설정 버전과 일치, 제목·전송 항목 필수, 최종본은 모든 전송의 국가·보관 기간 필수). `draft`는 응답에 넣지 않는다. v1 초안에는 ADR-0016·0024에서 확정된 전송만 적고 국가·보관 기간은 비운다 |
 | 13 | 스키마 | V3 `ai_consent`. `notice_version`은 정수 (ERD의 `text`에서 변경, 최소 버전과 비교), `version` BIGINT + UNIQUE (`principal_id`, `purpose`, `version`) (ERD의 색인 `ix_ai_consent_principal_purpose_decided`를 대체). `principal_id`에는 FK를 두지 않는다 (다른 모듈). `device_id` 컬럼은 두되 단계 4에서 기기 식별을 정할 때까지 비워 둔다 (엔티티 매핑 없음) |
@@ -42,7 +42,7 @@
 - 5: 지금은 철회를 구독할 모듈이 없다. FR-O-02의 "전송 직전 상태 재확인"과 ADR-0016 실행 단계의 재확인이 이미 철회 뒤 전송을 막는다. 대기 작업을 일괄 취소해야 하면 단계 5에서 이벤트를 추가한다.
 - 7: 단말은 동의·거절만 고르면 되고, 철회 여부는 서버가 이력으로 판단한다.
 - 8: 거절은 전송을 늘리지 않으므로 안내 버전이 오래돼도 기록해도 된다. 동의는 사용자가 현재 전송 범위를 봤다는 근거여야 한다.
-- 10: 같은 화면에서 같은 결정을 다시 보내도 이력이 늘지 않는다. 다른 안내 버전에서 다시 동의하면 새 범위에 대한 동의이므로 기록한다.
+- 10: 반복을 기록하지 않으면 순번이 오르지 않아, 같은 순번으로 보낸 늦은 요청이 그 뒤의 결정을 덮는다. 코드 검토에서 "거절 반복 → 늦게 도착한 동의가 200"을 재현했다. 거절 반복만 기록하면 반대로 늦은 거절이 이후의 동의 반복을 덮는다. 모든 결정이 순번을 올리면 어떤 결정이든 그 전에 보낸 요청은 409가 된다. 결정은 드물어 이력 증가는 작다.
 - 12: 국가·보관 기간은 국외 이전 고지 (ADR-0016)에 필요하지만 아직 확인되지 않았다. 추정값을 넣지 않고 비운 채 초안으로 둔다.
 - 13: 최신 행 조회는 (주체, 목적, 순번 내림차순)이므로 UNIQUE 색인이 조회 색인을 겸한다. 요청이 아직 기기를 식별하지 않아 `device_id`를 채울 수 없다.
 
@@ -55,13 +55,17 @@
 | 지금 철회 이벤트 발행 | 구독자가 없음. 실행 직전 재확인으로 충분 |
 | 요청에서 `WITHDRAWN`을 직접 받음 | 단말이 이력을 알아야 함. 서버가 직전 결정으로 판단 가능 |
 | 409에 현재 순번 포함 | 오류 형식 (`PikException`)에 필드 추가가 필요. 단말은 어차피 현재 안내도 다시 받아야 함 |
-| 같은 결정 반복도 매번 기록 | 이력만 늘고 판단에 쓰이지 않음 |
+| 같은 결정·같은 안내 반복은 기록하지 않음 | 순번이 오르지 않아 늦게 도착한 동의가 이후 거절을 덮음 (코드 검토에서 재현) |
+| 거절 반복만 기록 | 늦게 도착한 거절이 이후 동의 반복을 덮음 |
+| 제약 이름으로 UNIQUE 위반 판별 | 이름은 오류 메시지에서 꺼내므로 PostgreSQL 메시지 언어가 영어가 아니면 없음 → 409 대신 503 |
+| 모르는 안내 버전 = 400 | 롤링 배포 중 정상 요청이 영구 400으로 저장됨. 다시 조회하면 해결되는 충돌이므로 409 |
 | 안내 국가·보관 기간에 추정값 기재 | 확인되지 않은 사실이 사용자 고지로 나감 |
 
 ## 결과
 - V3 마이그레이션이 `ai_consent`를 만든다. ER 설계안의 `ai_consent`를 같은 모양으로 고쳤다 (`notice_version` 정수, `version` 추가, UNIQUE).
 - 코드: `consent` 모듈 (엔티티·저장소·`AiConsents`·컨트롤러·안내 읽기), `consent/ai-notice-v1.json`, `application.yml`의 `pik.consent.ai`.
-- 안내 v1은 초안이다. 운영 배포 전에 받는 곳별 처리 국가·보관 기간 (D-08, P08)을 확인하고 법률 검토를 거쳐 `draft`를 해제해야 한다. 그 전에는 `local`·`test` 밖에서 기동이 실패한다.
+- 안내 v1은 초안이다. 운영 배포 전에 받는 곳별 처리 국가·보관 기간 (D-08, P08)을 확인하고 법률 검토를 거쳐 `draft`를 해제해야 한다. 그 전에는 `local`·`test` 밖에서 기동이 실패한다. 기동 검증은 구조화 필드 (국가·보관 기간)만 보므로, 해제 전 법률 검토에서 `notes` 문구 (임시 이미지 삭제 시점 등)도 함께 확인한다. 국외 이전 고지에 필요한 그 밖의 항목 (이전 시기·방법, 받는 자 연락처, 거부 방법·효과 등, 개인정보보호법 제28조의8 기준으로 검토 필요)을 구조화 필드로 둘지도 그때 정한다.
+- 최소 안내 버전에 못 미친 동의는 `status` = `GRANTED`, `reconsentRequired` = true, `features` = 기본 기능으로 응답한다. 단말은 분석 가능 여부를 `status`가 아니라 `features`로 판단한다 (api-contract).
 - 단계 5: 분석 실행 직전과 결과 저장 직전에 `AiConsents.isGranted`로 재확인하고, 동의가 없으면 작업을 취소하고 응답을 저장하지 않는다 (ADR-0021 #5).
 - 계정 로그인 (FR-A-01) 구현 때: 동의는 주체마다 따로 두며 비로그인 주체의 동의를 계정으로 옮기지 않는다 (자동 병합 금지). 로그인 뒤 동의를 다시 묻는 흐름을 그때 정한다.
 - 탈퇴 (단계 10): 동의 이력의 삭제·보관 기준을 탈퇴 최소 기록 (ADR-0020)과 함께 정한다. 비로그인 주체는 P08 기한을 따른다.

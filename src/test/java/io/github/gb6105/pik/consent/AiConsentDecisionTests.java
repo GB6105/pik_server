@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import org.hibernate.exception.ConstraintViolationException;
+import org.hibernate.exception.ConstraintViolationException.ConstraintKind;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -59,7 +60,7 @@ class AiConsentDecisionTests {
 	void noticeTheServerHasNotServedIsUnknown() {
 		latest(null);
 
-		assertRejected(() -> consents(2, 1).decide(principal, request(Choice.DENIED, 3, 0)), ErrorCode.INVALID_INPUT,
+		assertRejected(() -> consents(2, 1).decide(principal, request(Choice.DENIED, 3, 0)), ErrorCode.CONFLICT,
 				"UNKNOWN_NOTICE_VERSION");
 	}
 
@@ -104,7 +105,20 @@ class AiConsentDecisionTests {
 	}
 
 	@Test
-	void refusingAgainOnANewerNoticeIsRecorded() {
+	void refusalsNeverAskForConsentAgain() {
+		AiConsents consents = consents(2, 2);
+		for (ConsentDecision refusal : new ConsentDecision[] { ConsentDecision.DENIED, ConsentDecision.WITHDRAWN }) {
+			latest(consent(refusal, 1, 1));
+
+			ConsentState state = consents.state(principal);
+
+			assertThat(state.reconsentRequired()).isFalse();
+			assertThat(state.granted()).isFalse();
+		}
+	}
+
+	@Test
+	void refusingAgainAfterAWithdrawalIsADenial() {
 		latest(consent(ConsentDecision.WITHDRAWN, 1, 2));
 
 		ConsentState state = consents(2, 1).decide(principal, request(Choice.DENIED, 2, 2));
@@ -116,7 +130,8 @@ class AiConsentDecisionTests {
 	@Test
 	void versionTakenConcurrentlyIsAConflict() {
 		latest(null);
-		doThrow(violation("uk_ai_consent_principal_purpose_version")).when(records).insert(any());
+		// PostgreSQL reporting in another language: Hibernate finds no constraint name, only the kind.
+		doThrow(violation(ConstraintKind.UNIQUE, null)).when(records).insert(any());
 
 		assertRejected(() -> consents(1, 1).decide(principal, request(Choice.GRANTED, 1, 0)), ErrorCode.CONFLICT,
 				"VERSION_CONFLICT");
@@ -125,7 +140,7 @@ class AiConsentDecisionTests {
 	@Test
 	void otherIntegrityViolationsAreNotConflicts() {
 		latest(null);
-		DataIntegrityViolationException other = violation("ai_consent_pkey");
+		DataIntegrityViolationException other = violation(ConstraintKind.NOT_NULL, "principal_id");
 		doThrow(other).when(records).insert(any());
 
 		assertThatThrownBy(() -> consents(1, 1).decide(principal, request(Choice.GRANTED, 1, 0))).isSameAs(other);
@@ -153,9 +168,9 @@ class AiConsentDecisionTests {
 		return new DecisionRequest(decision, noticeVersion, version);
 	}
 
-	private static DataIntegrityViolationException violation(String constraint) {
+	private static DataIntegrityViolationException violation(ConstraintKind kind, @Nullable String constraint) {
 		return new DataIntegrityViolationException("violation",
-				new ConstraintViolationException("violation", new SQLException("violation"), constraint));
+				new ConstraintViolationException("violation", new SQLException("violation"), kind, constraint));
 	}
 
 	private static void assertRejected(Runnable action, ErrorCode code, String reason) {
