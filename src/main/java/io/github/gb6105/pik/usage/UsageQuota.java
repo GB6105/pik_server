@@ -15,9 +15,9 @@ import lombok.NoArgsConstructor;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A principal's quota for one period. Rows are created on first use ({@link UsageRecords#lockOrCreateTrialQuota}) with the limit
- * configured at that time, so a later change of the setting leaves existing quotas as they were. The database keeps
- * {@code reserved + consumed <= limit}.
+ * A principal's quota for one period. Rows are created on first use ({@link UsageRecords#lockOrCreateTrialQuota})
+ * with the limit configured at that time, so a later change of the setting leaves existing quotas as they were. The
+ * database keeps {@code reserved + consumed <= limit}.
  */
 @Entity
 @IdClass(UsageQuota.Key.class)

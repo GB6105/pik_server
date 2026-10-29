@@ -52,8 +52,16 @@ final class DeviceKeys {
 		for (String entry : configured.split(",")) {
 			String[] parts = entry.trim().split(":", 2);
 			Assert.state(parts.length == 2, "Each device key must be <version>:<base64 key>");
-			int version = Integer.parseInt(parts[0].trim());
-			byte[] key = Base64.getDecoder().decode(parts[1].trim());
+			int version;
+			byte[] key;
+			try {
+				version = Integer.parseInt(parts[0].trim());
+				key = Base64.getDecoder().decode(parts[1].trim());
+			}
+			catch (IllegalArgumentException ex) {
+				// The cause's message may hold the key.
+				throw new IllegalStateException("Each device key must be <version>:<base64 key>");
+			}
 			Assert.state(version >= 1, "Device key versions start at 1");
 			Assert.state(key.length >= MINIMUM_KEY_BYTES, "Device keys must have at least 32 bytes");
 			Assert.state(keys.put(version, new SecretKeySpec(key, ALGORITHM)) == null,

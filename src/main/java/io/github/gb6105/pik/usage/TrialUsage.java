@@ -28,7 +28,8 @@ import org.springframework.util.StringUtils;
  * <p>
  * One transaction may change the usage of one principal on one device only: each call locks the principal's quota and
  * then the device's mark, and two transactions spanning several of them could take the locks in opposite orders
- * (ADR-0029 #16).
+ * (ADR-0029 #16). For the same reason a transaction nested with {@code REQUIRES_NEW} in one that changed usage may not
+ * change it again.
  */
 @Service
 @RequiredArgsConstructor
@@ -47,7 +48,8 @@ public class TrialUsage {
 	/**
 	 * Records in the DeviceCheck bits that an iOS device starts its trial, before the job that would use it is
 	 * accepted (ADR-0029 #5·18). Does nothing when the device is not iOS, is already recorded or cannot cover the
-	 * photos for the principal. A device whose bits another install has set gets no trial. Calls Apple, so it runs
+	 * photos for the principal, even while an earlier write is unconfirmed. A device whose bits another install has
+	 * set gets no trial. Calls Apple, so it runs
 	 * outside database transactions; once the bits are set, the device has started its trial even if the job is then
 	 * not accepted.
 	 * @param photos the photos of the job about to be accepted
@@ -64,13 +66,13 @@ public class TrialUsage {
 			if (!mark.needsDeviceCheck()) {
 				return Start.NONE;
 			}
-			if (mark.isStarting()) {
-				return Start.RESUME;
-			}
 			boolean covered = mark.covers(photos) && records.findTrialQuota(principalId)
 				.map((quota) -> quota.covers(photos))
 				.orElse(photos <= properties.trial().limit());
-			return covered ? Start.NEW : Start.NONE;
+			if (!covered) {
+				return Start.NONE;
+			}
+			return mark.isStarting() ? Start.RESUME : Start.NEW;
 		});
 		if (start == Start.NONE) {
 			return;
@@ -91,7 +93,8 @@ public class TrialUsage {
 		}
 		catch (PikException ex) {
 			// A refused token wrote nothing; after any other failure the bits may be set, so the mark stays starting.
-			if (ex.getCode() == ErrorCode.FORBIDDEN) {
+			// A retry keeps it starting even when refused, since an earlier write may have set the bits.
+			if (start == Start.NEW && ex.getCode() == ErrorCode.FORBIDDEN) {
 				updateMark(trialMarkId, DeviceTrialMark::cancelDeviceCheck);
 			}
 			throw ex;
@@ -185,19 +188,20 @@ public class TrialUsage {
 				(status) -> change.accept(records.lockMark(trialMarkId).orElseThrow(), Instant.now()));
 	}
 
+	// A scope that is bound but not among the current synchronizations belongs to a suspended outer transaction, whose
+	// locks a nested one would wait for.
 	private static void claimScope(UUID principalId, @Nullable UUID trialMarkId) {
+		Assert.state(TransactionSynchronizationManager.isSynchronizationActive(),
+				"Trial usage needs transaction synchronization");
 		Scope scope = (Scope) TransactionSynchronizationManager.getResource(SCOPE);
 		if (scope == null) {
 			scope = new Scope(principalId);
+			TransactionSynchronizationManager.registerSynchronization(scope);
 			TransactionSynchronizationManager.bindResource(SCOPE, scope);
-			TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-
-				@Override
-				public void afterCompletion(int status) {
-					TransactionSynchronizationManager.unbindResourceIfPossible(SCOPE);
-				}
-
-			});
+		}
+		else {
+			Assert.state(TransactionSynchronizationManager.getSynchronizations().contains(scope),
+					"Trial usage must not change in a transaction nested in one that changed it (ADR-0029 #16)");
 		}
 		scope.claim(principalId, trialMarkId);
 	}
@@ -209,9 +213,9 @@ public class TrialUsage {
 	}
 
 	/**
-	 * The principal and device mark a transaction has changed usage for.
+	 * The principal and device mark a transaction has changed usage for, released when it completes.
 	 */
-	private static final class Scope {
+	private static final class Scope implements TransactionSynchronization {
 
 		private final UUID principalId;
 
@@ -228,6 +232,11 @@ public class TrialUsage {
 			if (trialMarkId != null) {
 				this.trialMarkId = trialMarkId;
 			}
+		}
+
+		@Override
+		public void afterCompletion(int status) {
+			TransactionSynchronizationManager.unbindResourceIfPossible(SCOPE);
 		}
 
 	}

@@ -17,7 +17,9 @@ interface DeviceCheck {
 
 	/**
 	 * Records that the device of the token started a trial.
-	 * @throws io.github.gb6105.pik.shared.error.PikException as {@link #trialStarted}
+	 * @throws io.github.gb6105.pik.shared.error.PikException as {@link #trialStarted}; {@code FORBIDDEN} only when
+	 * nothing was written, so malformed and reused tokens must be refused with it, while any other failure may follow
+	 * a write that set the bits (ADR-0029 #18)
 	 */
 	void recordTrialStarted(String deviceToken);
 

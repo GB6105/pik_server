@@ -100,7 +100,7 @@
 | D-20 | iCloud 사진 photoId 수렴, 재설치 때 연결 이관 | 두 번째 기기가 만든 photoId를 같은 `cloud_ref`의 서버 photoId로 바꾸는 절차, 이전 설치 (`device` 행)의 `photo_device_link`와 `organize_state` DEVICE 키를 새 설치로 옮기는 방법 (iOS는 기기 식별자 없음). FR-A-04 기술 검증과 함께 결정 | 단계 9 전 | FR-A-02·04, FR-L-05 (ADR-0022) |
 | D-21 | 기기 증명 challenge 방식 (실제 검증 구현 때) | 서버 발급 nonce API (유효 시간·1회 사용) / 요청 해시 기반 (App Attest `clientDataHash`, Play Integrity `requestHash`). 체험 기기 판별 값 (Android ID·DeviceCheck 토큰)을 증명에 묶을지도 함께 (ADR-0029) | 실제 기기 증명 구현 전 (운영 배포 전) | 운영 배포 (`local`·`test` 밖 기동 불가, ADR-0027) |
 | D-22 | 운영자용 actuator 접근 | 별도 관리 포트 (내부망) / 운영자 인증 (access token과 분리) | 지표·운영 endpoint 노출 전 | 모니터링 연동 (현재 health만 공개, 나머지 403, ADR-0027) |
-| D-23 | 실제 DeviceCheck 연동의 실패 처리 | 조회 실패 시 설치를 503으로 끝냄 (현재 규약) / 체험 없이 설치 진행 / 체험 판별 보류 후 재조회. Apple 키 준비 포함 | 운영 배포 전 (D-21과 함께) | 운영 배포 (`local`·`test` 밖 기동 불가, ADR-0029) |
+| D-23 | 실제 DeviceCheck 연동의 실패 처리 | 조회 실패 시 설치를 503으로 끝냄 (현재 규약) / 체험 없이 설치 진행 / 체험 판별 보류 후 재조회. Apple 키 준비 포함. 구현 조건: 아무것도 쓰지 않았을 때만 403, 형식 오류·재사용 토큰은 403 (ADR-0029 #18) | 운영 배포 전 (D-21과 함께) | 운영 배포 (`local`·`test` 밖 기동 불가, ADR-0029) |
 
 ## 위험·제약
 - 저장소가 공개 상태라 요구사항 원문 (`docs/spec`)·ADR·`.claude/docs`가 공개된다. 사용자가 수용했다 (2026-10-26). 비공개가 필요해지면 이력에서 제거한 뒤 저장소 재생성 또는 Private 전환을 검토한다 (Free 플랜이면 Private 저장소에 Ruleset 미적용).

@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -47,6 +48,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 import org.springframework.transaction.IllegalTransactionStateException;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -380,6 +382,70 @@ class TrialUsageTests {
 	}
 
 	@Test
+	void refusedRetryKeepsTheMarkStarting() {
+		String token = deviceCheckToken();
+		UUID mark = installIos(token);
+		UUID principal = UuidV7.generate();
+		PikException unavailable = new PikException(ErrorCode.TEMPORARY_FAILURE, "DEVICE_CHECK_UNAVAILABLE", true);
+		PikException refused = new PikException(ErrorCode.FORBIDDEN, "DEVICE_CHECK_FAILED", false);
+		// Apple wrote the bits but the answer was lost, then refused the token of the retry.
+		doAnswer((invocation) -> {
+			invocation.callRealMethod();
+			throw unavailable;
+		}).doThrow(refused).doCallRealMethod().when(deviceCheck).recordTrialStarted(token);
+
+		assertThatThrownBy(() -> trialUsage.recordStart(principal, mark, 1, token)).isSameAs(unavailable);
+		assertThatThrownBy(() -> trialUsage.recordStart(principal, mark, 1, token)).isSameAs(refused);
+		assertThat(mark(mark)).containsEntry("device_check_state", "STARTING");
+
+		trialUsage.recordStart(principal, mark, 1, token);
+
+		assertThat(mark(mark)).containsEntry("device_check_state", "TRIAL_STARTED").containsEntry("exhausted_at", null);
+		assertThat(reserve(principal, mark, UuidV7.generate(), photos(1))).isEqualTo(new Reservation.Reserved(1));
+	}
+
+	@Test
+	void startingMarkIsResumedOnlyWithATokenAndTrialLeft() {
+		String token = deviceCheckToken();
+		UUID mark = installIos(token);
+		PikException unavailable = new PikException(ErrorCode.TEMPORARY_FAILURE, "DEVICE_CHECK_UNAVAILABLE", true);
+		doThrow(unavailable).when(deviceCheck).recordTrialStarted(token);
+		assertThatThrownBy(() -> trialUsage.recordStart(UuidV7.generate(), mark, 1, token)).isSameAs(unavailable);
+		UUID exhausted = UuidV7.generate();
+		UUID job = UuidV7.generate();
+		reserve(exhausted, androidMark(), job, photos(5));
+		consume(exhausted, job);
+		clearInvocations(deviceCheck);
+
+		trialUsage.recordStart(exhausted, mark, 1, null);
+		trialUsage.recordStart(UuidV7.generate(), mark, 6, null);
+		assertRejected(() -> trialUsage.recordStart(UuidV7.generate(), mark, 1, null), ErrorCode.INVALID_INPUT,
+				"DEVICE_CHECK_TOKEN_REQUIRED");
+
+		assertThat(mark(mark)).containsEntry("device_check_state", "STARTING");
+		verify(deviceCheck, never()).recordTrialStarted(any());
+	}
+
+	@Test
+	void startFollowsTheLimitTheMarkWasCreatedWith() {
+		UUID mark = installIos(deviceCheckToken());
+		jdbc.sql("UPDATE device_trial_mark SET limit_count = 2 WHERE id = :id").param("id", mark).update();
+
+		trialUsage.recordStart(UuidV7.generate(), mark, 3, null);
+
+		assertThat(mark(mark)).containsEntry("device_check_state", null);
+		verify(deviceCheck, never()).recordTrialStarted(any());
+	}
+
+	@Test
+	void jobTheTrialCannotCoverIsNotCoveredBeforeTheStart() {
+		UUID mark = installIos(deviceCheckToken());
+
+		assertThat(reserve(UuidV7.generate(), mark, UuidV7.generate(), photos(6)))
+			.isEqualTo(new Reservation.NotCovered());
+	}
+
+	@Test
 	void startIsNotRecordedWhenTheTrialCannotCoverTheJob() {
 		UUID principal = UuidV7.generate();
 		reserve(principal, androidMark(), UuidV7.generate(), photos(3));
@@ -414,6 +480,43 @@ class TrialUsageTests {
 		}));
 		assertThat(reserve(UuidV7.generate(), otherMark, UuidV7.generate(), photos(1)))
 			.isEqualTo(new Reservation.Reserved(1));
+	}
+
+	@Test
+	void settlementsKeepToThePrincipalAndDeviceOfTheTransaction() {
+		UUID principal = UuidV7.generate();
+		UUID other = UuidV7.generate();
+		UUID mark = androidMark();
+		UUID otherMark = androidMark();
+		UUID jobOnOtherMark = UuidV7.generate();
+		reserve(other, mark, UuidV7.generate(), photos(1));
+		reserve(principal, otherMark, jobOnOtherMark, photos(1));
+
+		assertThatIllegalStateException().isThrownBy(() -> transaction.executeWithoutResult((status) -> {
+			trialUsage.reserve(principal, mark, UuidV7.generate(), photos(1));
+			trialUsage.release(other, UuidV7.generate());
+		}));
+		assertThatIllegalStateException().isThrownBy(() -> transaction.executeWithoutResult((status) -> {
+			trialUsage.reserve(principal, mark, UuidV7.generate(), photos(1));
+			trialUsage.consume(principal, jobOnOtherMark);
+		}));
+		assertThat(reservations(principal)).extracting((row) -> row.get("status")).containsExactly("RESERVED");
+	}
+
+	@Test
+	@Timeout(value = 30, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+	void nestedTransactionMayNotChangeTheUsageAgain() {
+		UUID principal = UuidV7.generate();
+		UUID mark = androidMark();
+		TransactionTemplate nested = new TransactionTemplate(transaction.getTransactionManager());
+		nested.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+
+		// Without the check the nested reservation would wait for the quota lock of the outer one.
+		assertThatIllegalStateException().isThrownBy(() -> transaction.executeWithoutResult((status) -> {
+			trialUsage.reserve(principal, mark, UuidV7.generate(), photos(1));
+			nested.executeWithoutResult((inner) -> trialUsage.reserve(principal, mark, UuidV7.generate(), photos(1)));
+		})).withMessageContaining("nested");
+		assertThat(reserve(principal, mark, UuidV7.generate(), photos(1))).isEqualTo(new Reservation.Reserved(1));
 	}
 
 	@Test
@@ -463,10 +566,11 @@ class TrialUsageTests {
 		androidMark(keys("9:" + key), androidId());
 		String others = "1:" + key() + ",2:" + key();
 
-		assertThatIllegalStateException().isThrownBy(() -> new DeviceKeyCheck(records, keys(others)).run(null))
+		assertThatIllegalStateException()
+			.isThrownBy(() -> new DeviceKeyCheck(records, keys(others)).afterSingletonsInstantiated())
 			.withMessageContaining("[9]");
 		assertThatNoException()
-			.isThrownBy(() -> new DeviceKeyCheck(records, keys(others + ",9:" + key)).run(null));
+			.isThrownBy(() -> new DeviceKeyCheck(records, keys(others + ",9:" + key)).afterSingletonsInstantiated());
 	}
 
 	@Test

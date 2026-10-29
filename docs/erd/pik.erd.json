@@ -3614,7 +3614,7 @@
         "name": "exhausted_at",
         "dataType": "timestamptz",
         "options": 0,
-        "comment": "마지막 사진을 완료한 시각, 또는 이전 설치에서 체험을 시작한 iOS 기기의 설치 시각 (체험 없음)"
+        "comment": "마지막 사진을 완료한 시각, 또는 같은 기기의 다른 설치가 체험을 시작한 것을 확인한 시각 (설치 등록 때나 이 설치의 시작 기록 직전, 체험 없음)"
       },
       "03h46ggks8ij6t1ezlncrcoju": {
         "id": "03h46ggks8ij6t1ezlncrcoju",

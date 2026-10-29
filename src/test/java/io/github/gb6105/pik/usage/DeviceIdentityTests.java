@@ -37,6 +37,13 @@ class DeviceIdentityTests {
 	}
 
 	@Test
+	void malformedKeyEntryDoesNotShowTheKey() {
+		assertThatIllegalStateException().isThrownBy(() -> DeviceKeys.load(KEY + ":1", false))
+			.withMessageNotContaining(KEY)
+			.withNoCause();
+	}
+
+	@Test
 	void androidIdIsNormalizedAndHidden() {
 		TrialDevices.Evidence.Android evidence = new TrialDevices.Evidence.Android(" ABCDEF0123456789 ");
 

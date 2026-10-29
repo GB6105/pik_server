@@ -45,7 +45,10 @@ class DeviceTrialMark {
 
 	private int consumedCount;
 
-	/** When the device ran out of trial: its last photo was consumed, or it had started a trial before this install. */
+	/**
+	 * When the device ran out of trial: its last photo was consumed, or another install of the device had started the
+	 * trial, found when this install was registered or was about to start.
+	 */
 	private @Nullable Instant exhaustedAt;
 
 	private Instant createdAt;
