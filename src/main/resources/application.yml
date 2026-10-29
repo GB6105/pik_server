@@ -63,6 +63,13 @@ pik:
       notice-version: 1
       # Consents given on older notices no longer count. Raise it only when the transfers widen (ADR-0028 #4).
       minimum-notice-version: 1
+  usage:
+    trial:
+      # Photos, representatives and members together, analyzed free once per principal and device (FR-B-01, P01).
+      limit: 100
+    # HMAC keys for Android device IDs: "<version>:<base64 key>" entries separated by commas, at least 32 bytes each.
+    # The highest version hashes new devices. Empty only in the local and test profiles, which use an ephemeral key.
+    device-keys: ${PIK_USAGE_DEVICE_KEYS:}
 
 # Field allow list from ADR-0023 #9; anything else (thread, MDC extras, request data) is dropped.
 logging:

@@ -5,7 +5,9 @@ import io.github.gb6105.pik.shared.error.PikException;
 import io.github.gb6105.pik.shared.security.AccessTokens;
 import io.github.gb6105.pik.shared.security.AccessTokens.AccessToken;
 import io.github.gb6105.pik.shared.security.PrincipalKind;
+import io.github.gb6105.pik.usage.TrialDevices;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,8 @@ class AnonymousAuthService {
 
 	private final AttestationVerifier attestationVerifier;
 
+	private final TrialDevices trialDevices;
+
 	private final AccountRecords records;
 
 	private final AccessTokens accessTokens;
@@ -31,21 +35,26 @@ class AnonymousAuthService {
 	private final TransactionTemplate transaction;
 
 	/**
-	 * Verifies the device first, outside the transaction, then stores the principal, install and device together.
+	 * Verifies the device and reads its trial evidence first, outside the transaction, then stores the principal,
+	 * install, device and the device's trial mark together.
 	 */
 	RegisteredInstall register(InstallRequest request) {
+		TrialDevices.Evidence evidence = request.trialEvidence();
 		attestationVerifier.verify(request.platform(), request.attestation());
+		TrialDevices.IdentifiedDevice trialDevice = trialDevices.identify(evidence);
 		String token = InstallTokens.generate();
 		Instant now = Instant.now();
 		Principal principal = Principal.anonymous(now);
 		AnonymousInstall install = new AnonymousInstall(principal.getId(), InstallTokens.hash(token),
 				request.platform(), AttestationKind.of(request.platform()), now);
-		Device device = Device.ofNewInstall(principal.getId(), request.platform(), request.appVersion(), now);
-		transaction.executeWithoutResult((status) -> {
+		Device device = Objects.requireNonNull(transaction.execute((status) -> {
 			records.persist(principal);
 			records.persist(install);
-			records.persist(device);
-		});
+			Device created = Device.ofNewInstall(principal.getId(), request.platform(), request.appVersion(),
+					trialDevices.register(trialDevice), now);
+			records.persist(created);
+			return created;
+		}));
 		return new RegisteredInstall(principal.getId(), device.getInstallId(), token);
 	}
 
@@ -62,7 +71,9 @@ class AnonymousAuthService {
 			.orElseThrow(AnonymousAuthService::invalidInstallToken);
 		Instant now = Instant.now();
 		records.touchLastSeen(principal.getId(), now, now.minus(properties.lastSeenInterval()));
-		return new IssuedToken(principal.getId(), accessTokens.issue(principal.getId(), PrincipalKind.ANONYMOUS));
+		Device device = records.findDeviceOfAnonymous(principal.getId());
+		return new IssuedToken(principal.getId(),
+				accessTokens.issue(principal.getId(), PrincipalKind.ANONYMOUS, device.getId()));
 	}
 
 	private static PikException invalidInstallToken() {

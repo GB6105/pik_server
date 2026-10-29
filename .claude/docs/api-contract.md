@@ -46,7 +46,7 @@
 - 장기 작업 접수 = 202 + 작업 ID + 진행 상태
 
 ## 인증 (ADR-0023)
-- access JWT = ES256, 15분. 클레임 `iss`·`sub` (주체 ID)·`kind` (ACCOUNT / ANONYMOUS)·`iat`·`exp`, 헤더 `kid`. 개인정보 금지
+- access JWT = ES256, 15분. 클레임 `iss`·`sub` (주체 ID)·`kind` (ACCOUNT / ANONYMOUS)·`did` (기기 ID, ADR-0029)·`iat`·`exp`, 헤더 `kid`. 개인정보 금지
 - 계정 refresh = 90일, 사용할 때마다 교체 (마지막 사용부터 90일), 재사용 감지 시 family 폐기. 교체 직후 유예 30초 (설정값) 안의 재사용은 응답 유실로 보고 폐기 안 함 → 새 토큰 쌍 재발급, 앞선 후속 토큰 폐기 (판단 기준 `rotated_at`)
 - 익명 설치 토큰 = 발급 시 기기 증명, 만료·교체 없음, 해시 저장·서버 폐기 가능. 설치 토큰 → access JWT 교환
 - 수명 값은 모두 설정값. 서명 키는 현재 + 이전 키 검증 (키 교체)
@@ -54,17 +54,18 @@
 ### 익명 인증 엔드포인트 (ADR-0025 #7, ADR-0027)
 | 엔드포인트 | 요청 | 응답 |
 |---|---|---|
-| `POST /installs` | `{platform: IOS / ANDROID, appVersion?, attestation: {token, keyId?}}` | 201 `{installId, installToken}` |
+| `POST /installs` | `{platform: IOS / ANDROID, appVersion?, attestation: {token, keyId?}, trialDevice: {androidId? / deviceCheckToken?}}` | 201 `{installId, installToken}` |
 | `POST /auth/token` | `{grantType: "install_token", installToken}` | 200 `{accessToken, tokenType: "Bearer", expiresIn}` (초) |
 - 둘 다 access token 불필요 (`Authorization` 헤더가 있어도 무시), 멱등 키 미사용 (Command 공통 필드 없음). 재전송 = 새 주체 (ADR-0025 #2)
 - 기기 증명 종류 = `platform`에서 도출. 실패 = 403 `FORBIDDEN` / `ATTESTATION_FAILED`
+- `trialDevice` = 재설치 체험 판별 값, 플랫폼 값 하나만 (Android `androidId` = 16진수 1~16자리, 대소문자·앞뒤 공백 무시, iOS `deviceCheckToken`). 없음·빈 값·형식 오류·다른 플랫폼 값 = 400 `TRIAL_DEVICE_INVALID`, 객체 누락 = 400 `VALIDATION_FAILED`. DeviceCheck가 토큰 거부 = 403 `DEVICE_CHECK_FAILED`, 연결 불가 = 503 `DEVICE_CHECK_UNAVAILABLE` (재시도 가능). 검사 순서 = 형식 → 기기 증명 → DeviceCheck (ADR-0029)
 - 오류: 모르는 `grantType` = 400 `UNSUPPORTED_GRANT_TYPE`, `installToken` 누락 = 400 `VALIDATION_FAILED`, 없는·폐기된 토큰과 비활성 주체 = 401 `INSTALL_TOKEN_INVALID` (구분 안 함)
 
 ### 접근 제어 (ADR-0027)
 - 기본 거부. 공개 = `PublicEndpoints` 구현 (모듈별), 오류 디스패치, actuator health (공개 경로는 `Authorization` 무시). health 밖의 actuator = 토큰이 있어도 403 (없으면 401). 나머지 (없는 경로 포함) = `Authorization: Bearer <access JWT>`
 - 401 사유: 토큰 없음 = `ACCESS_TOKEN_REQUIRED` (`WWW-Authenticate: Bearer`), 잘못됨·만료 = `ACCESS_TOKEN_INVALID` (`WWW-Authenticate: Bearer error="invalid_token"`). 컨트롤러의 401도 `WWW-Authenticate: Bearer`. 권한 부족 = 403 `ACCESS_DENIED`
-- JWT 검증: ES256만, `kid` 필수, `typ` = `JWT`, `iss`·`exp`·`sub` (UUID)·`kind` 확인, 만료 허용 오차 60초 (설정값)
-- 요청 주체 = 컨트롤러 파라미터 `CurrentPrincipal`. 요청 본문·경로의 ID로 소유권 판단 금지
+- JWT 검증: ES256만, `kid` 필수, `typ` = `JWT`, `iss`·`exp`·`sub` (UUID)·`kind`·`did` (UUID) 확인, 만료 허용 오차 60초 (설정값)
+- 요청 주체 = 컨트롤러 파라미터 `CurrentPrincipal` (`id`·`kind`·`deviceId`). 요청 본문·경로의 ID로 소유권 판단 금지
 
 ### 외부 전송 동의 (FR-O-02, ADR-0028)
 | 엔드포인트 | 요청 | 응답 |
@@ -78,6 +79,11 @@
 - 직전이 동의인 거절 = `WITHDRAWN`, 그 밖의 거절 = `DENIED`
 - `features` = 동의 기준 (기본 4개 + 유효한 동의 시 `PHOTO_ANALYSIS`·`NATURAL_LANGUAGE_SEARCH`). 체험·구독 자격은 별도. 분석 가능 여부는 `status`가 아니라 `features`로 판단
 - `reconsentRequired` = 최소 안내 버전 (설정값) 미만에서 받은 동의 → 현재 안내로 다시 묻기
+
+### 무료 체험 (FR-B-01, ADR-0029)
+- HTTP API 없음. 분석 접수 (단계 5)가 `TrialUsage`를 호출하고 접수 응답에 반영
+- 한도·잔여량 응답 금지. 체험이 묶음 전체를 덮지 못하면 분석하지 않고 구독 안내 필요로 응답
+- iOS 분석 접수 요청 = 새 DeviceCheck 토큰 포함 (첫 체험 시작 기록용). 필요한데 없으면 400 `DEVICE_CHECK_TOKEN_REQUIRED`, DeviceCheck 오류는 설치와 같은 응답. 503 `DEVICE_CHECK_UNAVAILABLE` 뒤 재시도도 새 토큰
 
 ## 정상 결과로 취급
 - 빈 검색 결과

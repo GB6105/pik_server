@@ -47,7 +47,7 @@ public class AiConsents {
 	 * on any notice the server has served, since it sends nothing.
 	 */
 	@Transactional
-	ConsentState decide(UUID principalId, DecisionRequest request) {
+	ConsentState decide(UUID principalId, UUID deviceId, DecisionRequest request) {
 		ConsentState current = state(principalId);
 		if (request.version() != current.version()) {
 			throw conflict("VERSION_CONFLICT");
@@ -66,8 +66,8 @@ public class AiConsents {
 		boolean wasGranted = latest != null && latest.getDecision() == ConsentDecision.GRANTED;
 		ConsentDecision decision = grant ? ConsentDecision.GRANTED
 				: wasGranted ? ConsentDecision.WITHDRAWN : ConsentDecision.DENIED;
-		AiConsent next = AiConsent.of(principalId, PURPOSE, decision, noticeVersion, current.version() + 1,
-				Instant.now());
+		AiConsent next = AiConsent.of(principalId, deviceId, PURPOSE, decision, noticeVersion,
+				current.version() + 1, Instant.now());
 		try {
 			records.insert(next);
 		}

@@ -32,6 +32,15 @@ class AccountRecords {
 	}
 
 	/**
+	 * The one device of an anonymous principal, stored with its install.
+	 */
+	Device findDeviceOfAnonymous(UUID principalId) {
+		return entityManager.createQuery("SELECT d FROM Device d WHERE d.principalId = :principalId", Device.class)
+			.setParameter("principalId", principalId)
+			.getSingleResult();
+	}
+
+	/**
 	 * Moves {@code last_seen_at} of a principal's install and devices to {@code now} when the install's is older than
 	 * {@code staleBefore}. Conditional statements instead of entity changes: concurrent exchanges neither fail on the
 	 * device version nor bump it, and only the first of them writes (ADR-0027 #15). Install entities already loaded in

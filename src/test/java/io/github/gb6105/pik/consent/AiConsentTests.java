@@ -38,6 +38,8 @@ import tools.jackson.databind.json.JsonMapper;
 @AutoConfigureMockMvc
 class AiConsentTests {
 
+	static final UUID DEVICE = UuidV7.generate();
+
 	static final JsonMapper JSON = JsonMapper.builder().build();
 
 	@Autowired
@@ -87,7 +89,7 @@ class AiConsentTests {
 				.containsEntry("notice_version", 1)
 				.containsEntry("version", 1L)
 				.containsEntry("purpose", "AI_ANALYSIS_AND_SEARCH")
-				.containsEntry("device_id", null));
+				.containsEntry("device_id", DEVICE));
 		assertThat(consents.isGranted(principal)).isTrue();
 		assertThat(current(principal)).bodyJson().extractingPath("$.consent.status").isEqualTo("GRANTED");
 	}
@@ -314,7 +316,7 @@ class AiConsentTests {
 	}
 
 	private String bearer(UUID principal) {
-		return "Bearer " + accessTokens.issue(principal, PrincipalKind.ANONYMOUS).value();
+		return "Bearer " + accessTokens.issue(principal, PrincipalKind.ANONYMOUS, DEVICE).value();
 	}
 
 	private List<Map<String, Object>> rows(UUID principal) {

@@ -85,25 +85,28 @@ class SecurityTests {
 
 	final UUID principalId = UuidV7.generate();
 
+	final UUID deviceId = UuidV7.generate();
+
 	@Test
 	void issuedTokenIdentifiesThePrincipal() {
-		String token = accessTokens.issue(principalId, PrincipalKind.ANONYMOUS).value();
+		String token = accessTokens.issue(principalId, PrincipalKind.ANONYMOUS, deviceId).value();
 
 		assertThat(whoami("Bearer " + token)).hasStatusOk().bodyJson().isLenientlyEqualTo("""
-				{"id": "%s", "kind": "ANONYMOUS"}
-				""".formatted(principalId));
+				{"id": "%s", "kind": "ANONYMOUS", "deviceId": "%s"}
+				""".formatted(principalId, deviceId));
 	}
 
 	@Test
 	void issuedTokenCarriesOnlyTheAgreedClaims() throws Exception {
-		SignedJWT jwt = SignedJWT.parse(accessTokens.issue(principalId, PrincipalKind.ACCOUNT).value());
+		SignedJWT jwt = SignedJWT.parse(accessTokens.issue(principalId, PrincipalKind.ACCOUNT, deviceId).value());
 
 		assertThat(jwt.getHeader().getAlgorithm()).isEqualTo(JWSAlgorithm.ES256);
 		assertThat(jwt.getHeader().getType()).isEqualTo(JOSEObjectType.JWT);
 		assertThat(jwt.getHeader().getKeyID()).isEqualTo("current");
-		assertThat(jwt.getJWTClaimsSet().getClaims()).containsOnlyKeys("iss", "sub", "kind", "iat", "exp")
+		assertThat(jwt.getJWTClaimsSet().getClaims()).containsOnlyKeys("iss", "sub", "kind", "did", "iat", "exp")
 			.containsEntry("sub", principalId.toString())
-			.containsEntry("kind", "ACCOUNT");
+			.containsEntry("kind", "ACCOUNT")
+			.containsEntry("did", deviceId.toString());
 		assertThat(jwt.getJWTClaimsSet().getExpirationTime().toInstant())
 			.isEqualTo(jwt.getJWTClaimsSet().getIssueTime().toInstant().plus(properties.accessTokenTtl()));
 	}
@@ -159,6 +162,8 @@ class SecurityTests {
 		assertInvalid(whoami(bearer(CURRENT, "current", (claims) -> claims.subject(null))));
 		assertInvalid(whoami(bearer(CURRENT, "current", (claims) -> claims.claim("kind", "ADMIN"))));
 		assertInvalid(whoami(bearer(CURRENT, "current", (claims) -> claims.claim("kind", null))));
+		assertInvalid(whoami(bearer(CURRENT, "current", (claims) -> claims.claim("did", "not-a-uuid"))));
+		assertInvalid(whoami(bearer(CURRENT, "current", (claims) -> claims.claim("did", null))));
 	}
 
 	@Test
@@ -226,7 +231,7 @@ class SecurityTests {
 
 	@Test
 	void healthIsTheOnlyOpenActuatorEndpoint() {
-		String token = accessTokens.issue(principalId, PrincipalKind.ANONYMOUS).value();
+		String token = accessTokens.issue(principalId, PrincipalKind.ANONYMOUS, deviceId).value();
 
 		assertThat(mvc.get().uri("/actuator/health")).hasStatus(200);
 		assertThat(mvc.get().uri("/actuator")).hasStatus(401);
@@ -245,7 +250,7 @@ class SecurityTests {
 
 	@Test
 	void logsCarryThePrincipalButNeverTheToken(CapturedOutput output) {
-		String token = accessTokens.issue(principalId, PrincipalKind.ANONYMOUS).value();
+		String token = accessTokens.issue(principalId, PrincipalKind.ANONYMOUS, deviceId).value();
 		assertThat(whoami("Bearer " + token)).hasStatusOk();
 		assertInvalid(whoami("Bearer " + token + "x"));
 
@@ -308,6 +313,7 @@ class SecurityTests {
 		return new JWTClaimsSet.Builder().issuer(properties.issuer())
 			.subject(principalId.toString())
 			.claim("kind", "ANONYMOUS")
+			.claim("did", deviceId.toString())
 			.issueTime(Date.from(now))
 			.expirationTime(Date.from(now.plusSeconds(300)));
 	}
