@@ -4,7 +4,7 @@
 > 결정 근거는 `adr/`, 날짜별 진행 기록은 `devlog/`에 둔다.
 
 - 최종 갱신: 2026-10-29
-- 현재 단계: **2. 공통 기반 진행 중** (2-1·2-2 완료, 2-3 검토 완료·PR 대기)
+- 현재 단계: **3. 동의 기록 진행 중** (`feature/FR-O-02-ai-consent`)
 
 ## 기록 체계
 | 문서 | 경로 | 용도 | 갱신 시점 |
@@ -19,8 +19,8 @@
 |---|---|---|
 | 0 | 협업 기반: SSOT 배치, CLAUDE.md, 보조 문서, 권한·훅, 기록 체계, Git Flow | 완료 |
 | 1 | 프로젝트 골격: Gradle·Spring Boot 초기화, `.env.example`, CI | 완료 |
-| 2 | 공통 기반 (모듈 골격, ProblemDetail, 멱등 기록, 보안, 구조화 로그) + 익명 주체 발급 (ADR-0020) | 진행 중: 2-1 공통 기반·2-2 멱등 기록 완료, 2-3 익명 인증 (`feature/stage2-anonymous-auth`, ADR-0025~0027) |
-| 3 | 동의 기록 (FR-O-02): 단일 동의 + 목적 필드, 철회 처리 | 대기 |
+| 2 | 공통 기반 (모듈 골격, ProblemDetail, 멱등 기록, 보안, 구조화 로그) + 익명 주체 발급 (ADR-0020) | 완료 (ADR-0025~0027) |
+| 3 | 동의 기록 (FR-O-02): 단일 동의 + 목적 필드, 철회 처리 | 진행 중 (`feature/FR-O-02-ai-consent`) |
 | 4 | 이용량 (FR-B-01): 예약·반환, 기기·계정 이중 집계, 재설치 판별 | 대기 |
 | 5 | 분석 접수·묶음 판단 (FR-I-01·02) → 분석 (FR-I-03) → 액션·이벤트 생성 (FR-G-01~03, 웹 연결 제외) | 대기. 선행: 유사도 벡터 모델 클라이언트 합의, D-09 |
 | 6 | 3회 클릭 집계 (FR-B-01), 웹 연결 (FR-X-06), FR-G-04 | 대기 |
@@ -62,7 +62,6 @@
 - 단계 2-3 익명 인증: V2 마이그레이션 (주체·설치·기기), ES256 access JWT 발급·검증 (JWK Set, 이전 키 검증, `kid` 필수), `POST /installs` (기기 증명 대역, 서버 발급 설치 ID)·`POST /auth/token`, 기본 거부 보안 필터 체인, 인증 실패 응답 (`WWW-Authenticate`, 변경 요청 `jobId`), 로그 `principal_id`. 대역·임시 키는 `local`·`test` 프로필에서만 기동 ([ADR-0027](adr/0027-anonymous-auth-implementation.md))
 
 ## 다음 할 일
-- [ ] 단계 2-3 PR 병합 (`feature/stage2-anonymous-auth`, 검토 APPROVE, ADR-0027 확정)
 - [ ] 실제 기기 증명 검증 (App Attest·Play Integrity)과 challenge 발급 API 구현: 단계 2는 대역만 사용하며, 구현 전에는 `local`·`test` 밖에서 기동이 실패한다. Apple 키·Google Cloud 서비스 계정 준비 후, 클라이언트 연동·운영 배포 전 (ADR-0020·0023·0027)
 - [ ] 운영 JWK Set (ES256) 생성·보관·교체 절차 (배포 환경 구성 때, D-13과 함께, ADR-0027)
 - [ ] 유사도 벡터 모델을 클라이언트와 합의 (단계 5 전, ADR-0021)
