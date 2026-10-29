@@ -4,7 +4,7 @@
 > 결정 근거는 `adr/`, 날짜별 진행 기록은 `devlog/`에 둔다.
 
 - 최종 갱신: 2026-10-29
-- 현재 단계: **3. 동의 기록 진행 중** (`feature/FR-O-02-ai-consent`, 구현 완료·검토 대기)
+- 현재 단계: **3. 동의 기록 진행 중** (`feature/FR-O-02-ai-consent`, 검토 완료·PR 대기)
 
 ## 기록 체계
 | 문서 | 경로 | 용도 | 갱신 시점 |
@@ -64,7 +64,7 @@
 - 단계 3 동의 기록: V3 마이그레이션 (`ai_consent`), `consent` 모듈, `GET`·`PUT /consents/ai` (동의 순번 필수·결정마다 증가, 직전 동의의 거절 = 철회, 서버 제공 안내 (Google 장소 조회 포함)·최소 안내 버전), 다른 모듈용 `AiConsents.isGranted`. 안내 v1은 초안이라 `local`·`test` 밖 기동 불가 ([ADR-0028](adr/0028-ai-consent-implementation.md))
 
 ## 다음 할 일
-- [ ] 단계 3 검토·PR (`feature/FR-O-02-ai-consent`)
+- [ ] 단계 3 PR 병합 (`feature/FR-O-02-ai-consent`, 검토 APPROVE, ADR-0028 확정)
 - [ ] 동의 안내 확정: 받는 곳별 처리 국가·보관 기간 (Anthropic·TypeSafe·Google, D-08·P08) 확인, 법률 검토 (`notes` 문구, 국외 이전 고지의 그 밖의 항목) 후 `draft` 해제 (운영 배포 전, ADR-0028)
 - [ ] 실제 기기 증명 검증 (App Attest·Play Integrity)과 challenge 발급 API 구현: 단계 2는 대역만 사용하며, 구현 전에는 `local`·`test` 밖에서 기동이 실패한다. Apple 키·Google Cloud 서비스 계정 준비 후, 클라이언트 연동·운영 배포 전 (ADR-0020·0023·0027)
 - [ ] 운영 JWK Set (ES256) 생성·보관·교체 절차 (배포 환경 구성 때, D-13과 함께, ADR-0027)
