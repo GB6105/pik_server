@@ -81,7 +81,7 @@
 - [ ] 동의 안내 확정: 받는 곳별 처리 국가·보관 기간 (Anthropic·TypeSafe·Google, D-08·P08) 확인, 법률 검토 (`notes` 문구, 국외 이전 고지의 그 밖의 항목) 후 `draft` 해제 (운영 배포 전, ADR-0028)
 - [ ] 실제 기기 증명 검증 (App Attest·Play Integrity)과 challenge 발급 API 구현 (방식: ADR-0032 #6): 단계 2는 대역만 사용하며, 구현 전에는 `local`·`test` 밖에서 기동이 실패한다. Apple 키·Google Cloud 서비스 계정 준비 후, 클라이언트 연동·운영 배포 전 (ADR-0020·0023·0027)
 - [ ] 운영 JWK Set (ES256) 생성·보관·교체 절차 (배포 환경 구성 때, D-13과 함께, ADR-0027)
-- [ ] 유사도 벡터 모델을 클라이언트와 합의 (단계 5 전, ADR-0021)
+- [ ] 유사도 벡터 모델을 클라이언트와 합의 (묶음 활성화 `groupingEnabled=true` 전. 5-1 착수는 막지 않음, ADR-0021·0031)
 - [ ] TypeSafe Jev 직접 API early access 신청, 데이터 보관·처리 국가 확인 (D-08)
 - [ ] Haiku 5.5·Jev 측정용 실제 사진·검색어 표본 구성 (D-07)
 - [x] 분석 작업·접수 단위 상태명 확정 (ADR-0031, 설계 문서 2.1)

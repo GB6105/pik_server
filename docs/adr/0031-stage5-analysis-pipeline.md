@@ -2,7 +2,7 @@
 
 - 상태: 채택 (설계 계약, Codex 비판 검토 R1~R8 수렴, 2026-11-01). #11 실행 모드·#12 불명 재호출은 사용자 결정 대기 (D-25·D-26)
 - 날짜: 2026-11-01
-- 관련: FR-I-01·02·03, FR-G-01~03, FR-E-01, ADR-0016 #5 대체, ADR-0021, ADR-0024 #1·#4-1·#4-2·#6-3, ADR-0029, ADR-0030 #1·#2·#3 보완, 설계 문서 `docs/design/stage5-analysis-pipeline.md`
+- 관련: FR-I-01·02·03, FR-G-01~03, FR-E-01, ADR-0016 #5 대체·2단계 보완, ADR-0021 #4 4단계 대체, ADR-0024 #1·#4-1·#4-2·#6-3, ADR-0029, ADR-0030 #1·#2·#3 보완, 설계 문서 `docs/design/stage5-analysis-pipeline.md`
 
 ## 맥락
 - 사용자가 단계 5를 "모델과 무관한 계약"으로 착수하고, PR 3개 (5-1 접수 / 5-2 실행 / 5-3 생성)로 나누고, 신규 모듈을 `photo` + `analysis`로 두라고 정했다.
@@ -28,11 +28,13 @@
 | 14 | 호출 manifest | 모델·프롬프트·스키마·thinking·effort·입출력 상한·가격 버전을 묶은 불변 행을 접수 때 작업에 고정한다. 실행 가능한 manifest = 현재 + 이전 |
 | 15 | 결과 스키마 v1 | 모델과 무관한 내부 DTO + JSON Schema. 실행 값은 자르지 않고 `INVALID`로 둔다. 전화 자동 근거는 명시 국가 코드·연결 주소만 쓴다 |
 | 16 | 생성 리스너 | `@ApplicationModuleListener(propagation = NOT_SUPPORTED)` 조정 리스너가 다른 빈의 TX 메서드로 본체를 실행하고, 본체 TX가 끝난 뒤 실패 기록 TX를 실행한다. 상한 (5) 미만이면 예외를 다시 던지고, 종결되면 정상 반환한다 |
-| 17 | 이벤트 판정 | 날짜·시각·장소는 사용자 확정값, 행사명은 자동 근거만 비교한다. 판정 = `LINKED`/`CREATED`/`AMBIGUOUS`/`SUPPRESSED`. 비로그인 요약이 불완전하면 연결·생성을 모두 하지 않는다 |
+| 17 | 이벤트 판정 | 날짜·시각·장소는 사용자 확정값이 있으면 그것, 없으면 자동 근거로 비교한다. 행사명은 자동 근거만 비교한다. 판정 = `LINKED`/`CREATED`/`AMBIGUOUS`/`SUPPRESSED`. 비로그인 요약이 불완전하면 연결·생성을 모두 하지 않는다 |
 | 18 | 보관 | `SUCCEEDED` 작업·접수는 그 작업을 가리키는 결과가 있는 동안 유지 (ADR-0024 #6-3). 유니크는 `uk_analysis_job_photo_active WHERE status NOT IN (FAILED, CANCELLED, INELIGIBLE)` (ADR-0024 #4-1). `external_call` 90일 |
 | 19 | 활성화 | 접수는 `pik.analysis.intake-enabled` (기본 false)로 켜고 끈다. 세 PR이 모두 병합되고 프로필별 리스너 시험이 통과한 뒤 켠다 |
 
-### 보완하는 기존 결정
+### 보완·대체하는 기존 결정
+- ADR-0021 #4 접수 흐름 4단계 (접수 응답에 대표 사진 presigned PUT URL 반환): #5로 대체한다. 접수 응답에는 URL이 없고, 시도 발급 API가 URL을 준다.
+- ADR-0016 파이프라인 2단계 (축소 이미지 JPEG·WebP): 첫 계약은 JPEG만 받는다 (`Content-Type: image/jpeg`, 설계 문서 2.3). WebP는 측정·서버 디코딩 검증 뒤 manifest의 contentType으로 추가한다.
 - ADR-0016 #5 (결과 불명 = 확인 필요 상태 + 재대조 배치): 재대조할 제공자 계약이 없으므로 #12로 대체한다. 무조건 재호출하지 않는다는 원칙은 유지한다 (사진 수명 1회 상한).
 - ADR-0030 #1: 동의 기준 버전 검사를 시도 발급·확정·허가·완료 TX의 공통 조건으로 넣는다.
 - ADR-0030 #2: 호출 시도 예산·전역 비용 예산 구조를 #9로 정한다.
