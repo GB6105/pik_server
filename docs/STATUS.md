@@ -65,7 +65,7 @@
 - 단계 3 동의 기록: V3 마이그레이션 (`ai_consent`), `consent` 모듈, `GET`·`PUT /consents/ai` (동의 순번 필수·결정마다 증가, 직전 동의의 거절 = 철회, 서버 제공 안내 (Google 장소 조회 포함)·최소 안내 버전), 다른 모듈용 `AiConsents.isGranted`. 안내 v1은 초안이라 `local`·`test` 밖 기동 불가 ([ADR-0028](adr/0028-ai-consent-implementation.md))
 - 단계 4 무료 체험 이용량: V4 마이그레이션 (`usage_quota`·`device_trial_mark`·`usage_reservation`), `usage` 모듈 (주체·기기 이중 집계, 묶음 전체가 들어갈 때만 예약, 사진당 1회 차감, 완료·반환), 설치 등록의 기기 판별 (Android ID HMAC·키 버전, iOS DeviceCheck 대역), 첫 체험 접수 전 DeviceCheck 시작 기록, access token `did`·`ai_consent.device_id` ([ADR-0029](adr/0029-trial-usage-implementation.md))
 - 설계 검토 1차 (Codex): 발견 14건 판정, 동의 철회 판정 기준·외부 호출 키 의미·일회성 증거와 멱등 입력 분리·키 교체 절차·승인된 SSOT 차이 목록 ([ADR-0030](adr/0030-design-review-r1-corrections.md)). 단계 5 항목은 단계 5 설계로 넘김
-- 설계 검토 R2~R8 (Codex 비판 → Claude 판정 → 수정 → 재검토, 단위마다 처음부터 재검토): 단계 5 분석 파이프라인 ([ADR-0031](adr/0031-stage5-analysis-pipeline.md), `docs/design/stage5-analysis-pipeline.md`), 운영·인프라·보안 (D-06·D-11·D-22 해소, [ADR-0032](adr/0032-operations-infrastructure-security.md)), 이후 단계 정책 제안 (D-12 해소, [ADR-0033](adr/0033-later-stage-policy-proposals.md))
+- 설계 검토 R2~R8 (Codex 비판 → Claude 판정 → 수정 → 재검토, 단위마다 처음부터 재검토): 단계 5 분석 파이프라인 ([ADR-0031](adr/0031-stage5-analysis-pipeline.md), `docs/design/stage5-analysis-pipeline.md`), 운영·인프라·보안 (D-06·D-11·D-22 해소, [ADR-0032](adr/0032-operations-infrastructure-security.md)), 이후 단계 정책 제안 (D-12 해소, [ADR-0033](adr/0033-later-stage-policy-proposals.md)). 세부 계약 = `docs/design/` 3종. R9·R10에서 저장소 반영을 검증
 
 ## 다음 할 일
 - [x] 단계 4 PR 병합 (PR #11, `3d1df32`)
