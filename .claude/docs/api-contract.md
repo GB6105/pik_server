@@ -83,7 +83,7 @@
 ### 무료 체험 (FR-B-01, ADR-0029)
 - HTTP API 없음. 분석 접수 (단계 5)가 `TrialUsage`를 호출하고 접수 응답에 반영
 - 한도·잔여량 응답 금지. 체험이 묶음 전체를 덮지 못하면 분석하지 않고 구독 안내 필요로 응답
-- iOS 분석 접수 요청 = 새 DeviceCheck 토큰 포함 (첫 체험 시작 기록용). 필요한데 없으면 400 `DEVICE_CHECK_TOKEN_REQUIRED`, DeviceCheck 오류는 설치와 같은 응답. 503 `DEVICE_CHECK_UNAVAILABLE` 뒤 재시도도 새 토큰
+- iOS 분석 접수 요청 = 새 DeviceCheck 토큰을 헤더 `Device-Check-Token`으로 포함 (첫 체험 시작 기록용, 본문·멱등 해시에 넣지 않음, ADR-0030). 필요한데 없으면 400 `DEVICE_CHECK_TOKEN_REQUIRED`, DeviceCheck 오류는 설치와 같은 응답. 503 `DEVICE_CHECK_UNAVAILABLE` 뒤 재시도도 새 토큰. 같은 `Idempotency-Key`로 토큰만 바꿔 재전송 = 정상 (기존 접수 상태 반환)
 
 ## 정상 결과로 취급
 - 빈 검색 결과

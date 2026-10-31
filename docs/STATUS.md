@@ -3,8 +3,8 @@
 > 프로젝트 기록의 진입점. 작업이 끝날 때마다 이 파일을 최신 상태로 덮어쓴다.
 > 결정 근거는 `adr/`, 날짜별 진행 기록은 `devlog/`에 둔다.
 
-- 최종 갱신: 2026-10-29
-- 현재 단계: **3. 동의 기록 진행 중** (`feature/FR-O-02-ai-consent`, 검토 완료·PR 대기)
+- 최종 갱신: 2026-11-01
+- 현재 단계: **5. 분석 접수 설계 중** (`feature/design-review-codex`: Codex와 설계 검토·미결 결정 진행)
 
 ## 기록 체계
 | 문서 | 경로 | 용도 | 갱신 시점 |
@@ -21,8 +21,8 @@
 | 1 | 프로젝트 골격: Gradle·Spring Boot 초기화, `.env.example`, CI | 완료 |
 | 2 | 공통 기반 (모듈 골격, ProblemDetail, 멱등 기록, 보안, 구조화 로그) + 익명 주체 발급 (ADR-0020) | 완료 (ADR-0025~0027) |
 | 3 | 동의 기록 (FR-O-02): 단일 동의 + 목적 필드, 철회 처리 | 완료 (ADR-0028) |
-| 4 | 이용량 (FR-B-01): 예약·반환, 기기·계정 이중 집계, 재설치 판별 | 진행 중 (`feature/FR-B-01-usage`, ADR-0029) |
-| 5 | 분석 접수·묶음 판단 (FR-I-01·02) → 분석 (FR-I-03) → 액션·이벤트 생성 (FR-G-01~03, 웹 연결 제외) | 대기. 선행: 유사도 벡터 모델 클라이언트 합의, D-09 |
+| 4 | 이용량 (FR-B-01): 예약·반환, 기기·계정 이중 집계, 재설치 판별 | 완료 (ADR-0029) |
+| 5 | 분석 접수·묶음 판단 (FR-I-01·02) → 분석 (FR-I-03) → 액션·이벤트 생성 (FR-G-01~03, 웹 연결 제외). PR 3개: 5-1 접수·묶음 / 5-2 업로드·실행·결과·정산 / 5-3 액션·이벤트 | 설계 중. 벡터 모델 합의·D-09를 기다리지 않고 모델과 무관한 계약 (모델·버전·차원·임계값 = 설정값)으로 착수, 모듈 `photo` + `analysis` (2026-11-01 사용자 결정) |
 | 6 | 3회 클릭 집계 (FR-B-01), 웹 연결 (FR-X-06), FR-G-04 | 대기 |
 | 7 | 로그인·로그아웃 (FR-A-01·03) | 대기 |
 | 8 | 구독 (FR-B-02~05) | 대기. 선행: D-12 |
@@ -63,9 +63,12 @@
 
 - 단계 3 동의 기록: V3 마이그레이션 (`ai_consent`), `consent` 모듈, `GET`·`PUT /consents/ai` (동의 순번 필수·결정마다 증가, 직전 동의의 거절 = 철회, 서버 제공 안내 (Google 장소 조회 포함)·최소 안내 버전), 다른 모듈용 `AiConsents.isGranted`. 안내 v1은 초안이라 `local`·`test` 밖 기동 불가 ([ADR-0028](adr/0028-ai-consent-implementation.md))
 - 단계 4 무료 체험 이용량: V4 마이그레이션 (`usage_quota`·`device_trial_mark`·`usage_reservation`), `usage` 모듈 (주체·기기 이중 집계, 묶음 전체가 들어갈 때만 예약, 사진당 1회 차감, 완료·반환), 설치 등록의 기기 판별 (Android ID HMAC·키 버전, iOS DeviceCheck 대역), 첫 체험 접수 전 DeviceCheck 시작 기록, access token `did`·`ai_consent.device_id` ([ADR-0029](adr/0029-trial-usage-implementation.md))
+- 설계 검토 1차 (Codex): 발견 14건 판정, 동의 철회 판정 기준·외부 호출 키 의미·일회성 증거와 멱등 입력 분리·키 교체 절차·승인된 SSOT 차이 목록 ([ADR-0030](adr/0030-design-review-r1-corrections.md)). 단계 5 항목은 단계 5 설계로 넘김
 
 ## 다음 할 일
-- [ ] 단계 4 PR 병합 (`feature/FR-B-01-usage`, ADR-0029)
+- [x] 단계 4 PR 병합 (PR #11, `3d1df32`)
+- [ ] 사용자 보고: FR-G-01 (31행)과 FR-E-01 (718·728행)의 마지막 체험 사진 이벤트 생성 자격 문구 정리 (ADR-0030 #8)
+- [ ] Android ID HMAC 활성 쓰기 버전 설정 (`PIK_USAGE_DEVICE_KEY_ACTIVE`)과 2단계 키 교체 절차, JWT 2단계 서명 키 교체 절차 (운영 배포 전, ADR-0030)
 - [ ] 운영 Android ID HMAC 키 (`PIK_USAGE_DEVICE_KEYS`) 생성·SSM 등록, 키 교체 때 이전 키 유지 (배포 환경 구성 때, ADR-0029)
 - [ ] 동의 안내 확정: 받는 곳별 처리 국가·보관 기간 (Anthropic·TypeSafe·Google, D-08·P08) 확인, 법률 검토 (`notes` 문구, 국외 이전 고지의 그 밖의 항목) 후 `draft` 해제 (운영 배포 전, ADR-0028)
 - [ ] 실제 기기 증명 검증 (App Attest·Play Integrity)과 challenge 발급 API 구현: 단계 2는 대역만 사용하며, 구현 전에는 `local`·`test` 밖에서 기동이 실패한다. Apple 키·Google Cloud 서비스 계정 준비 후, 클라이언트 연동·운영 배포 전 (ADR-0020·0023·0027)
