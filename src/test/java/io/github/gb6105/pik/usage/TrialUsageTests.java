@@ -9,7 +9,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.github.gb6105.pik.TestcontainersConfiguration;
@@ -18,6 +21,7 @@ import io.github.gb6105.pik.shared.error.PikException;
 import io.github.gb6105.pik.shared.id.UuidV7;
 import io.github.gb6105.pik.usage.TrialUsage.Photo;
 import io.github.gb6105.pik.usage.TrialUsage.Reservation;
+import io.github.gb6105.pik.usage.TrialUsage.StartGuard;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -37,6 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.mockito.InOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -145,12 +150,28 @@ class TrialUsageTests {
 		UUID mark = androidMark();
 		reserve(principal, mark, UuidV7.generate(), photos(3));
 
-		assertThat(reserve(principal, mark, UuidV7.generate(), photos(3))).isEqualTo(new Reservation.NotCovered());
+		assertThat(reserve(principal, mark, UuidV7.generate(), photos(3))).isEqualTo(new Reservation.NotCovered(true));
 		assertThat(quota(principal)).containsEntry("reserved_count", 3);
 		assertThat(mark(mark)).containsEntry("reserved_count", 3);
 		assertThat(reservations(principal)).hasSize(3);
 
 		assertThat(reserve(principal, mark, UuidV7.generate(), photos(2))).isEqualTo(new Reservation.Reserved(2));
+	}
+
+	@Test
+	void bundleWaitingOnlyForReleasesIsRetryable() {
+		UUID mark = androidMark();
+		UUID first = UuidV7.generate();
+		UUID consumedJob = UuidV7.generate();
+		reserve(first, mark, consumedJob, photos(1));
+		consume(first, consumedJob);
+		reserve(first, mark, UuidV7.generate(), photos(3));
+
+		// The device holds 3 reserved and 1 consumed: 4 photos fit once the reservations come back, 5 never do.
+		assertThat(reserve(UuidV7.generate(), mark, UuidV7.generate(), photos(4)))
+			.isEqualTo(new Reservation.NotCovered(true));
+		assertThat(reserve(UuidV7.generate(), mark, UuidV7.generate(), photos(5)))
+			.isEqualTo(new Reservation.NotCovered(false));
 	}
 
 	@Test
@@ -163,7 +184,7 @@ class TrialUsageTests {
 
 		assertThat(mark(mark).get("exhausted_at")).isNotNull();
 		assertThat(reserve(UuidV7.generate(), mark, UuidV7.generate(), photos(1)))
-			.isEqualTo(new Reservation.NotCovered());
+			.isEqualTo(new Reservation.NotCovered(false));
 	}
 
 	@Test
@@ -174,7 +195,7 @@ class TrialUsageTests {
 		consume(principal, job);
 
 		assertThat(reserve(principal, androidMark(), UuidV7.generate(), photos(1)))
-			.isEqualTo(new Reservation.NotCovered());
+			.isEqualTo(new Reservation.NotCovered(false));
 	}
 
 	@Test
@@ -247,7 +268,7 @@ class TrialUsageTests {
 		assertThat((byte[]) mark(first).get("device_key_hmac")).hasSize(32)
 			.isNotEqualTo(androidId.getBytes());
 		assertThat(reserve(UuidV7.generate(), reinstalled, UuidV7.generate(), photos(4)))
-			.isEqualTo(new Reservation.NotCovered());
+			.isEqualTo(new Reservation.NotCovered(false));
 	}
 
 	@Test
@@ -304,7 +325,7 @@ class TrialUsageTests {
 		assertThat(mark(reinstalled).get("exhausted_at")).isNotNull();
 		trialUsage.recordStart(UuidV7.generate(), reinstalled, 1, null);
 		assertThat(reserve(UuidV7.generate(), reinstalled, UuidV7.generate(), photos(1)))
-			.isEqualTo(new Reservation.NotCovered());
+			.isEqualTo(new Reservation.NotCovered(false));
 	}
 
 	@Test
@@ -344,7 +365,7 @@ class TrialUsageTests {
 		assertThat(mark(second)).containsEntry("device_check_state", "TRIAL_STARTED");
 		assertThat(mark(second).get("exhausted_at")).isNotNull();
 		assertThat(reserve(UuidV7.generate(), second, UuidV7.generate(), photos(1)))
-			.isEqualTo(new Reservation.NotCovered());
+			.isEqualTo(new Reservation.NotCovered(false));
 		verify(deviceCheck).recordTrialStarted(token);
 	}
 
@@ -448,7 +469,7 @@ class TrialUsageTests {
 		UUID mark = installIos(deviceCheckToken());
 
 		assertThat(reserve(UuidV7.generate(), mark, UuidV7.generate(), photos(6)))
-			.isEqualTo(new Reservation.NotCovered());
+			.isEqualTo(new Reservation.NotCovered(false));
 	}
 
 	@Test
@@ -462,6 +483,98 @@ class TrialUsageTests {
 
 		assertThat(mark(mark)).containsEntry("device_check_state", null);
 		verify(deviceCheck, never()).recordTrialStarted(any());
+	}
+
+	@Test
+	void guardIsNotCalledWhenNoStartIsNeeded() {
+		StartGuard guard = mock(StartGuard.class);
+		UUID principal = UuidV7.generate();
+		String token = deviceCheckToken();
+		UUID started = installIos(token);
+		trialUsage.recordStart(principal, started, 1, token);
+		UUID uncovered = installIos(deviceCheckToken());
+
+		trialUsage.recordStart(principal, androidMark(), 1, null, guard);
+		trialUsage.recordStart(principal, started, 1, null, guard);
+		trialUsage.recordStart(UuidV7.generate(), uncovered, 6, null, guard);
+
+		verify(guard, never()).beforeStart();
+	}
+
+	@Test
+	void guardRunsOnceAfterTheTokenCheckAndBeforeAppleForANewStart() {
+		StartGuard guard = mock(StartGuard.class);
+		String token = deviceCheckToken();
+		UUID mark = installIos(token);
+		clearInvocations(deviceCheck);
+
+		assertRejected(() -> trialUsage.recordStart(UuidV7.generate(), mark, 1, null, guard), ErrorCode.INVALID_INPUT,
+				"DEVICE_CHECK_TOKEN_REQUIRED");
+		verify(guard, never()).beforeStart();
+		trialUsage.recordStart(UuidV7.generate(), mark, 1, token, guard);
+
+		InOrder order = inOrder(guard, deviceCheck);
+		order.verify(guard).beforeStart();
+		order.verify(deviceCheck).trialStarted(token);
+		order.verify(deviceCheck).recordTrialStarted(token);
+		verify(guard, times(1)).beforeStart();
+		assertThat(mark(mark)).containsEntry("device_check_state", "TRIAL_STARTED");
+	}
+
+	@Test
+	void guardRunsOnceWhenAStartingMarkIsResumed() {
+		StartGuard guard = mock(StartGuard.class);
+		String token = deviceCheckToken();
+		UUID mark = installIos(token);
+		UUID principal = UuidV7.generate();
+		doThrow(new PikException(ErrorCode.TEMPORARY_FAILURE, "DEVICE_CHECK_UNAVAILABLE", true)).doCallRealMethod()
+			.when(deviceCheck)
+			.recordTrialStarted(token);
+		assertThatThrownBy(() -> trialUsage.recordStart(principal, mark, 1, token)).isInstanceOf(PikException.class);
+		assertThat(mark(mark)).containsEntry("device_check_state", "STARTING");
+		clearInvocations(deviceCheck);
+
+		trialUsage.recordStart(principal, mark, 1, token, guard);
+
+		InOrder order = inOrder(guard, deviceCheck);
+		order.verify(guard).beforeStart();
+		order.verify(deviceCheck).recordTrialStarted(token);
+		verify(guard, times(1)).beforeStart();
+		verify(deviceCheck, never()).trialStarted(any());
+		assertThat(mark(mark)).containsEntry("device_check_state", "TRIAL_STARTED");
+	}
+
+	@Test
+	void failingGuardStopsTheStartBeforeApple() {
+		PikException refused = PikException.unstored(ErrorCode.FORBIDDEN, "ATTESTATION_REQUIRED", true);
+		String token = deviceCheckToken();
+		UUID mark = installIos(token);
+		clearInvocations(deviceCheck);
+
+		assertThatThrownBy(() -> trialUsage.recordStart(UuidV7.generate(), mark, 1, token, () -> {
+			throw refused;
+		})).isSameAs(refused);
+
+		assertThat(mark(mark)).containsEntry("device_check_state", null);
+		verify(deviceCheck, never()).trialStarted(any());
+		verify(deviceCheck, never()).recordTrialStarted(any());
+	}
+
+	@Test
+	void unavailableFakeTokenIsATemporaryFailureThatChangesNothing() {
+		UUID mark = installIos(deviceCheckToken());
+		String unavailable = FakeDeviceCheck.UNAVAILABLE_PREFIX + UUID.randomUUID();
+
+		assertThatThrownBy(() -> trialUsage.recordStart(UuidV7.generate(), mark, 1, unavailable))
+			.isInstanceOfSatisfying(PikException.class, (ex) -> {
+				assertThat(ex.getCode()).isEqualTo(ErrorCode.TEMPORARY_FAILURE);
+				assertThat(ex.getReason()).isEqualTo("DEVICE_CHECK_UNAVAILABLE");
+				assertThat(ex.isRetryable()).isTrue();
+			});
+		assertThat(mark(mark)).containsEntry("device_check_state", null);
+		assertThatThrownBy(() -> new FakeDeviceCheck().recordTrialStarted(unavailable))
+			.isInstanceOfSatisfying(PikException.class,
+					(ex) -> assertThat(ex.getReason()).isEqualTo("DEVICE_CHECK_UNAVAILABLE"));
 	}
 
 	@Test
