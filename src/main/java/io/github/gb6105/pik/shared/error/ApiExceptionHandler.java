@@ -51,7 +51,9 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 			headers.set(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
 		}
 		ApiError error = new ApiError(ex.getCode(), ex.getReason(), ex.isRetryable());
-		return new ResponseEntity<>(CommandRequests.problem(error, request), headers, error.code().status());
+		ProblemDetail problem = CommandRequests.problem(error, request);
+		ex.getProperties().forEach(problem::setProperty);
+		return new ResponseEntity<>(problem, headers, error.code().status());
 	}
 
 	// No 500 in the requirements' error table: unexpected failures surface as a retryable TEMPORARY_FAILURE.

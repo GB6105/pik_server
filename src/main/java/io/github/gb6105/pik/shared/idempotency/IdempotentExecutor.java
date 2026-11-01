@@ -123,15 +123,16 @@ public class IdempotentExecutor {
 	private IdempotentResponse problem(IdempotentRequest request, PikException ex) {
 		ApiError error = new ApiError(ex.getCode(), ex.getReason(), ex.isRetryable());
 		ProblemDetail problem = error.toCommandProblemDetail(request.key().value());
+		ex.getProperties().forEach(problem::setProperty);
 		problem.setInstance(currentRequestPath());
 		return new IdempotentResponse(error.code().status().value(), jsonMapper.valueToTree(problem));
 	}
 
 	// 401, 429 and errors carrying Retry-After depend on state outside the request (token, rate window) and are not
-	// stored (ADR-0023, ADR-0024, ADR-0026).
+	// stored (ADR-0023, ADR-0024, ADR-0026), nor are failures marked unstorable (ADR-0032 #6-2).
 	private static boolean isStored(PikException ex) {
 		ErrorCode code = ex.getCode();
-		return code.status().is4xxClientError() && code != ErrorCode.UNAUTHENTICATED
+		return ex.isStorable() && code.status().is4xxClientError() && code != ErrorCode.UNAUTHENTICATED
 				&& code != ErrorCode.RATE_LIMITED && ex.getRetryAfter() == null;
 	}
 
