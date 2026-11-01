@@ -59,7 +59,7 @@
 - 둘 다 access token 불필요 (`Authorization` 헤더가 있어도 무시), 멱등 키 미사용 (Command 공통 필드 없음). 재전송 = 새 주체 (ADR-0025 #2)
 - 기기 증명 종류 = `platform`에서 도출. 실패 = 403 `FORBIDDEN` / `ATTESTATION_FAILED`
 - iOS 첫 체험 접수 assertion (ADR-0032 #6-2): 증거 없음·challenge 만료·nonce 오류 = 403 `FORBIDDEN` / `ATTESTATION_REQUIRED` + 새 challenge, counter 경합 = 409 `CONFLICT` + `Retry-After`, 서명·키 불일치 = 403 `ATTESTATION_FAILED`. 모두 멱등 기록에 저장하지 않음. 헤더 `App-Attest-Assertion`·`App-Attest-Challenge-Id`·`App-Attest-Nonce`는 멱등 해시 제외
-- `trialDevice` = 재설치 체험 판별 값, 플랫폼 값 하나만 (Android `androidId` = 16진수 1~16자리, 대소문자·앞뒤 공백 무시, iOS `deviceCheckToken`). 없음·빈 값·형식 오류·다른 플랫폼 값 = 400 `TRIAL_DEVICE_INVALID`, 객체 누락 = 400 `VALIDATION_FAILED`. DeviceCheck가 토큰 거부 = 403 `DEVICE_CHECK_FAILED`. 전송 장애·Apple 5xx = 설치 진행 (201) + 기기 "확인 전" (D-23, ADR-0032 #7). 503 `DEVICE_CHECK_UNAVAILABLE` (재시도 가능)은 확인 전 기기의 첫 체험 접수 재조회 실패에만 쓴다. 검사 순서 = 형식 → 기기 증명 → DeviceCheck (ADR-0029)
+- `trialDevice` = 재설치 체험 판별 값, 플랫폼 값 하나만 (Android `androidId` = 16진수 1~16자리, 대소문자·앞뒤 공백 무시, iOS `deviceCheckToken`). 없음·빈 값·형식 오류·다른 플랫폼 값 = 400 `TRIAL_DEVICE_INVALID`, 객체 누락 = 400 `VALIDATION_FAILED`. DeviceCheck가 토큰 거부 = 403 `DEVICE_CHECK_FAILED`. 전송 장애·Apple 5xx = 설치 진행 (201) + 기기 "확인 전" (D-23, ADR-0032 #7). 503 `DEVICE_CHECK_UNAVAILABLE` (재시도 가능, 멱등 기록에 저장 안 함)은 첫 체험 시작의 DeviceCheck 일시 장애에 쓴다: NEW·확인 전 기기의 조회·기록 실패, `STARTING` 기록의 조회 없는 재기록 실패 (ADR-0029 #18). 토큰 거절 403은 그대로. 검사 순서 = 형식 → 기기 증명 → DeviceCheck (ADR-0029)
 - 오류: 모르는 `grantType` = 400 `UNSUPPORTED_GRANT_TYPE`, `installToken` 누락 = 400 `VALIDATION_FAILED`, 없는·폐기된 토큰과 비활성 주체 = 401 `INSTALL_TOKEN_INVALID` (구분 안 함)
 
 ### 접근 제어 (ADR-0027)
