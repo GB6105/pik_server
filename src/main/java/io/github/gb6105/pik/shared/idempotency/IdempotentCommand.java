@@ -16,4 +16,11 @@ import java.lang.annotation.Target;
 @Documented
 public @interface IdempotentCommand {
 
+	/**
+	 * Whether the request accepts a long-running job. Its {@code jobId} is the server's job ID, so error responses,
+	 * which created no job, carry {@code jobId = null} instead of the key (api-contract.md). Requests passed to the
+	 * executor set {@link IdempotentRequest#longRunning()} to match.
+	 */
+	boolean longRunning() default false;
+
 }

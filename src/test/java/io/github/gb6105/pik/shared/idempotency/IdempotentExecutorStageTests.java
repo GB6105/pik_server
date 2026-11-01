@@ -24,6 +24,7 @@ import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,7 +49,8 @@ import tools.jackson.databind.node.ObjectNode;
 
 /**
  * The executor's stages for requests that check before the business transaction ({@code lookup}, {@code reject},
- * {@code commit}), failures that are never stored and problem members carried by {@link PikException}.
+ * {@code commit}), failures that are never stored, problem members carried by {@link PikException} and the
+ * {@code jobId} of long-running requests.
  */
 @Import({ TestcontainersConfiguration.class, AuthenticatedMockMvc.class,
 		IdempotentExecutorStageTests.StageProbeController.class })
@@ -291,6 +293,64 @@ class IdempotentExecutorStageTests {
 		assertThat(executor.lookup(requestB, ReplayProjection.IDENTITY)).map(IdempotentResponse::status).hasValue(202);
 	}
 
+	// The key is the job ID of an immediate change only; a long-running intake has none on failure (api-contract.md).
+	@ParameterizedTest
+	@CsvSource({ "immediate, true", "long-running, false" })
+	void securityFailureCarriesTheKeyForImmediateChangesOnly(String path, boolean carriesKey) {
+		UUID key = UuidV7.generate();
+
+		assertThat(post(path, key, "{\"name\": \"a\"}", "Bearer x.y.z")).hasStatus(401)
+			.bodyJson()
+			.isLenientlyEqualTo("""
+					{"code": "UNAUTHENTICATED", "reason": "ACCESS_TOKEN_INVALID", "jobId": %s, "result": "FAILED"}
+					""".formatted(jobId(key, carriesKey)));
+	}
+
+	@ParameterizedTest
+	@CsvSource({ "immediate, true", "long-running, false" })
+	void failureAfterKeyCheckCarriesTheKeyForImmediateChangesOnly(String path, boolean carriesKey) {
+		UUID key = UuidV7.generate();
+
+		assertThat(post(path, key, "{\"name\": \"\"}", null)).hasStatus(400).bodyJson().isLenientlyEqualTo("""
+				{"code": "INVALID_INPUT", "reason": "VALIDATION_FAILED", "jobId": %s, "result": "FAILED"}
+				""".formatted(jobId(key, carriesKey)));
+		assertThat(post(path, key, "{\"name\": \"a\", \"fail\": \"unstored\"}", null)).hasStatus(409)
+			.bodyJson()
+			.isLenientlyEqualTo("""
+					{"reason": "PROBE_FAILED", "jobId": %s, "result": "FAILED"}
+					""".formatted(jobId(key, carriesKey)));
+	}
+
+	@ParameterizedTest
+	@CsvSource({ "immediate, true", "long-running, false" })
+	void storedFailureCarriesTheKeyForImmediateChangesOnly(String path, boolean carriesKey) {
+		UUID key = UuidV7.generate();
+		String expected = """
+				{"code": "FORBIDDEN", "reason": "PROBE_FAILED", "jobId": %s, "result": "FAILED"}
+				""".formatted(jobId(key, carriesKey));
+
+		assertThat(post(path, key, "{\"name\": \"a\", \"fail\": \"stored\"}", null)).hasStatus(403)
+			.bodyJson()
+			.isLenientlyEqualTo(expected);
+		assertThat(storedBody(key).get("jobId").isNull()).isEqualTo(!carriesKey);
+		assertThat(post(path, key, "{\"name\": \"a\", \"fail\": \"stored\"}", null)).hasStatus(403)
+			.bodyJson()
+			.isLenientlyEqualTo(expected);
+	}
+
+	@Test
+	void longRunningRejectionIsStoredWithoutJobId() {
+		UUID key = UuidV7.generate();
+		IdempotentRequest request = new IdempotentRequest(owner, new IdempotencyKey(key), "probe.stage", "x", true);
+
+		IdempotentResponse rejected = executor.reject(request,
+				new PikException(ErrorCode.FORBIDDEN, "PROBE_FAILED", false), ReplayProjection.IDENTITY);
+
+		assertThat(rejected.body().get("jobId").isNull()).isTrue();
+		assertThat(storedBody(key).get("jobId").isNull()).isTrue();
+		assertThat(new IdempotentRequest(owner, new IdempotencyKey(key), "probe.stage", "x").longRunning()).isFalse();
+	}
+
 	private IdempotentRequest request(UUID key, Object command) {
 		return new IdempotentRequest(owner, new IdempotencyKey(key), "probe.stage", command);
 	}
@@ -307,13 +367,24 @@ class IdempotentExecutorStageTests {
 	}
 
 	private MvcTestResult post(UUID key, String body) {
-		return mvc.post()
-			.uri("/test-stage-commands/{owner}/immediate", owner)
+		return post("immediate", key, body, null);
+	}
+
+	private MvcTestResult post(String path, UUID key, String body, @Nullable String authorization) {
+		var request = mvc.post()
+			.uri("/test-stage-commands/{owner}/{path}", owner, path)
 			.header("API-Version", "1")
 			.header(IdempotencyKey.HEADER, key.toString())
 			.contentType(MediaType.APPLICATION_JSON)
-			.content(body)
-			.exchange();
+			.content(body);
+		if (authorization != null) {
+			request.header(HttpHeaders.AUTHORIZATION, authorization);
+		}
+		return request.exchange();
+	}
+
+	private static String jobId(UUID key, boolean carriesKey) {
+		return carriesKey ? "\"" + key + "\"" : "null";
 	}
 
 	// Stored bodies come back from jsonb with reordered keys and narrower number nodes.
@@ -356,16 +427,28 @@ class IdempotentExecutorStageTests {
 		@PostMapping("/immediate")
 		ResponseEntity<JsonNode> immediate(@PathVariable UUID owner, IdempotencyKey key,
 				@Valid @RequestBody ProbeCommand command) {
-			return executor.execute(new IdempotentRequest(owner, key, "probe.immediate", command), () -> {
-				if ("stored".equals(command.fail())) {
-					throw new PikException(ErrorCode.FORBIDDEN, "PROBE_FAILED", false, null, CHALLENGE);
-				}
-				if ("unstored".equals(command.fail())) {
-					throw PikException.unstored(ErrorCode.CONFLICT, "PROBE_FAILED", true, Duration.ofSeconds(2),
-							CHALLENGE);
-				}
-				return command;
-			}).toResponseEntity();
+			return executor.execute(new IdempotentRequest(owner, key, "probe.immediate", command), () -> act(command))
+				.toResponseEntity();
+		}
+
+		@IdempotentCommand(longRunning = true)
+		@PostMapping("/long-running")
+		ResponseEntity<JsonNode> longRunning(@PathVariable UUID owner, IdempotencyKey key,
+				@Valid @RequestBody ProbeCommand command) {
+			return executor
+				.commit(new IdempotentRequest(owner, key, "probe.long-running", command, true),
+						() -> new Outcome(HttpStatus.ACCEPTED, act(command)), ReplayProjection.IDENTITY)
+				.toResponseEntity();
+		}
+
+		private static ProbeCommand act(ProbeCommand command) {
+			if ("stored".equals(command.fail())) {
+				throw new PikException(ErrorCode.FORBIDDEN, "PROBE_FAILED", false, null, CHALLENGE);
+			}
+			if ("unstored".equals(command.fail())) {
+				throw PikException.unstored(ErrorCode.CONFLICT, "PROBE_FAILED", true, Duration.ofSeconds(2), CHALLENGE);
+			}
+			return command;
 		}
 
 		record ProbeCommand(@NotBlank String name, @Nullable String fail) {

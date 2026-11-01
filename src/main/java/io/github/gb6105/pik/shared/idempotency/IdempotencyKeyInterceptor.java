@@ -16,10 +16,11 @@ class IdempotencyKeyInterceptor implements HandlerInterceptor {
 
 	@Override
 	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-		if (!IdempotentCommands.isCommand(handler)) {
+		IdempotentCommand command = IdempotentCommands.command(handler);
+		if (command == null) {
 			return true;
 		}
-		IdempotencyKey key = IdempotentCommands.mark(request);
+		IdempotencyKey key = IdempotentCommands.mark(request, command);
 		String header = request.getHeader(IdempotencyKey.HEADER);
 		if (header == null || header.isBlank()) {
 			throw new PikException(ErrorCode.INVALID_INPUT, "IDEMPOTENCY_KEY_REQUIRED", false);

@@ -179,7 +179,7 @@ public class IdempotentExecutor {
 
 	private IdempotentResponse problem(IdempotentRequest request, PikException ex) {
 		ApiError error = new ApiError(ex.getCode(), ex.getReason(), ex.isRetryable());
-		ProblemDetail problem = error.toCommandProblemDetail(request.key().value());
+		ProblemDetail problem = error.toCommandProblemDetail(request.longRunning() ? null : request.key().value());
 		ex.getProperties().forEach(problem::setProperty);
 		problem.setInstance(currentRequestPath());
 		return new IdempotentResponse(error.code().status().value(), jsonMapper.valueToTree(problem));
