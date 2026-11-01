@@ -41,5 +41,5 @@ R1-02 (구성 사진의 개별 근거), R1-03 (실행 세대·조건부 완료),
 ## 결과
 - 문서: `external_call.request_key` ERD 주석, `consistency-rules.md` (동의 판정·외부 호출 키·호출 예산·일회성 증거), `api-contract.md` (`Device-Check-Token` 헤더), `ssot-deviations.md` 신규, CLAUDE.md 보조 문서 표, ADR-0024·0027·0028·0029 상태 줄.
 - 코드 (해당 단계에서): 1 = 단계 5 (접수 행 `consent_version`, `consent` 공개 API·잠금), 4 = 단계 5-1, 5 = 운영 배포 전.
-- 사용자 보고: 8의 SSOT 문구 정리.
+- 사용자 보고: 8의 SSOT 문구 정리. 보고 결과 (2026-11-01): 사용자는 "정책을 SSOT에 맞게"를 지시했다. FR-G-01 31행은 "접수가 허용된 마지막 체험 사진"만 정한 특별 규정이고 FR-E-01은 체험 소진의 일반 규칙이므로, 특별 규정을 따르는 8의 해석이 SSOT와 맞는다. 해석을 유지하고 SSOT는 고치지 않는다.
 - 출처: Codex R1 검토 (`.omc/codex/r1-review.md`, 저장소 밖 작업 파일)와 Claude 판정. 사용자는 검토와 수정을 지시했다 (2026-11-01).

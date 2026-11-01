@@ -123,7 +123,7 @@
 | 처리 기한 | 48시간 (claim·허가·완료에서도 검사) | 접수 |
 | 임대 120초 / 송신 여유 70초 / HTTP 전체 60초 | | claim / 허가 / 송신 |
 | 임시 객체 | 종료 즉시 삭제 outbox, 청소 6시간, 수명 주기 3일, 미삭제 경보 | |
-- 안내 (P08 확정 대기): "분석 후 즉시 삭제, 남은 경우에도 업로드 후 4일 안에 삭제 대상"
+- 안내 (P08 확정, ADR-0033 #10): "분석 후 즉시 삭제, 남은 경우에도 업로드 후 4일 안에 삭제 대상"
 
 ### 2.3 업로드
 - 시도 발급 `POST /analysis-jobs/{requestId}/upload-attempts` (`Idempotency-Key`), `items[]` ≤ 100 = `analysisJobId`, `contentLength` ≤ `maxBytes`, `sha256`. 응답 = 대상별 처리 목록 (200)
