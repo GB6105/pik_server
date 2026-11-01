@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
 /**
  * Issues per-owner change numbers for sync pulls (FR-A-02). The counter row stays locked until the caller's
@@ -20,11 +21,22 @@ public class ChangeSequence {
 
 	@Transactional(propagation = Propagation.MANDATORY)
 	public long next(UUID ownerId) {
-		return jdbc.sql("""
-				INSERT INTO owner_change_counter (owner_id, last_seq) VALUES (:owner, 1)
-				ON CONFLICT (owner_id) DO UPDATE SET last_seq = owner_change_counter.last_seq + 1
+		return nextBlock(ownerId, 1);
+	}
+
+	/**
+	 * Issues {@code count} consecutive numbers with one counter update, for changes written together.
+	 * @return the first number; the others follow it without gaps
+	 */
+	@Transactional(propagation = Propagation.MANDATORY)
+	public long nextBlock(UUID ownerId, int count) {
+		Assert.isTrue(count >= 1, "count must be at least 1");
+		long last = jdbc.sql("""
+				INSERT INTO owner_change_counter (owner_id, last_seq) VALUES (:owner, :count)
+				ON CONFLICT (owner_id) DO UPDATE SET last_seq = owner_change_counter.last_seq + :count
 				RETURNING last_seq
-				""").param("owner", ownerId).query(Long.class).single();
+				""").param("owner", ownerId).param("count", count).query(Long.class).single();
+		return last - count + 1;
 	}
 
 }

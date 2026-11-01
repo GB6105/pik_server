@@ -1,6 +1,7 @@
 package io.github.gb6105.pik.shared.change;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
@@ -68,8 +69,38 @@ class ChangeSequenceTests {
 	}
 
 	@Test
+	void blockIssuesConsecutiveNumbersAmongSingleOnes() {
+		UUID owner = UUID.randomUUID();
+		UUID other = UUID.randomUUID();
+
+		List<Long> issued = transactions.execute((status) -> List.of(changes.nextBlock(owner, 3), changes.next(owner),
+				changes.nextBlock(owner, 2), changes.nextBlock(other, 4), changes.nextBlock(owner, 1)));
+		long afterCommit = transactions.execute((status) -> changes.next(owner));
+
+		// Blocks of 3 (1-3) and 2 (5-6) around 4, then 7; the other owner starts at 1.
+		assertThat(issued).containsExactly(1L, 4L, 5L, 1L, 7L);
+		assertThat(afterCommit).isEqualTo(8L);
+		assertThat(jdbc.sql("SELECT last_seq FROM owner_change_counter WHERE owner_id = :owner")
+			.param("owner", other)
+			.query(Long.class)
+			.single()).isEqualTo(4L);
+	}
+
+	@Test
+	void blockHoldsAtLeastOneNumber() {
+		UUID owner = UUID.randomUUID();
+
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> transactions.executeWithoutResult((status) -> changes.nextBlock(owner, 0)));
+		long first = transactions.execute((status) -> changes.next(owner));
+		assertThat(first).isEqualTo(1L);
+	}
+
+	@Test
 	void requiresCallerTransaction() {
 		assertThatThrownBy(() -> changes.next(UUID.randomUUID())).isInstanceOf(IllegalTransactionStateException.class);
+		assertThatThrownBy(() -> changes.nextBlock(UUID.randomUUID(), 2))
+			.isInstanceOf(IllegalTransactionStateException.class);
 	}
 
 	private long waitingLocks() {
