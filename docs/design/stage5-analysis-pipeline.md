@@ -160,11 +160,12 @@
 7. 회수: `RUNNING ∧ locked_until < now()` → 그 토큰의 호출 없음 = `READY` + 토큰 폐기, `SENDING` 호출 있음 = 불명 확정 (2.6)
 
 ### 2.5 Claude 호출·응답
-- 호출 manifest (불변 행, ID = 내용 SHA-256, 기동 때 설정에서 만들고 없으면 삽입, 범위 검사 실패 = 기동 실패): model `claude-haiku-5-5`, promptVersion (프롬프트 본문 해시), schemaVersion (결과 v1), thinking 설정, effort 초기 `low`, `max_tokens` 1,024, `maxLongEdgePx`, `maxBytes`, `maxPixels`, contentType, 이미지 토큰 상한, OCR 사용·상한 (초기 사용 안 함), 캐시 정책 (prefix 범위·5분), 가격 버전 (입력·캐시 생성·캐시 읽기·출력 단가), 최대 비용 (계산값). 값은 모두 D-07 측정 대상
+- 호출 manifest (불변 행, ID = 내용 SHA-256, 기동 때 설정에서 만들고 없으면 삽입, 범위 검사 실패 = 기동 실패): model `claude-haiku-5-5`, promptVersion (프롬프트 본문 해시), schemaVersion (결과 v1), thinking 설정, effort 초기 `low`, `max_tokens` 1,024, `maxLongEdgePx`, `maxBytes`, `maxPixels`, contentType, 이미지 토큰 상한, OCR 사용·상한 (초기 사용 안 함), 캐시 정책 (prefix 범위·5분), `outputLocale` (생성 라벨 언어, 초기 `ko-KR`), 가격 버전 (입력·캐시 생성·캐시 읽기·출력 단가), 최대 비용 (계산값). 값은 모두 D-07 측정 대상
 - 접수가 현재 manifest를 작업에 고정 (`uploadPolicy`의 근원). 호출·결과도 **작업의 manifest**로 실행·기록. 실행 가능한 manifest 목록 = 현재 + 이전 (프롬프트·스키마 자원을 버전별로 보관). 이전 manifest를 실행할 수 없게 만드는 배포는 해당 작업이 빠진 뒤 (런북)
 - 원장 (`external_call`): manifest ID, 입력 sha256, 예산 일자, 사용 토큰 (입력·출력·캐시 생성·캐시 읽기), 정산 상태
 - 캐시: 안정된 공통 prefix만, 늘리지 않음, 사용량으로 이득 확인
-- 공통 순수 검증기 (A2 완료 전 실행, A3 재사용): 스키마 위반·전체 사용 불가 (4.1) = 분석 `FAILED(INVALID_OUTPUT)` / 필드 오류 = `validation` 붙여 저장 / 근거 없음 = 정상. 날짜 범위 (촬영 시각 −1년~+3년)는 이상 탐지 (`NEEDS_CHECK`). `validation_reference_at` = 촬영 시각, 없으면 접수 시각
+- 응답 처리 순서: `end_turn`이고 JSON 전체가 파싱될 때만 처리 (`max_tokens` = 정산표대로 분석 전체 `FAILED(TRUNCATED)`, 검색 블록만 잃는 부분 성공 없음). 원시 JSON 트리로 파싱하고, SDK helper의 엄격 스키마 검증으로 전체를 거절하지 않는다. 액션·이벤트 부분과 `search` 블록 (4.1)을 나누어 검증한다
+- 공통 순수 검증기 (A2 완료 전 실행, A3 재사용): 액션·이벤트 부분의 스키마 위반·전체 사용 불가 (4.1) = 분석 `FAILED(INVALID_OUTPUT)` / 필드 오류 = `validation` 붙여 저장 / 근거 없음 = 정상. 날짜 범위 (촬영 시각 −1년~+3년)는 이상 탐지 (`NEEDS_CHECK`). `validation_reference_at` = 촬영 시각, 없으면 접수 시각
 
 **정산표 (유일 기준)**. 위험 송신 = 사진 평생·주체 일일·기기 평생 (체험 작업만) 세 횟수를 함께 다룬다.
 | 응답 | 호출 상태 | 비용 | 위험 송신 | 체험 사진 예약 | 작업 |
@@ -206,10 +207,10 @@
   - 디코더 바이트·픽셀 상한, 전역 유입 제한 유지
 - 한계: 같은 파일의 새 `photoId`는 사진 카운터를 따로 센다. 주된 방어 = 기기·주체·전역
 
-### 2.8 실행 모드 (사용자 판정 필요, 판정 전에는 기존 Batch 결정 유지)
-- 제안: 체험 첫 실행도 worker의 Messages 호출, Batch는 Pro 최초 처리량 (단계 8)만. 접수 HTTP는 202 그대로
-- 근거: Batch는 최대 24시간 창. 사진 1장 비용 (2026-11-01 추정) 동기 약 $0.00058~0.00081 / Batch 절반
-- 조건: 슬롯·주체 상한 구현, 첫 결과 p95·100장 완료 시간·사용자당 비용 측정. 거절되면 5-2에 첫 실행 Batch 포함
+### 2.8 실행 모드 (사용자 결정 2026-11-01, D-25)
+- 체험 첫 실행도 worker의 Messages 호출. Batch는 Pro 최초 처리량 (단계 8)만. 접수 HTTP는 202 그대로
+- 근거: Batch는 최대 24시간 창. 사진 1장 비용 (2026-11-01 추정) 동기 약 $0.00058~0.00081 / Batch 절반. 첫 결과 시간을 비용보다 우선
+- 조건: 슬롯·주체 상한 구현, 첫 결과 p95·100장 완료 시간·사용자당 비용 측정
 
 ### 2.9 회수·청소·시험
 - 회수 배치 (5분, ShedLock), 대상 = `AWAITING_UPLOAD` 중 (업로드 기한 + 유예 경과) ∨ (`issued_count = 5` ∧ 현재 시도 URL 만료 + 유예 경과) → 현재 시도 HEAD → 확정 공통 조건이면 확정, 404·`REJECTED`면 종료 (`UPLOAD_EXPIRED` 또는 `UPLOAD_ATTEMPTS_EXHAUSTED`), 403·5xx는 다음 주기
@@ -298,21 +299,38 @@
 
 ## 4. 구현 계약
 ### 4.1 분석 결과 스키마 v1 (모델과 무관한 내부 DTO + JSON Schema)
-- `context`: `summary` ≤ 200자 (표시용, 로그 금지), `primaryLanguage` (BCP 47), `suggestedCountry` (ISO 3166-1 alpha-2 또는 null, 확인 화면 기본값 제안 전용)
+- `context`: `summary` ≤ 200자 (사진의 객관적 내용·관계를 담는 한두 문장, **표시와 검색 색인 공용**, 로그 금지), `primaryLanguage` (BCP 47), `suggestedCountry` (ISO 3166-1 alpha-2 또는 null, 확인 화면 기본값 제안 전용)
 - `schedules[]` ≤ 3: `title` (≤ 100, `extraction`), `date`·`startTime`·`endTime` (값 + `extraction`), `allDay`, `timezone` (IANA 또는 오프셋 + `EXPLICIT_OFFSET`/`PLACE_LINKED`/`NONE`), `place` (`name` ≤ 100, `address` ≤ 200, `countryCode`, `extraction`), `relativeDateText` ≤ 50
 - `phones[]` ≤ 5: `raw` ≤ 32, `label` ≤ 50, `countryCode` (명시·연결된 경우), `countryEvidence` (`EXPLICIT_CODE`/`LINKED_ADDRESS`/`NONE`), `extraction`
 - `accounts[]` ≤ 3: `bank` ≤ 30, `number` ≤ 32, `holder` ≤ 30, `extraction`
 - `copyTexts[]` ≤ 5: `text` ≤ 500, `kind` (`URL`/`COUPON`/`ADDRESS`/`OTHER`), `extraction`
 - `places[]` ≤ 3: `name` ≤ 100, `address` ≤ 200, `countryCode`, `extraction`
 - `undatedIntents[]` ≤ 3: `targetName` ≤ 100, `kind` (`VISIT`/`BUY`/`WATCH`/`OTHER`)
-- 서버가 붙임: `verification`, `validation`, `basis_change_seq`, manifest ID, `schemaVersion`
+- `search` (검색용 파생 정보, FR-I-03): 검색 값은 자동 실행 근거가 아니다 (0.2 대상 아님, 액션으로 승격 금지). 근거 구분 = 위치: `observedKeywords`만 사진에서 읽은 값, 나머지는 추정. 빈 배열·null = 판단 불가 또는 해당 없음
+  | 필드 | 형식·상한 |
+  |---|---|
+  | `entities[]` | ≤ 8, `{label ≤ 20자, colors[] ≤ 2}` (사물별 색) |
+  | `backgroundColors[]` | ≤ 2. 색 enum 12종: `RED`·`ORANGE`·`YELLOW`·`GREEN`·`BLUE`·`PURPLE`·`PINK`·`BROWN`·`BLACK`·`WHITE`·`GRAY`·`BEIGE` |
+  | `scenes[]` · `activities[]` | 각 ≤ 3, 각 ≤ 20자 |
+  | `moods[]` | ≤ 2: `CHEERFUL`·`CALM`·`ROMANTIC`·`FESTIVE`·`GLOOMY`·`TENSE`·`NOSTALGIC`·`NEUTRAL` |
+  | `peopleCount` | `NONE` (사람 없음 확인)/`ONE`/`FEW` (2~5)/`MANY` (6+)/null (판단 불가) |
+  | `contentType` | `PHOTO`/`DOCUMENT`/`RECEIPT`/`POSTER`/`TICKET`/`MENU`/`BUSINESS_CARD`/`OTHER`/null. 내용 종류만 (스크린샷 여부 = 단말 메타데이터) |
+  | `saveIntent` | `REFERENCE`/`TODO`/`SHOPPING`/`MEMORY`/`OTHER`/null (`OTHER` = 확인된 다른 범주) |
+  | `observedKeywords[]` | ≤ 10, 각 ≤ 30자, 사진에 적힌 원문 그대로 (본문 전체 아님) |
+  - 생성 라벨 언어 = manifest `outputLocale`, 읽은 문구 = 원문. locale 변경으로 기존 결과를 재분석하지 않음
+  - 시간·장소: 촬영 시각 = 단말 메타데이터, 행사 시간·장소 = `schedules`·`places`. 검색 블록에 날짜·주소를 다시 뽑지 않음
+  - 개인정보: 모든 자유 문자열 (`summary`·`label`·`scenes`·`activities`)에서 얼굴 식별, 외모 기반 신원·나이·인종·종교·건강·성적 지향·정치 성향 등 민감 속성 추론 금지. 사진에 인쇄된 글은 `observedKeywords`에 원문 허용 (명함 이름 포함, DB 저장만, 로그 금지)
+  - 검증: 액션·이벤트 부분과 분리한 정규화. enum 밖 값 = 그 항목 버림, 길이 초과 = 절단 + `truncatedFields`, 블록 누락·타입 오류 = 블록 폐기. 검색 블록 문제만으로 분석을 실패시키지 않음
+  - `searchState` (서버 계산, 정규화 전 오류 유무 보존): `AVAILABLE` = 유효 항목이 남음 / `EMPTY` = 오류 없는 정상 빈 블록 / `DISCARDED` = 블록 누락·타입 오류 또는 오류 항목을 버려 유효 항목이 없음. 이 상태는 `search` 블록에만 해당하고, 사진의 검색 가능 여부는 `summary`·시간/장소 투영·단말 메타데이터를 따로 반영해 계산 (`EMPTY` ≠ 검색 불가)
+  - `INHERITED` 구성 사진 = 대표의 검색 블록을 이어받되 직접 읽은 사실로 표시하지 않고 사진별 메모·태그를 덮어쓰지 않음 (FR-S-03)
+- 서버가 붙임: `verification`, `validation`, `basis_change_seq`, manifest ID, `schemaVersion`, `outputLocale`, `searchState`
 - 배열 개수 초과 = 앞에서부터 자르고 `truncatedFields` 기록 (스키마 위반 아님). 길이 초과: 표시 텍스트 (`summary`·`title`·`label`·`text`·`name`)만 절단, 실행 값 (`raw`·`number`·날짜·시각·주소)은 자르지 않고 그 항목 `INVALID`. 모든 배열이 비어 있음 = 정상 (생성 `NO_RESULT`)
 - 전체 사용 불가 = 스키마 위반 (필수 키·타입) 또는 제시된 항목이 모두 `INVALID`
 
 ### 4.2 공개 API (5-3)
 | API | 종류 | 계약 |
 |---|---|---|
-| `GET /photos/{photoId}/analysis` | Query | 소유 검증 (아니면 404). `analysisStatus` (`NONE`/`IN_PROGRESS`/`DONE`/`FAILED`), `analyzedVersion`, `sourceChangeSeq`, `generation` (`action`·`event` 상태: 분석 없음 = `NONE`, 3.1 투영, 비로그인 이벤트 = `NOT_APPLICABLE`), `actions[]` (`actionId`, 종류, 표시값, `readiness`, 사유, `version`), `event` (`eventId`, `outcome`) 또는 null. `ETag`/304 |
+| `GET /photos/{photoId}/analysis` | Query | 소유 검증 (아니면 404). `analysisStatus` (`NONE`/`IN_PROGRESS`/`DONE`/`FAILED`), `analyzedVersion`, `sourceChangeSeq`, `generation` (`action`·`event` 상태: 분석 없음 = `NONE`, 3.1 투영, 비로그인 이벤트 = `NOT_APPLICABLE`), `actions[]` (`actionId`, 종류, 표시값, `readiness`, 사유, `version`), `event` (`eventId`, `outcome`) 또는 null. 검색 투영: `summary`, `search`, `searchState`, `schemaVersion`, `outputLocale`, `verification`, `analyzedVersion`, `resultVersion`, `basisChangeSeq`, `sourceChanged` (= `photo.source_change_seq > result.basis_change_seq`, 구성 사진은 자기 기준값), 묶음·출처 작업 식별자, `searchTimePlace` (`schedules`·`places`의 날짜·시각·시간대·장소 이름·주소 + 읽음/추정·검증 상태, 액션·이벤트 생성 성공과 무관하게 결과 저장만으로 제공, 촬영 시각과 구분). `ETag`/304 |
 | `POST /photo-actions/{actionId}/confirm` | Command (`Idempotency-Key`) | 본문 `version`, `sourceChangeSeq`, 선택 `value`·`countryCode`·`timezone` (있으면 `EDITED`, 없으면 `CONFIRMED`). 소유 검증 (아니면 404). 버전·seq가 오래되면 409 `VERSION_CONFLICT`. 200 = 갱신된 액션 |
 | `POST /event-decisions` (비로그인) | 상태를 바꾸지 않는 판단 Query (본문이 커서 POST, 멱등 키 불필요) | 본문 `photoId`, `resultVersion`, 요약 (`revision`, `kind` (`DATED`/`UNDATED`), `complete`, `range` 또는 `targetName`, `events[]` ≤ 50: `eventId`, 비교 값, 보호 상태, 요청 사진과의 관계 상태 (`NONE`/`INCLUDED`/`EXCLUDED`)). 서버가 요청 주체 소유 사진의 저장 결과를 찾아 `resultVersion` 일치 확인 (다르면 409). `complete=false`면 `LINKED`·`CREATED` 없음 (`AMBIGUOUS`). 응답 = `basisRevision`, `resultVersion`, 판정, `proposalId`, 적용 키 (`LINKED`·`CREATED`만) |
 
@@ -325,6 +343,7 @@
 | `action` | `photo_action`, `action_generation` | 리스너 2개, 확인 Command, 생성 투영 |
 | `event` | `event`, `event_photo`, `event_generation` | 리스너 2개, 비로그인 판단 Query |
 - FK는 모듈 안에서만. 모듈 밖 참조는 ID 값
+- 결과 저장·삭제 = 같은 TX에서 `owner_change_counter`로 `change_seq` 발급 + 출처·버전 기록 (단말 검색 색인 동기화의 기반). 결과 변경 피드·전체 동기화 API는 단계 9 공통 동기화 (`later-stage-policies.md` C10)
 - 유니크·부분 인덱스: `uk_analysis_job_photo_active` (`owner_id`, `photo_id`) `WHERE status NOT IN (FAILED, CANCELLED, INELIGIBLE)` (ADR-0024 #4-1, `SUCCEEDED` 포함), `uk_usage_reservation_photo` (`principal_id`, `photo_id`) `WHERE status <> RELEASED`, 작업당 현재 `ISSUED` 시도 1개, `external_call (job, run_token)`, `READY` (`next_attempt_at`, `base_priority`, `queued_at`), 주체별 `RUNNING`, 생성 행 PK (owner, photo), `ai_gate` PK (원인)
 - 보관:
   - `SUCCEEDED` 작업과 그 접수 = 그 작업을 가리키는 결과가 있는 동안 유지 (ADR-0024 #6-3·#4-2)
