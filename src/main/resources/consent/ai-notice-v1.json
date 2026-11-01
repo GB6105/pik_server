@@ -6,7 +6,7 @@
     {
       "data": "사진 축소본, 사진 속 텍스트",
       "recipient": "Anthropic (Claude)",
-      "purpose": "사진 분석, 액션·이벤트 만들기, 사진 속 텍스트 번역",
+      "purpose": "사진 분석, 액션·이벤트 만들기, 검색용 정보 만들기, 사진 속 텍스트 번역",
       "country": null,
       "retention": null
     },

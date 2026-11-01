@@ -3271,7 +3271,7 @@
         "id": "03h4468ge977zqezlqov97k8n",
         "tableId": "03h4468ge977zqezlqcrd27lf",
         "name": "request_key",
-        "comment": "같은 의도의 중복 과금 차단. Batches custom_id",
+        "comment": "서버 안 호출 의도 식별·Batches custom_id 결과 매칭. 제공자 쪽 중복 과금 차단·응답 재조회를 보장하지 않음 (ADR-0030)",
         "dataType": "text",
         "options": 12
       },

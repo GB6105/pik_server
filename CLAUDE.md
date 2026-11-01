@@ -20,8 +20,12 @@ Pik(사진 정리 앱) iOS·Android 클라이언트의 백엔드. Java 21 + Spri
 | 엔티티·aggregate·패키지 경계 설계, 이벤트·배치 추가 | `.claude/docs/domain-boundaries.md` |
 | 트랜잭션·재시도·멱등성·외부 연동 구현 | `.claude/docs/consistency-rules.md` |
 | API 응답·오류 코드 정의 | `.claude/docs/api-contract.md` |
+| 인수 조건·테스트 작성, SSOT와 다른 동작 확인 | `.claude/docs/ssot-deviations.md` |
 | 로그·삭제·탈퇴·보관 기간 처리 | `.claude/docs/data-retention.md` |
 | 미정 정책(P01~P12) 관련 값 사용 | `.claude/docs/open-policies.md` |
+| 단계 5 분석 (접수·업로드·실행·정산·액션·이벤트 생성) 구현 | `docs/design/stage5-analysis-pipeline.md` |
+| 배포 환경·actuator·기기 증명·DB 복구·키 운영 구현 | `docs/design/operations-infrastructure.md` |
+| 단계 6 이후 구독 처리량·분석 측정·검색 캐시·사진 수렴·보관·알림 구현 | `docs/design/later-stage-policies.md` |
 | 작업 종료·결정 발생 시 기록 | `docs/STATUS.md` 갱신, `docs/devlog/YYYY-MM-DD.md` 작성, 결정은 `docs/adr/` 추가 |
 | 브랜치 생성·커밋·병합·릴리스 | `.claude/docs/git-flow.md` |
 | 작업 시작·종료 보고 양식 | `.claude/docs/decision-reporting.md` |
