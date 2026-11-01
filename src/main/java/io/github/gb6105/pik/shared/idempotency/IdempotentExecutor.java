@@ -10,9 +10,11 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.json.ProblemDetailJacksonMixin;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.cfg.JsonNodeFeature;
@@ -37,6 +40,8 @@ public class IdempotentExecutor {
 	private final IdempotencyRecords records;
 
 	private final TransactionTemplate transactions;
+
+	private final TransactionTemplate readTransactions;
 
 	private final IdempotencyProperties properties;
 
@@ -57,6 +62,8 @@ public class IdempotentExecutor {
 			IdempotencyProperties properties, JsonMapper jsonMapper) {
 		this.records = records;
 		this.transactions = new TransactionTemplate(transactionManager);
+		this.readTransactions = new TransactionTemplate(transactionManager);
+		this.readTransactions.setReadOnly(true);
 		this.properties = properties;
 		this.jsonMapper = jsonMapper.rebuild().addMixIn(ProblemDetail.class, ProblemDetailJacksonMixin.class).build();
 	}
@@ -68,30 +75,77 @@ public class IdempotentExecutor {
 	 * @return the response to send, for the first request and for every retransmission
 	 */
 	public IdempotentResponse execute(IdempotentRequest request, Supplier<?> action) {
-		Assert.state(!TransactionSynchronizationManager.isActualTransactionActive(),
-				"IdempotentExecutor must start the transaction that stores the record");
+		return commit(request, () -> new Outcome(HttpStatus.OK, action.get()), ReplayProjection.IDENTITY);
+	}
+
+	/**
+	 * Finds the stored response before the request does any work, so that a retransmission is answered without
+	 * checks or external calls that depend on one-time evidence (ADR-0030 #4). Reads in a transaction of its own and
+	 * must be called outside a transaction.
+	 * @return the replayed response; empty when the key has no record yet
+	 * @throws PikException {@code INVALID_INPUT} / {@code IDEMPOTENCY_KEY_REUSED} when the record is of another
+	 * command
+	 */
+	public Optional<IdempotentResponse> lookup(IdempotentRequest request, ReplayProjection projection) {
+		assertOutsideTransaction();
+		String requestHash = hash(request);
+		return Optional.ofNullable(readTransactions.execute((status) -> {
+			StoredResponse stored = records.find(request.ownerId(), request.key().value());
+			return (stored != null) ? replay(stored, requestHash, projection) : null;
+		}));
+	}
+
+	/**
+	 * Answers a failure found before {@link #commit}, such as a check outside the business transaction. Under the key
+	 * lock a record stored since {@link #lookup}, for example by a retransmission, is replayed; otherwise a final 4xx
+	 * is stored and returned, and any other failure is rethrown without a record (B6-2.E6). Must be called outside a
+	 * transaction.
+	 */
+	public IdempotentResponse reject(IdempotentRequest request, PikException failure, ReplayProjection projection) {
+		assertOutsideTransaction();
+		return replayOrStore(request, hash(request), projection, () -> {
+			if (!isStored(failure)) {
+				throw failure;
+			}
+			return problem(request, failure);
+		});
+	}
+
+	/**
+	 * Runs {@code action} as {@link #execute} does, with the success status the action returns. Retransmissions of a
+	 * stored success are answered through {@code projection}. Must be called outside a transaction.
+	 * @return the response to send, for the first request and for every retransmission
+	 */
+	public IdempotentResponse commit(IdempotentRequest request, Supplier<Outcome> action,
+			ReplayProjection projection) {
+		assertOutsideTransaction();
 		String requestHash = hash(request);
 		try {
-			return replayOrStore(request, requestHash, () -> succeeded(action));
+			return replayOrStore(request, requestHash, projection, () -> succeeded(action));
 		}
 		catch (RejectedAction rejected) {
 			// A savepoint would keep rollback-only marks and the synchronizations (event listeners) the action
 			// registered, so the action's transaction is rolled back as a whole instead.
 			IdempotentResponse response = problem(request, rejected.exception);
-			return replayOrStore(request, requestHash, () -> response);
+			return replayOrStore(request, requestHash, projection, () -> response);
 		}
+	}
+
+	private static void assertOutsideTransaction() {
+		Assert.state(!TransactionSynchronizationManager.isActualTransactionActive(),
+				"IdempotentExecutor must start the transactions that read and store the record");
 	}
 
 	// Under the key lock: answers with the stored record, or stores the response from produce. The lookup sees
 	// records committed while waiting for the lock because connections run READ COMMITTED (application.yml).
 	// A retransmission that stores its record between a rejected action and its error response wins.
 	private IdempotentResponse replayOrStore(IdempotentRequest request, String requestHash,
-			Supplier<IdempotentResponse> produce) {
+			ReplayProjection projection, Supplier<IdempotentResponse> produce) {
 		return transactions.execute((status) -> {
 			records.lock(request.ownerId(), request.key().value(), properties.lockTimeout());
 			StoredResponse stored = records.find(request.ownerId(), request.key().value());
 			if (stored != null) {
-				return replay(stored, requestHash);
+				return replay(stored, requestHash, projection);
 			}
 			IdempotentResponse response = produce.get();
 			records.insert(request, requestHash, response, properties.retention());
@@ -99,17 +153,20 @@ public class IdempotentExecutor {
 		});
 	}
 
-	private IdempotentResponse replay(StoredResponse stored, String requestHash) {
+	private IdempotentResponse replay(StoredResponse stored, String requestHash, ReplayProjection projection) {
 		if (!stored.requestHash().equals(requestHash)) {
 			throw new PikException(ErrorCode.INVALID_INPUT, "IDEMPOTENCY_KEY_REUSED", false);
 		}
-		return new IdempotentResponse(stored.responseCode(), jsonMapper.readTree(stored.responseBody()));
+		int status = stored.responseCode();
+		JsonNode body = jsonMapper.readTree(stored.responseBody());
+		return new IdempotentResponse(status,
+				HttpStatusCode.valueOf(status).is2xxSuccessful() ? projection.project(status, body) : body);
 	}
 
-	private IdempotentResponse succeeded(Supplier<?> action) {
-		Object body;
+	private IdempotentResponse succeeded(Supplier<Outcome> action) {
+		Outcome outcome;
 		try {
-			body = action.get();
+			outcome = action.get();
 		}
 		catch (PikException ex) {
 			if (isStored(ex)) {
@@ -117,7 +174,7 @@ public class IdempotentExecutor {
 			}
 			throw ex;
 		}
-		return new IdempotentResponse(HttpStatus.OK.value(), jsonMapper.valueToTree(body));
+		return new IdempotentResponse(outcome.status().value(), jsonMapper.valueToTree(outcome.body()));
 	}
 
 	private IdempotentResponse problem(IdempotentRequest request, PikException ex) {
