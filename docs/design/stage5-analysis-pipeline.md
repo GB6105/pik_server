@@ -42,7 +42,7 @@
 
 ## 1. 단계 5-1 접수·묶음
 ### 1.1 요청 `POST /analysis-jobs`
-- 헤더: `Idempotency-Key`, `API-Version`, iOS = `Device-Check-Token` 매 접수 (필요할 때만 사용, 해시 제외)
+- 헤더: `Idempotency-Key`, `API-Version`, iOS = `Device-Check-Token` 매 접수 (필요할 때만 사용, 해시 제외). iOS 체험 시작 접수 = `App-Attest-Assertion`·`App-Attest-Challenge-Id`·`App-Attest-Nonce` (서버가 challenge를 줄 때만, 해시 제외, `operations-infrastructure.md` B6-2)
 - 본문: `trigger` (`NEW_PHOTOS`/`ORGANIZE`), `photos[]` 1~100
   - `photoId` UUID (= `photo.client_ref`, 내부 `photo.id`와 다름), `contentVersion` 1~128자 불투명 토큰
   - `takenAt` 선택, RFC 3339 오프셋 필수. 누락 = 단독, 형식 오류 = 400
@@ -54,14 +54,14 @@
 1. 인증 → 실행기 사전 조회 (해시 비교, 같으면 재생)
 2. 형식 검증 → 빠른 동의 확인 (TX 밖, 아니면 403 `AI_CONSENT_REQUIRED`)
 3. TX 밖 준비: `groupingEnabled`면 요청의 **모든** 유효 벡터 디코딩·정규화·쌍별 유사도. 기존 결과·진행 작업 조회, 예비 묶음
-4. iOS이고 체험 예약 예정 = `recordStart(예비 묶음 중 가장 작은 크기)` (TX 밖)
+4. iOS이고 체험 예약 예정 = assertion 검증·challenge 소비·counter CAS (증거 없으면 비저장 403 `ATTESTATION_REQUIRED` + challenge, B6-2) → `recordStart(예비 묶음 중 가장 작은 크기)` (TX 밖)
 5. 업무 TX:
    a. 동의 공유 잠금 → 기준 버전 확보 (유효 GRANTED가 아니면 403)
    b. 주체 접수 잠금 → `photo` 찾기·생성 (id 순). 관측 기록 (1.6)
    c. 재분류 (`EXISTING_RESULT`/`IN_PROGRESS`/후보, 입력 반복 실패 차단 2.7) → 준비한 유사도로 묶음 재계산
    d. 묶음을 `max(takenAt)` 내림차순 (동률 `photoId`)으로 `reserve`:
       - `Reserved` 진행 / `NotCovered` 다음 묶음 / `AlreadyReserved` 매핑 사진은 `IN_PROGRESS`, 나머지는 다시 묶음
-      - `StartRequired` = TX 롤백 → 막힌 묶음 크기로 `recordStart` → 1회 재시도 → 또 나오면 503 (저장 안 함)
+      - `StartRequired` = TX 롤백 → (iOS: 4단계 검증 증표 재사용, 증표가 없으면 비저장 challenge 응답) → 막힌 묶음 크기로 `recordStart` → 1회 재시도 → 또 나오면 503 (저장 안 함)
    e. 접수 (기준 동의 버전, 규칙 버전, trigger, 접수 시각, `first_result_at = null`), 항목 (사진마다 `photo_version`·`basis_change_seq` 스냅샷), 벡터, 묶음, 작업 (`AWAITING_UPLOAD`, `funding`, manifest ID 고정, `uploadPolicy`, `upload_deadline`, `processing_deadline`, `base_priority`, `queued_at`). JDBC batch
    f. 멱등 기록
 - 체험 기기 송신 한도가 소진된 기기 = 항목 `NOT_ACCEPTED`/`ANALYSIS_UNAVAILABLE` (빠른 거절, 최종 판정은 허가)
@@ -182,7 +182,7 @@
 - 일시 회로 (429·529·5xx 연속): 지수 백오프로 자동 반개방
 - 작업이 실패·취소·대상 아님으로 끝나면 체험 사진 예약은 전체 반환. 성공은 사진별 (결과 저장 = consume, 삭제 구성원 = release)
 
-### 2.6 불명 (별도 허용 결정)
+### 2.6 불명 (사용자 결정 2026-11-01, D-26: 사진마다 1회 자동 재호출)
 - 불명 확정 TX = 호출 `UNKNOWN` + 최대 비용 확정 + 위험 송신 소진 + 토큰 폐기
   - `photo_ai_budget.unknown_retry_used = false` → true로 바꾸고 `READY` (**중복 과금을 감수하는 자동 재호출 1회**, 사진 수명 1회, 새 작업에서도 셈)
   - 이미 true = `FAILED(UNKNOWN_OUTCOME)` + 반환
