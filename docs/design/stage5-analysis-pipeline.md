@@ -54,7 +54,7 @@
 1. 인증 → 실행기 사전 조회 (해시 비교, 같으면 재생)
 2. 형식 검증 → 빠른 동의 확인 (TX 밖, 아니면 403 `AI_CONSENT_REQUIRED`)
 3. TX 밖 준비: `groupingEnabled`면 요청의 **모든** 유효 벡터 디코딩·정규화·쌍별 유사도. 기존 결과·진행 작업 조회, 예비 묶음
-4. iOS이고 체험 예약 예정 = assertion 검증·challenge 소비·counter CAS (증거 없으면 비저장 403 `ATTESTATION_REQUIRED` + challenge, B6-2) → `recordStart(예비 묶음 중 가장 작은 크기)` (TX 밖)
+4. iOS이고 체험 예약 예정 (TX 밖): (a) 체험 **시작이 필요한** 경우만 (B6-2.E1: `device_trial_mark` NEW·D-23 확인 전·`STARTING` 복구) assertion 검증·challenge 소비·counter CAS (증거 없으면 비저장 403 `ATTESTATION_REQUIRED` + challenge, B6-2). 이미 시작된 기기 (`TRIAL_STARTED`)·Pro 접수는 assertion 헤더 없이 통과 → (b) `recordStart(예비 묶음 중 가장 작은 크기)`
 5. 업무 TX:
    a. 동의 공유 잠금 → 기준 버전 확보 (유효 GRANTED가 아니면 403)
    b. 주체 접수 잠금 → `photo` 찾기·생성 (id 순). 관측 기록 (1.6)
@@ -86,7 +86,7 @@
 - 본문: `jobId` (= 접수 ID), `result=ACCEPTED`, `retryable`, phase, 수량, `items[]` (`admissionResult`, `code`·`reason`·`retryable`·`retryAfter`, `analysisJobId`, 그룹·역할, 현재 실행 결과, `observedVersion`·`analyzedVersion`, `vectorIgnored`), 작업별 `uploadRequired`·`uploadPolicy` (`image/jpeg`, `maxBytes`, `maxLongEdgePx`). **URL 없음**
 - 오류 층 고정: `admissionResult` (접수 판정) / `code` (오류 분류, api-contract) / `reason` (세부 사유). 예: 이용 자격 부족 = `admissionResult=NOT_ACCEPTED`, `code=FORBIDDEN`, `reason=SUBSCRIPTION_REQUIRED`, `retryable` = 예약 대기면 true, 소진·체험 없음이면 false. 숫자 비노출
 - 재전송 = 최초 상태 코드 + 저장 판정 + 현재 실행 상태. 오류는 저장 응답 그대로
-- 사전 검사 오류 = 실행기 확정 오류 경로 (키 잠금 → 재확인 → 저장). 저장 = 403 동의, 400 토큰 누락, DeviceCheck 거절 403. 저장 안 함 = 503
+- 사전 검사 오류 = 실행기 확정 오류 경로 (키 잠금 → 재확인 → 저장). 저장 = 403 동의, 400 토큰 누락, DeviceCheck 거절 403. 저장 안 함 = 503, B6-2 증거 오류 (`ATTESTATION_REQUIRED`·409 counter 경합·`ATTESTATION_FAILED`, ADR-0026 저장 규칙의 명시적 예외). 인수 조건: 증거 오류 뒤 같은 키로 증거를 보완한 재전송은 저장된 403에 막히지 않음
 - 실행기 확장: 사전 조회·해시 비교, 확정 오류 저장, 202 저장, 성공 재생 투영
 
 ### 1.6 원본 버전 관측 (단순화)
@@ -330,7 +330,7 @@
 ### 4.2 공개 API (5-3)
 | API | 종류 | 계약 |
 |---|---|---|
-| `GET /photos/{photoId}/analysis` | Query | 소유 검증 (아니면 404). `analysisStatus` (`NONE`/`IN_PROGRESS`/`DONE`/`FAILED`), `analyzedVersion`, `sourceChangeSeq`, `generation` (`action`·`event` 상태: 분석 없음 = `NONE`, 3.1 투영, 비로그인 이벤트 = `NOT_APPLICABLE`), `actions[]` (`actionId`, 종류, 표시값, `readiness`, 사유, `version`), `event` (`eventId`, `outcome`) 또는 null. 검색 투영: `summary`, `search`, `searchState`, `schemaVersion`, `outputLocale`, `verification`, `analyzedVersion`, `resultVersion`, `basisChangeSeq`, `sourceChanged` (= `photo.source_change_seq > result.basis_change_seq`, 구성 사진은 자기 기준값), 묶음·출처 작업 식별자, `searchTimePlace` (`schedules`·`places`의 날짜·시각·시간대·장소 이름·주소 + 읽음/추정·검증 상태, 액션·이벤트 생성 성공과 무관하게 결과 저장만으로 제공, 촬영 시각과 구분). `ETag`/304 |
+| `GET /photos/{photoId}/analysis` | Query | 소유 검증 (아니면 404). `analysisStatus` (`NONE`/`IN_PROGRESS`/`DONE`/`FAILED`), `analyzedVersion`, `sourceChangeSeq`, `generation` (`action`·`event` 상태: 분석 없음 = `NONE`, 3.1 투영, 비로그인 이벤트 = `NOT_APPLICABLE`), `actions[]` (`actionId`, 종류, 표시값, `readiness`, 사유, `version`), `event` (`eventId`, `outcome`) 또는 null. 검색 투영: `summary`, `search`, `searchState`, `schemaVersion`, `outputLocale`, `verification`, `analyzedVersion`, `resultVersion`, `basisChangeSeq`, `sourceChanged` (= `photo.source_change_seq > result.basis_change_seq`, 구성 사진은 자기 기준값), 묶음·출처 작업 식별자, `searchTimePlace` (`schedules`·`places`의 날짜·시각·시간대·장소 이름·주소 + 읽음/추정·검증 상태, 액션·이벤트 생성 성공과 무관하게 결과 저장만으로 제공, 촬영 시각과 구분). 체험 대상 `trialEligible` (서버 계산, 정의·전이: `later-stage-policies.md` C9 P02, 자격 변경 = ETag 갱신). `ETag`/304 |
 | `POST /photo-actions/{actionId}/confirm` | Command (`Idempotency-Key`) | 본문 `version`, `sourceChangeSeq`, 선택 `value`·`countryCode`·`timezone` (있으면 `EDITED`, 없으면 `CONFIRMED`). 소유 검증 (아니면 404). 버전·seq가 오래되면 409 `VERSION_CONFLICT`. 200 = 갱신된 액션 |
 | `POST /event-decisions` (비로그인) | 상태를 바꾸지 않는 판단 Query (본문이 커서 POST, 멱등 키 불필요) | 본문 `photoId`, `resultVersion`, 요약 (`revision`, `kind` (`DATED`/`UNDATED`), `complete`, `range` 또는 `targetName`, `events[]` ≤ 50: `eventId`, 비교 값, 보호 상태, 요청 사진과의 관계 상태 (`NONE`/`INCLUDED`/`EXCLUDED`)). 서버가 요청 주체 소유 사진의 저장 결과를 찾아 `resultVersion` 일치 확인 (다르면 409). `complete=false`면 `LINKED`·`CREATED` 없음 (`AMBIGUOUS`). 응답 = `basisRevision`, `resultVersion`, 판정, `proposalId`, 적용 키 (`LINKED`·`CREATED`만) |
 

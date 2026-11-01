@@ -43,5 +43,5 @@
 | [0029](0029-trial-usage-implementation.md) | 무료 체험 이용량 구현 방식 (모듈·요청 기기 식별·재설치 판별·DeviceCheck 시작 기록·묶음 단위 예약) | 채택 (HMAC 활성 쓰기 버전·접수 토큰 헤더: ADR-0030, #18 DeviceCheck 장애 시 설치 진행: ADR-0032 #7) | 2026-10-29 |
 | [0030](0030-design-review-r1-corrections.md) | 설계 검토 1차 반영 (동의 철회 판정·멱등 입력 경계·키 교체 절차·SSOT 차이 목록) | 채택 (#1·#2·#3 단계 5 보완: ADR-0031, #5 키 2개 이상 활성 버전 필수: ADR-0032) | 2026-11-01 |
 | [0031](0031-stage5-analysis-pipeline.md) | 단계 5 분석 파이프라인 설계 (접수·실행·정산·생성) | 채택 | 2026-11-01 |
-| [0032](0032-operations-infrastructure-security.md) | 운영·인프라·보안 설계 (네트워크·RDS·SLO·actuator·CI·기기 증명·복구·키) | 채택 (출구·assertion·DeviceCheck 장애·보안 원장은 제안) | 2026-11-01 |
+| [0032](0032-operations-infrastructure-security.md) | 운영·인프라·보안 설계 (네트워크·RDS·SLO·actuator·CI·기기 증명·복구·키) | 채택 (출구·assertion·DeviceCheck 장애·보안 원장 = 사용자 결정 2026-11-01) | 2026-11-01 |
 | [0033](0033-later-stage-policy-proposals.md) | 이후 단계 정책 제안 (구독 처리량·분석 측정·OCR·검색·사진 수렴·보관·알림) | 일부 채택 (#1 RevenueCat, 사용자 결정 #2·#3 임시 기준·#4·#10·#11. #5~#9 제안) | 2026-11-01 |

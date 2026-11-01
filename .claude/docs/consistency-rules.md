@@ -37,7 +37,7 @@
 - 커맨드 record = 업무 변경이 의존하는 입력 전부 (경로 변수·쿼리 포함). 나중에 추가하는 필드는 null 허용 (해시에서 빠짐)
 - 재시도마다 새로 받는 일회성 증거 (DeviceCheck 토큰 등) = 본문·커맨드 제외, 헤더로 받음. 같은 키의 기록이 있으면 증거 검증·외부 호출·예약 없이 재생 (ADR-0030)
 - 커넥션 격리 수준 = READ COMMITTED 고정 (`application.yml`, 풀 설정 + 커넥션 초기화 SQL). 멱등 실행기가 의존
-- 저장 = 결과가 확정된 2xx·4xx → 같은 응답 반환. 4xx는 업무 변경 롤백 + 멱등 기록만 커밋. 401·`IDEMPOTENCY_IN_PROGRESS`·429 `RATE_LIMITED` (ADR-0024)·`Retry-After`가 있는 4xx·503·처리 중 예외는 저장 안 함. `IDEMPOTENCY_KEY_REUSED`는 원본 기록 유지
+- 저장 = 결과가 확정된 2xx·4xx → 같은 응답 반환. 4xx는 업무 변경 롤백 + 멱등 기록만 커밋. 401·`IDEMPOTENCY_IN_PROGRESS`·429 `RATE_LIMITED` (ADR-0024)·`Retry-After`가 있는 4xx·503·처리 중 예외·첫 체험 assertion 증거 오류 (`ATTESTATION_REQUIRED`·409 counter 경합·`ATTESTATION_FAILED`, ADR-0032 #6-2)는 저장 안 함. `IDEMPOTENCY_KEY_REUSED`는 원본 기록 유지
 - 200 응답 `items[]`의 재시도 가능한 실패 = 그 대상만 새 키로 재전송
 - 같은 키 = 같은 작업의 재전송만. 본문 변경·사용자 재시도 = 새 키 (저장된 4xx는 `retryable`이어도 같은 키면 같은 응답). 같은 키·다른 본문 = 400 `INVALID_INPUT`/`IDEMPOTENCY_KEY_REUSED`. 키 누락 = 400 `INVALID_INPUT`/`IDEMPOTENCY_KEY_REQUIRED`
 - 장기 작업 접수 재전송 = 저장 응답 대신 현재 작업 상태. 접수 응답·저장 본문에 업로드 URL 없음. URL = 시도 발급 API, 같은 키 재생 = 저장된 시도를 같은 만료로 재서명 (ADR-0031 #5)
