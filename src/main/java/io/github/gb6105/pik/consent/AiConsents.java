@@ -4,12 +4,14 @@ import io.github.gb6105.pik.consent.DecisionRequest.Choice;
 import io.github.gb6105.pik.shared.error.ErrorCode;
 import io.github.gb6105.pik.shared.error.PikException;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.exception.ConstraintViolationException.ConstraintKind;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -26,12 +28,26 @@ public class AiConsents {
 
 	private final ConsentProperties properties;
 
+	private final ConsentLocks locks;
+
 	/**
 	 * Whether photos and search terms of the principal may be sent to external services now.
 	 */
 	@Transactional(readOnly = true)
 	public boolean isGranted(UUID principalId) {
 		return state(principalId).granted();
+	}
+
+	/**
+	 * Holds the principal's consent against decisions until the caller's transaction ends, for work that is recorded
+	 * on the consent it found (ADR-0030 #1).
+	 * @return the version of the grant in force; empty when data may not be sent
+	 */
+	@Transactional(propagation = Propagation.MANDATORY)
+	public Optional<ConsentBasis> lockGrantedBasis(UUID principalId) {
+		locks.lockShared(principalId);
+		ConsentState state = state(principalId);
+		return state.granted() ? Optional.of(new ConsentBasis(state.version())) : Optional.empty();
 	}
 
 	@Transactional(readOnly = true)
@@ -48,6 +64,8 @@ public class AiConsents {
 	 */
 	@Transactional
 	ConsentState decide(UUID principalId, UUID deviceId, DecisionRequest request) {
+		// Waits for checks holding the consent (lockGrantedBasis), which then see the decision only after it commits.
+		locks.lockExclusive(principalId);
 		ConsentState current = state(principalId);
 		if (request.version() != current.version()) {
 			throw conflict("VERSION_CONFLICT");
