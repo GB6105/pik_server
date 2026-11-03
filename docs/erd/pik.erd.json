@@ -68,7 +68,11 @@
       "03htygdnvz0ch9exiton03zyv",
       "03hjfcwl6ebn9795fj0udpy4t",
       "03h0grztwslns5gtmr59vipg3",
-      "03hnm2l1rr3ilai38jdtwi3o3"
+      "03hnm2l1rr3ilai38jdtwi3o3",
+      "03h64la81jhdvsw3yyscpqbvp",
+      "03h64la81jhdvsw3yz1gsdcz2",
+      "03h64la81jhdvsw3yze3zlz02",
+      "03h64la81jhdvsw3yzv8vh54g"
     ],
     "relationshipIds": [
       "03h4468geephs5erx72aplmrf",
@@ -110,7 +114,14 @@
       "03h46ggksp11c0qxbs58bz9m4",
       "03hvo1pplbidr4yi8pghoep3x",
       "03hq8c76ybsua6rz0f848cb3t",
-      "03h2x3shbywzf8y96wnq7226m"
+      "03h2x3shbywzf8y96wnq7226m",
+      "03h64la81jhdvsw3z0z5xt6o4",
+      "03h64lgfhacz8m7i6uod5jgu2",
+      "03h64lgfhacz8m7i6uou5n4g5",
+      "03h64lgfhfv9s4hkyyznraj8y",
+      "03h64loaoux849eezbtq4xq0r",
+      "03h64loap0cj2pm8rqiksgl4q",
+      "03h64loap0cj2pm8rqjrjgd8n"
     ],
     "indexIds": [
       "03h4468geephs5erx8xgay3x3",
@@ -125,7 +136,6 @@
       "03h4468geka6y2ntyeootbswh",
       "03h4468geka6y2ntyetx16mmg",
       "03h4468geka6y2ntyf2g32t0c",
-      "03h4468geka6y2ntyffx02fed",
       "03h4468geka6y2ntyfo8fv95i",
       "03h4468geka6y2ntyfupt7ngc",
       "03h4468geka6y2ntyg0ypykbs",
@@ -155,7 +165,12 @@
       "03h8ubyxj764q6dplogninvz7",
       "03h96tf6luapcjplha68rmshw",
       "03hqu1oig4ysptwuplrg52lfk",
-      "03hkai8ej1t3rpyvajrxv4ghy"
+      "03hkai8ej1t3rpyvajrxv4ghy",
+      "03h64kzwn3c9g4nitks0pcste",
+      "03h64la81jhdvsw3z11shy8jn",
+      "03h64la81jhdvsw3z16f1eqfl",
+      "03h64la81jhdvsw3z1c6oo002",
+      "03h64phwvinhsenzz1j5h1ubb"
     ],
     "memoIds": [
       "03h446hedsmnrwp09ht0scm16",
@@ -174,6 +189,24 @@
   },
   "collections": {
     "tableEntities": {
+      "03h0grztwslns5gtmr59vipg3": {
+        "id": "03h0grztwslns5gtmr59vipg3",
+        "name": "api_rate_counter",
+        "comment": "API 호출 제한 카운터. 주체·API별 단기·일일 창을 UPSERT로 집계하고 한도 값은 설정값. 초과하면 429 RATE_LIMITED. 대상: 검색 해석 (FR-S-01), 단말이 요청하는 장소 조회 (비로그인 좌표·모호한 장소 후보, FR-N-02). 지난 창은 배치로 삭제 (ADR-0017, ADR-0024 #13-1·#13-2·#13-5)",
+        "columnIds": [
+          "03hjnn5tebz2bc1oabfslw5bm",
+          "03hpvewqdzbsok24k40ubj5fv",
+          "03h29c8t8j5ebbkpiog5w9gz0",
+          "03hnq9tkza2r2eyy4c25r4bpk",
+          "03h10enuw5jdoa1932on0zbcl",
+          "03h2glmiy3ibdam8vek2erhwv"
+        ],
+        "groupId": "03h4468geka6y2ntyi62mlft7",
+        "ui": {
+          "x": 2490,
+          "y": 2640
+        }
+      },
       "03h4468gdyciasr0yxo1ozvva": {
         "id": "03h4468gdyciasr0yxo1ozvva",
         "name": "principal",
@@ -465,13 +498,14 @@
       "03h4468ge3qzlp0kxmoxdncoo": {
         "id": "03h4468ge3qzlp0kxmoxdncoo",
         "name": "photo",
-        "comment": "사진별 Pik 정보 aggregate root. 원본은 서버에 없음. uk_photo_owner_cloud_ref는 WHERE cloud_ref IS NOT NULL 부분 유니크. ix_photo_original_deleted는 WHERE original_deleted_at IS NOT NULL 부분 인덱스이며 보관 기한 배치용이라 owner_id 선두 규칙의 예외 (FR-L-05, FR-A-02·04, FR-G-01, P11)",
+        "comment": "사진별 Pik 정보 aggregate root (photo 모듈). 원본은 서버에 없음. uk_photo_owner_cloud_ref는 WHERE cloud_ref IS NOT NULL 부분 유니크. ix_photo_original_deleted는 WHERE original_deleted_at IS NOT NULL 부분 인덱스이며 보관 기한 배치용이라 owner_id 선두 규칙의 예외 (FR-L-05, FR-A-02·04, FR-G-01, P11). V5 (단계 5-1)는 id·owner_id·client_ref·observed_version·source_change_seq·change_seq·시각·version과 uk_photo_owner_client_ref만 만든다. ix_photo_owner_change_seq·uk_photo_owner_cloud_ref (단계 9)와 ix_photo_original_deleted (P11)는 열을 소유하는 단계에서 추가 (FR-I-01)",
         "columnIds": [
           "03h4468ge3qzlp0kxmqyb4oka",
           "03h4468ge3qzlp0kxmssx2mpj",
           "03h4468ge3qzlp0kxmwdguygi",
           "03hk7a4hty35b1cuhqurqmvpq",
           "03h4468ge3qzlp0kxmxh4j4lx",
+          "03h64kvf6x3i173mscjx8ppfo",
           "03h4468ge3qzlp0kxmzwpk7vm",
           "03h4468ge3qzlp0kxn24nx8my",
           "03h4468ge3qzlp0kxn2vu1fqi",
@@ -577,24 +611,24 @@
       "03h4468ge977zqezlhqerbvdc": {
         "id": "03h4468ge977zqezlhqerbvdc",
         "name": "analysis_job",
-        "comment": "대표 사진 1장의 분석 호출 단위이자 작업 큐. 구성 사진은 photo_group_member를 통해 결과를 이어받음 (REUSED). ix_analysis_job_ready는 WHERE status = READY 부분 인덱스이며 owner_id 선두 규칙의 예외. SKIP LOCKED 폴링. 결과 저장 직전 사진 버전·작업 버전·principal 상태·동의 상태 대조. 사진 버전만 다르면 분석한 버전으로 결과를 저장하고 재분석하지 않음 (ADR-0024 #6-1). 동의 철회 시 전송 전 작업은 CANCELLED로 바꾸고 예약을 반환하며, 이미 보낸 요청의 응답은 저장하지 않음 (FR-I-01·03·06, FR-G-01, ADR-0021 #5, ADR-0022) uk_analysis_job_photo_active는 WHERE status NOT IN (FAILED, CANCELLED, INELIGIBLE) 부분 유니크 (사진당 살아 있는 작업 1개, 버전 무관). 결과가 있는 사진은 버전과 관계없이 재접수에서 빼고, FAILED·CANCELLED·INELIGIBLE만 남은 사진의 재접수는 새 행, 자동 재시도는 같은 행 (ADR-0024 #4-1·#6-1)",
+        "comment": "대표 사진 1장의 분석 호출 단위이자 작업 큐 (analysis 모듈). 접수 때 AWAITING_UPLOAD로 만들고 id는 예약 전에 미리 발급. 구성 사진은 group_id의 analysis_group (접수 항목 MEMBER)으로 결과를 이어받음. uk_analysis_job_photo_active는 WHERE status NOT IN (FAILED, CANCELLED, INELIGIBLE) 부분 유니크 (사진당 살아 있는 작업 1개, 버전 무관). 결과가 있는 사진은 버전과 관계없이 재접수에서 빼고, FAILED·CANCELLED·INELIGIBLE만 남은 사진의 재접수는 새 행, 자동 재시도는 같은 행 (ADR-0024 #4-1·#6-1). analysis_job을 삽입하는 모든 경로는 주체 접수 잠금을 먼저 잡음 (V5 잠금 순서 주석). uploadPolicy는 manifest_id의 analysis_call_manifest에서 조회. 결과 저장 직전 사진 버전·작업 버전·principal 상태·동의 상태 대조. 사진 버전만 다르면 분석한 버전으로 결과를 저장하고 재분석하지 않음 (ADR-0024 #6-1). 동의 철회 시 전송 전 작업은 CANCELLED로 바꾸고 예약을 반환하며, 이미 보낸 요청의 응답은 저장하지 않음. V5 (단계 5-1)는 접수 열만 만든다. 실행 열 (attempt_count·run_token·locked_until·next_attempt_at·issued_count·failure_code·종료 시각)과 claim용 ix_analysis_job_ready (새 정의, READY·RUNNING 인덱스, FOR UPDATE SKIP LOCKED)는 단계 5-2 (V6)에서 추가. cause·priority·quota_kind·template_version·model_id·upload_object_key·upload_expires_at과 상태 PENDING·NEEDS_CHECK는 설계 변경으로 삭제 (FR-I-01·03·06, FR-G-01, ADR-0021 #5, ADR-0022, ADR-0031 #10·#14·#18)",
         "columnIds": [
           "03h4468ge977zqezlht52p33h",
           "03h4468ge977zqezlhu49kpu8",
           "03huodysqek1979lnd2mmzh5q",
+          "03h64loaov0xg701kxeg46iht",
           "03h4468ge977zqezlhvteit1r",
           "03h4468ge977zqezlhyfww2ig",
-          "03h4468ge977zqezli03mytnc",
-          "03h4468ge977zqezli3hld6f0",
-          "03h4468ge977zqezli4c408gc",
+          "03h64loaov0xg701kxkv9ejr0",
+          "03h64loaov0xg701kxnwr5jzz",
           "03h4468ge977zqezli5q3gso3",
+          "03h64loap0cy71010fea5tgbf",
+          "03h64loap0cy71010fidwe5ho",
+          "03h64loap0cy71010fkt9tkn5",
+          "03h64loap0cy71010fpyvh8a6",
           "03h4468ge977zqezli7i5vn9y",
           "03h4468ge977zqezliak6wzv6",
           "03h4468ge977zqezlibne61mu",
-          "03h4468ge977zqezlielqzn7y",
-          "03h4468ge977zqezlih699cc5",
-          "03h4468ge977zqezlihboxcs2",
-          "03h4468ge977zqezlikssg79u",
           "03h4468ge977zqezlim9j9qu0",
           "03h4468ge977zqezliok7bthx",
           "03h4468ge977zqezliqy45m72",
@@ -638,7 +672,7 @@
       "03h4468ge977zqezljub686tt": {
         "id": "03h4468ge977zqezljub686tt",
         "name": "photo_group",
-        "comment": "유사 사진 묶음 (FR-I-02, FR-S-03)",
+        "comment": "유사 사진 묶음 (FR-I-02, FR-S-03). 사진의 영속 '현재 묶음'으로 단계 9에서 추가 (ADR-0034, D-28). 단계 9가 analysis_group + analysis_result로 초기 채움. 단계 5-1 (V5)은 접수 범위 analysis_group만 만든다",
         "columnIds": [
           "03h4468ge977zqezljvkdhdo8",
           "03h4468ge977zqezljwsruv8r",
@@ -660,7 +694,7 @@
       "03h4468ge977zqezlkfd4d0z8": {
         "id": "03h4468ge977zqezlkfd4d0z8",
         "name": "photo_group_member",
-        "comment": "한 사진은 한 묶음에만 속함. 구성이 바뀌면 photo_group.change_seq 증가 (FR-I-02)",
+        "comment": "한 사진은 한 묶음에만 속함. 구성이 바뀌면 photo_group.change_seq 증가 (FR-I-02). photo_group과 함께 단계 9에서 추가하는 영속 '현재 묶음' 구성 (ADR-0034, D-28). 단계 9가 analysis_group + analysis_result로 초기 채움",
         "columnIds": [
           "03h4468ge977zqezlkgfnt6js",
           "03h4468ge977zqezlkihkuzrg",
@@ -992,62 +1026,110 @@
           "y": 3284
         }
       },
-      "03htygdnvz0ch9exiton03zyv": {
-        "id": "03htygdnvz0ch9exiton03zyv",
-        "name": "analysis_request",
-        "comment": "분석 접수 1건. POST /analysis-jobs 응답의 작업 ID = id. 접수할 때 묶음을 정하고 대표 사진마다 analysis_job을 만듦. 대상 사진 수·대표 분석 수는 접수할 때 저장하고, 완료 수는 analysis_job을 집계해 계산 (FR-I-01·06, ADR-0021 접수 흐름, ADR-0022)",
+      "03h64la81jhdvsw3yyscpqbvp": {
+        "id": "03h64la81jhdvsw3yyscpqbvp",
+        "name": "analysis_grouping_rule",
+        "comment": "묶음 규칙 버전 (analysis 모듈, ADR-0034). id = 규칙 manifest (algorithmVersion·W·θ·최대 크기·정렬·동률·정규화·글자 조건) 정규 JSON의 SHA-256. 기동 때 설정에서 만들고 없으면 삽입, 행은 바꾸지 않음. analysis_request.grouping_rule_id가 참조하고, 단계 9 photo_group.rule_version도 같은 행을 참조 (FR-I-02, P05)",
         "columnIds": [
-          "03hsfso8pnhizeytjdlvm91xu",
-          "03hsjh2xbc8hvtixwo540yg5v",
-          "03hd1dh643i2d068gexy0eoqj",
-          "03h8p9vmgwg99ryan5298tb48",
-          "03hi1ctn7dmhzh59hxytngyex",
-          "03hhcpjbddajodzt2itduuszs",
-          "03hovv9ltyvkj632hjnteg3ud",
-          "03hnmshwqvclnnk39dgy9x6kg",
-          "03hgxqns6rei5a32r6t7t5rbg"
+          "03h64la81jhdvsw3yytqev2v6",
+          "03h64la81jhdvsw3yyw8adbvy",
+          "03h64la81jhdvsw3yyzjqf8g1"
         ],
         "groupId": "03h4468geka6y2ntyi62mlft7",
         "ui": {
-          "x": 1679,
-          "y": 2364
+          "x": 9066,
+          "y": 1846
+        }
+      },
+      "03h64la81jhdvsw3yz1gsdcz2": {
+        "id": "03h64la81jhdvsw3yz1gsdcz2",
+        "name": "analysis_call_manifest",
+        "comment": "호출 manifest (analysis 모듈, ADR-0031 #14). 접수 때 작업에 고정하는 불변 행. 단계 5-1은 최소판 (모델·업로드 정책). 프롬프트·스키마 버전·thinking·effort·가격·최대 비용은 단계 5-2가 내용을 넓히고 (내용 해시가 바뀌어 새 ID) 필요한 열을 V6에서 추가. 업로드 정책만 타입 열 (응답 uploadPolicy·5-2 발급 검사)",
+        "columnIds": [
+          "03h64la81jhdvsw3yz3dy6ozg",
+          "03h64la81jhdvsw3yz4yrwyax",
+          "03h64la81jhdvsw3yz5nbil9n",
+          "03h64la81jhdvsw3yz8djwuzy",
+          "03h64la81jhdvsw3yza5krwzy",
+          "03h64la81jhdvsw3yzdedsj22"
+        ],
+        "groupId": "03h4468geka6y2ntyi62mlft7",
+        "ui": {
+          "x": 9066,
+          "y": 1988
+        }
+      },
+      "03h64la81jhdvsw3yze3zlz02": {
+        "id": "03h64la81jhdvsw3yze3zlz02",
+        "name": "analysis_group",
+        "comment": "접수 범위 묶음 (analysis 모듈, 불변, ADR-0034). 묶음 판단을 거친 후보 사진마다 그룹 1개 (단독 = 크기 1), NOT_ACCEPTED 묶음도 기록 (FR-I-02 반환: 묶음 ID·대표·구성·총 수). 사진의 영속 현재 묶음 photo_group·photo_group_member는 단계 9에서 추가하고 이 표와 analysis_result로 초기 채움 (D-28)",
+        "columnIds": [
+          "03h64la81jhdvsw3yzgs6ih4o",
+          "03h64la81jhdvsw3yzijvq9uk",
+          "03h64la81jhdvsw3yzjvqpfjf",
+          "03h64la81jhdvsw3yzm67n5aq",
+          "03h64la81jhdvsw3yznxymjp7",
+          "03h64la81jhdvsw3yzph7m71q",
+          "03h64la81jhdvsw3yzslqiser",
+          "03h64la81jhdvsw3yztdqkqgn"
+        ],
+        "groupId": "03h4468geka6y2ntyi62mlft7",
+        "ui": {
+          "x": 3500,
+          "y": 2372
+        }
+      },
+      "03h64la81jhdvsw3yzv8vh54g": {
+        "id": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "analysis_request_item",
+        "comment": "접수의 사진별 판정 (analysis 모듈, 불변). 상태별 CHECK: ACCEPTED ⇒ analysis_job_id·group_id·group_role NOT NULL / IN_PROGRESS ⇒ analysis_job_id NOT NULL ∧ group_id NULL (다른 접수의 진행 작업을 참조할 수 있고 기존 그룹은 참조하지 않음) / NOT_ACCEPTED ⇒ code·reason NOT NULL / group_role NOT NULL ⇔ group_id NOT NULL / vector_id NOT NULL ⇒ vector_ignored_reason NULL. 참조할 기존 작업은 photo 뒤·예약 앞에 FOR SHARE로 먼저 잠금 (V5 잠금 순서 주석). reused_result_id·reused_photo_version과 EXISTING_RESULT ⇒ reused_result_id NOT NULL CHECK, retry_at은 단계 5-2에서 추가 (FR-I-01·02, ADR-0031 #4)",
+        "columnIds": [
+          "03h64la81jhdvsw3yzx9er1jo",
+          "03h64la81jhdvsw3yzzh1ab5f",
+          "03h64la81jhdvsw3z01z1qd87",
+          "03h64la81jhdvsw3z03yvgc06",
+          "03h64la81jhdvsw3z06gsz36u",
+          "03h64la81jhdvsw3z075g5556",
+          "03h64la81jhdvsw3z0ae6oeru",
+          "03h64la81jhdvsw3z0bfuyv3q",
+          "03h64la81jhdvsw3z0eora10s",
+          "03h64la81jhdvsw3z0gh0jt84",
+          "03h64la81jhdvsw3z0iuhh2jy",
+          "03h64la81jhdvsw3z0j8rdqoq",
+          "03h64la81jhdvsw3z0kwbnpzs",
+          "03h64la81jhdvsw3z0opxn459",
+          "03h64la81jhdvsw3z0qi4qm4a",
+          "03h64la81jhdvsw3z0qwb82w6",
+          "03h64la81jhdvsw3z0tmje3zn",
+          "03h64la81jhdvsw3z0wiwye1k",
+          "03h64la81jhdvsw3z0wqsjwbh"
+        ],
+        "groupId": "03h4468geka6y2ntyi62mlft7",
+        "ui": {
+          "x": 3500,
+          "y": 1846
         }
       },
       "03hjfcwl6ebn9795fj0udpy4t": {
         "id": "03hjfcwl6ebn9795fj0udpy4t",
         "name": "photo_vector",
-        "comment": "유사도 벡터. 사진이 있는 동안 보관하고 사진 삭제·탈퇴·비로그인 데이터 삭제 때 함께 지움. 같은 모델·버전끼리만 비교. 묶음 판단·서버 배치 묶음·대표 재선정에 사용 (FR-I-02, P05, ADR-0021 #2, ADR-0024 #5·#6-3)",
+        "comment": "사진의 불변 유사도 벡터 버전 (photo 모듈, ADR-0034). 같은 내용 (uk_photo_vector_content)은 기존 행 재사용, 다른 내용은 새 행, 행은 바꾸지 않음. 모든 삽입은 해당 photo 행 잠금 아래. 묶음 켜짐일 때 묶음 계산에 쓴 유효 벡터를 판정과 무관하게 저장 (ADR-0034)하고 접수 항목이 vector_id로 참조. 사진 버전은 접수 항목 스냅샷이 보유. 사진이 있는 동안 보관하고 사진 삭제·탈퇴·비로그인 데이터 삭제 때 함께 지움 (P11 단계). 어떤 항목도 참조하지 않는 행 정리는 보관 단계. 같은 모델·버전끼리만 비교. 묶음 판단·서버 배치 묶음·대표 재선정에 사용 (FR-I-02, P05, ADR-0021 #2, ADR-0024 #5·#6-3)",
         "columnIds": [
+          "03h64kzwmsfmys9ngrnckkdmw",
           "03hyh5ud70c8jcij43hkp2g37",
           "03hbekkthepotmhxv372qmdhs",
           "03hb5rb2z2ap9bdz7xxrl88hj",
           "03hl0jogeer0auxb3twgejymv",
-          "03hxjdkn2oky21mddaasxt3vy",
+          "03h64kzwmxxliw1zf1fv6lozw",
+          "03h64kzwmxxliw1zf1kpu76nd",
           "03h7tsgz0fwv1165aetyfeyaf",
+          "03h64kzwmxxliw1zf1n0ujdoo",
           "03hwfc20jtrcr4a5nv8hdaqeb"
         ],
         "groupId": "03h4468geka6y2ntyi62mlft7",
         "ui": {
           "x": 2490,
           "y": 2364
-        }
-      },
-      "03h0grztwslns5gtmr59vipg3": {
-        "id": "03h0grztwslns5gtmr59vipg3",
-        "name": "api_rate_counter",
-        "comment": "API 호출 제한 카운터. 주체·API별 단기·일일 창을 UPSERT로 집계하고 한도 값은 설정값. 초과하면 429 RATE_LIMITED. 대상: 검색 해석 (FR-S-01), 단말이 요청하는 장소 조회 (비로그인 좌표·모호한 장소 후보, FR-N-02). 지난 창은 배치로 삭제 (ADR-0017, ADR-0024 #13-1·#13-2·#13-5)",
-        "columnIds": [
-          "03hjnn5tebz2bc1oabfslw5bm",
-          "03hpvewqdzbsok24k40ubj5fv",
-          "03h29c8t8j5ebbkpiog5w9gz0",
-          "03hnq9tkza2r2eyy4c25r4bpk",
-          "03h10enuw5jdoa1932on0zbcl",
-          "03h2glmiy3ibdam8vek2erhwv"
-        ],
-        "groupId": "03h4468geka6y2ntyi62mlft7",
-        "ui": {
-          "x": 2490,
-          "y": 2640
         }
       },
       "03hnm2l1rr3ilai38jdtwi3o3": {
@@ -1072,9 +1154,79 @@
           "x": 3200,
           "y": 4792
         }
+      },
+      "03htygdnvz0ch9exiton03zyv": {
+        "id": "03htygdnvz0ch9exiton03zyv",
+        "name": "analysis_request",
+        "comment": "분석 접수 1건 (analysis 모듈). POST /analysis-jobs 응답의 작업 ID = id. 접수할 때 묶음 (analysis_group)을 정하고 대표 사진마다 analysis_job을 만듦. 사진별 판정은 analysis_request_item. 대상 사진 수·대표 분석 수는 접수할 때 저장하고, 진행 상태·완료 수는 저장하지 않고 analysis_job을 집계해 계산 (설계 1.5). 실행 근거 (동의 기준 버전·규칙 버전)를 접수 때 고정 (FR-I-01·06, ADR-0021 접수 흐름, ADR-0022, ADR-0031)",
+        "columnIds": [
+          "03hsfso8pnhizeytjdlvm91xu",
+          "03hsjh2xbc8hvtixwo540yg5v",
+          "03hd1dh643i2d068gexy0eoqj",
+          "03h64lgfh4y5l3nr2iovjfkmz",
+          "03h64lgfhad526s671i36tzlh",
+          "03h64lgfhad526s671lhwt0s2",
+          "03h64lgfhad526s671qbzadnp",
+          "03h64lgfhad526s671uoxo741",
+          "03h8p9vmgwg99ryan5298tb48",
+          "03hi1ctn7dmhzh59hxytngyex",
+          "03h64lgfhad526s671zes7mm1",
+          "03hovv9ltyvkj632hjnteg3ud",
+          "03hnmshwqvclnnk39dgy9x6kg",
+          "03hgxqns6rei5a32r6t7t5rbg"
+        ],
+        "groupId": "03h4468geka6y2ntyi62mlft7",
+        "ui": {
+          "x": 1679,
+          "y": 2364
+        }
       }
     },
     "tableColumnEntities": {
+      "03h10enuw5jdoa1932on0zbcl": {
+        "id": "03h10enuw5jdoa1932on0zbcl",
+        "tableId": "03h0grztwslns5gtmr59vipg3",
+        "name": "call_count",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h29c8t8j5ebbkpiog5w9gz0": {
+        "id": "03h29c8t8j5ebbkpiog5w9gz0",
+        "tableId": "03h0grztwslns5gtmr59vipg3",
+        "name": "window_kind",
+        "comment": "SHORT / DAILY",
+        "dataType": "text",
+        "options": 2
+      },
+      "03h2glmiy3ibdam8vek2erhwv": {
+        "id": "03h2glmiy3ibdam8vek2erhwv",
+        "tableId": "03h0grztwslns5gtmr59vipg3",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03hjnn5tebz2bc1oabfslw5bm": {
+        "id": "03hjnn5tebz2bc1oabfslw5bm",
+        "tableId": "03h0grztwslns5gtmr59vipg3",
+        "name": "principal_id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03hnq9tkza2r2eyy4c25r4bpk": {
+        "id": "03hnq9tkza2r2eyy4c25r4bpk",
+        "tableId": "03h0grztwslns5gtmr59vipg3",
+        "name": "window_start",
+        "dataType": "timestamptz",
+        "options": 2
+      },
+      "03hpvewqdzbsok24k40ubj5fv": {
+        "id": "03hpvewqdzbsok24k40ubj5fv",
+        "tableId": "03h0grztwslns5gtmr59vipg3",
+        "name": "api",
+        "comment": "SEARCH_INTERPRET / PLACE_LOOKUP",
+        "dataType": "text",
+        "options": 2
+      },
       "03h4468gdyciasr0yxpnzf0ip": {
         "id": "03h4468gdyciasr0yxpnzf0ip",
         "tableId": "03h4468gdyciasr0yxo1ozvva",
@@ -1207,6 +1359,14 @@
         "dataType": "timestamptz",
         "options": 8
       },
+      "03hgqcrj7wpm57tlbs61vebd4": {
+        "id": "03hgqcrj7wpm57tlbs61vebd4",
+        "tableId": "03h4468gdyciasr0yyd9e43nc",
+        "name": "revoked_at",
+        "comment": "설치 토큰 폐기 시각. 값이 있으면 access 교환 거부 (ADR-0023)",
+        "dataType": "timestamptz",
+        "options": 0
+      },
       "03h4468ge3qzlp0kxh760djmj": {
         "id": "03h4468ge3qzlp0kxh760djmj",
         "tableId": "03h4468ge3qzlp0kxh4t3yjt1",
@@ -1324,6 +1484,14 @@
         "dataType": "timestamptz",
         "options": 0
       },
+      "03heb5v0gfbwa7ndkm7115jih": {
+        "id": "03heb5v0gfbwa7ndkm7115jih",
+        "tableId": "03h4468ge3qzlp0kxhjodrf5h",
+        "name": "rotated_at",
+        "comment": "교체 시각. 이후 유예 시간 (설정값, 기본 30초) 안의 재사용은 family를 폐기하지 않음 (ADR-0023 #13)",
+        "dataType": "timestamptz",
+        "options": 0
+      },
       "03h4468ge3qzlp0kxi5u5onji": {
         "id": "03h4468ge3qzlp0kxi5u5onji",
         "tableId": "03h4468ge3qzlp0kxi4f3savi",
@@ -1397,6 +1565,14 @@
         "dataType": "uuid",
         "options": 0
       },
+      "03h2g80rhgcqcfsgwnhp5nzvv": {
+        "id": "03h2g80rhgcqcfsgwnhp5nzvv",
+        "tableId": "03h4468ge3qzlp0kxisn9vsc9",
+        "name": "version",
+        "comment": "주체·목적별 동의 순번 (데이터 버전). 결정마다 1 증가, 행은 수정하지 않음. 요청의 version과 다르면 409 (ADR-0028 #2)",
+        "dataType": "bigint",
+        "options": 8
+      },
       "03h4468ge3qzlp0kxiu7c2iu4": {
         "id": "03h4468ge3qzlp0kxiu7c2iu4",
         "tableId": "03h4468ge3qzlp0kxisn9vsc9",
@@ -1415,9 +1591,9 @@
         "id": "03h4468ge3qzlp0kxixwa7se7",
         "tableId": "03h4468ge3qzlp0kxisn9vsc9",
         "name": "device_id",
+        "comment": "결정을 보낸 기기 (access token did, ADR-0029). 단계 3 구현 기간에 만든 행은 비어 있음",
         "dataType": "uuid",
-        "options": 0,
-        "comment": "결정을 보낸 기기 (access token did, ADR-0029). 단계 3 구현 기간에 만든 행은 비어 있음"
+        "options": 0
       },
       "03h4468ge3qzlp0kxj08yn0md": {
         "id": "03h4468ge3qzlp0kxj08yn0md",
@@ -1440,6 +1616,14 @@
         "tableId": "03h4468ge3qzlp0kxisn9vsc9",
         "name": "decided_at",
         "dataType": "timestamptz",
+        "options": 8
+      },
+      "03hgckc5ub1epami4oyry0h9o": {
+        "id": "03hgckc5ub1epami4oyry0h9o",
+        "tableId": "03h4468ge3qzlp0kxisn9vsc9",
+        "name": "purpose",
+        "comment": "동의 목적. 첫 출시는 AI_ANALYSIS_AND_SEARCH 하나 (사진 분석 + 검색어 전송). 목적별 동의로 바꿀 때 값을 추가 (ADR-0021 #6)",
+        "dataType": "text",
         "options": 8
       },
       "03h4468ge3qzlp0kxj6ka7akv": {
@@ -1683,6 +1867,14 @@
         "dataType": "bigint",
         "options": 8
       },
+      "03h8jdato5y6ok94pelthc4e3": {
+        "id": "03h8jdato5y6ok94pelthc4e3",
+        "tableId": "03h4468ge3qzlp0kxk9r388k6",
+        "name": "guided_at",
+        "comment": "TRIAL만. 3회 클릭 구독 안내를 한 시각. 안내는 1회만. 새 계정으로 로그인하면 게스트 값을 이어받음 (ADR-0024 #7)",
+        "dataType": "timestamptz",
+        "options": 0
+      },
       "03h4468ge3qzlp0kxkuazvdjz": {
         "id": "03h4468ge3qzlp0kxkuazvdjz",
         "tableId": "03h4468ge3qzlp0kxktbzseyu",
@@ -1757,6 +1949,14 @@
         "dataType": "uuid",
         "options": 0
       },
+      "03hddvcejvp3kno6m1n9neihx": {
+        "id": "03hddvcejvp3kno6m1n9neihx",
+        "tableId": "03h4468ge3qzlp0kxktbzseyu",
+        "name": "photo_version",
+        "comment": "예약 당시 사진 버전 (기록용). 중복 차감 판단은 사진 단위 (ADR-0021 #3, ADR-0024 #4-1)",
+        "dataType": "text",
+        "options": 8
+      },
       "03h4468ge3qzlp0kxldxmq81d": {
         "id": "03h4468ge3qzlp0kxldxmq81d",
         "tableId": "03h4468ge3qzlp0kxlcf5ld1e",
@@ -1784,9 +1984,9 @@
         "id": "03h4468ge3qzlp0kxljsgwhi1",
         "tableId": "03h4468ge3qzlp0kxlcf5ld1e",
         "name": "target_id",
+        "comment": "API의 액션·이벤트 ID. 비로그인 이벤트는 단말 이벤트 ID",
         "dataType": "uuid",
-        "options": 8,
-        "comment": "API의 액션·이벤트 ID. 비로그인 이벤트는 단말 이벤트 ID"
+        "options": 8
       },
       "03h4468ge3qzlp0kxlllqha3c": {
         "id": "03h4468ge3qzlp0kxlllqha3c",
@@ -1945,8 +2145,8 @@
       "03h4468ge3qzlp0kxmxh4j4lx": {
         "id": "03h4468ge3qzlp0kxmxh4j4lx",
         "tableId": "03h4468ge3qzlp0kxmoxdncoo",
-        "name": "content_version",
-        "comment": "OS 원본 버전. 늦은 분석 결과 대조 기준",
+        "name": "observed_version",
+        "comment": "마지막 관측 contentVersion (OS 원본 버전, 1~128자). 늦은 분석 결과 대조 기준. 이전 이름 content_version (V5)",
         "dataType": "text",
         "options": 8
       },
@@ -1954,7 +2154,7 @@
         "id": "03h4468ge3qzlp0kxmzwpk7vm",
         "tableId": "03h4468ge3qzlp0kxmoxdncoo",
         "name": "os_taken_at",
-        "comment": "OS 촬영 시각",
+        "comment": "OS 촬영 시각. V5에 없음, 단계 9에서 추가 (ADR-0034: 단계 5-1은 접수 시점 값을 analysis_request_item.taken_at에 보관)",
         "dataType": "timestamptz",
         "options": 0
       },
@@ -1962,7 +2162,7 @@
         "id": "03h4468ge3qzlp0kxn24nx8my",
         "tableId": "03h4468ge3qzlp0kxmoxdncoo",
         "name": "os_modified_at",
-        "comment": "OS 수정 시각",
+        "comment": "OS 수정 시각. V5에 없음, 단계 9 (메타데이터 동기화 FR-L-05)에서 추가",
         "dataType": "timestamptz",
         "options": 0
       },
@@ -1970,7 +2170,7 @@
         "id": "03h4468ge3qzlp0kxn2vu1fqi",
         "tableId": "03h4468ge3qzlp0kxmoxdncoo",
         "name": "availability",
-        "comment": "AVAILABLE / ORIGINAL_DELETED. 연결된 기기 하나에서 삭제가 확인되면 ORIGINAL_DELETED (iCloud 사진은 삭제가 모든 기기에 전파되고, 그 밖의 사진은 연결 기기가 1대뿐). 권한 축소·다운로드 불가는 photo_device_link (P11, ADR-0022). original_deleted_at은 ORIGINAL_DELETED일 때만 값이 있음",
+        "comment": "AVAILABLE / ORIGINAL_DELETED. 연결된 기기 하나에서 삭제가 확인되면 ORIGINAL_DELETED (iCloud 사진은 삭제가 모든 기기에 전파되고, 그 밖의 사진은 연결 기기가 1대뿐). 권한 축소·다운로드 불가는 photo_device_link (P11, ADR-0022). original_deleted_at은 ORIGINAL_DELETED일 때만 값이 있음. V5에 없음, P11 (원본 없음 보관 기한) 구현 단계에서 추가",
         "dataType": "text",
         "options": 8
       },
@@ -1978,7 +2178,7 @@
         "id": "03h4468ge3qzlp0kxn4s55ogh",
         "tableId": "03h4468ge3qzlp0kxmoxdncoo",
         "name": "memo",
-        "comment": "길이 제한 P10",
+        "comment": "길이 제한 P10. V5에 없음, 단계 9 (메타데이터 동기화 FR-L-05, P10)에서 추가",
         "dataType": "text",
         "options": 0
       },
@@ -1986,6 +2186,7 @@
         "id": "03h4468ge3qzlp0kxn6wiid7g",
         "tableId": "03h4468ge3qzlp0kxmoxdncoo",
         "name": "change_seq",
+        "comment": "동기화 변경 번호 (owner_change_counter, >= 0). 생성·source_change_seq 증가 때 업무 TX 마지막에 발급 (ADR-0034). 0 = 커밋 전 임시값",
         "dataType": "bigint",
         "options": 8
       },
@@ -2007,17 +2208,49 @@
         "id": "03h4468ge3qzlp0kxncxdrysk",
         "tableId": "03h4468ge3qzlp0kxmoxdncoo",
         "name": "version",
-        "comment": "Pik 정보 버전 = 클라이언트가 보내는 데이터 버전",
+        "comment": "Pik 정보 버전 = 클라이언트가 보내는 데이터 버전. 원본 버전 관측은 올리지 않음 (ADR-0034)",
         "dataType": "bigint",
+        "default": "0",
         "options": 8
       },
       "03h4468ge3qzlp0kxnffh0xkr": {
         "id": "03h4468ge3qzlp0kxnffh0xkr",
         "tableId": "03h4468ge3qzlp0kxmoxdncoo",
         "name": "deleted_at",
-        "comment": "tombstone",
+        "comment": "tombstone. V5에 없음, 단계 9 (메타데이터 동기화 FR-L-05)에서 추가",
         "dataType": "timestamptz",
         "options": 0
+      },
+      "03h59fjnemh81jnvofj01265f": {
+        "id": "03h59fjnemh81jnvofj01265f",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "name": "original_deleted_at",
+        "comment": "원본 삭제 확인 시각. '원본 없음' 보관 기한(P11 설정값)의 기준이며, OS '최근 삭제'에서 복구되면 NULL (ADR-0021 #7). V5에 없음, P11 구현 단계에서 추가",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h64kvf6x3i173mscjx8ppfo": {
+        "id": "03h64kvf6x3i173mscjx8ppfo",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "name": "source_change_seq",
+        "comment": "원본 버전 관측 순번 (>= 0). 새 행 0, 관측값이 직전과 다를 때만 +1하고 PhotoSourceChanged 발행 (ADR-0031 #4). 접수 항목 basis_change_seq의 기준",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03hk7a4hty35b1cuhqurqmvpq": {
+        "id": "03hk7a4hty35b1cuhqurqmvpq",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "name": "cloud_ref",
+        "comment": "iOS PHCloudIdentifier. iCloud 동기화 사진만 기기 간 같은 사진으로 연결하고, 그 밖의 사진은 기기마다 별도 photo (ADR-0022). V5에 없음, 단계 9 (FR-A-04, D-20)에서 추가",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h2lgokq5x9ivph4qsew8ev3": {
+        "id": "03h2lgokq5x9ivph4qsew8ev3",
+        "tableId": "03h4468ge3qzlp0kxngunyby9",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
       },
       "03h4468ge3qzlp0kxniv2cq4u": {
         "id": "03h4468ge3qzlp0kxniv2cq4u",
@@ -2062,6 +2295,36 @@
         "tableId": "03h4468ge3qzlp0kxngunyby9",
         "name": "linked_at",
         "dataType": "timestamptz",
+        "options": 0
+      },
+      "03hclepjr6fpk93lwb9fud6tc": {
+        "id": "03hclepjr6fpk93lwb9fud6tc",
+        "tableId": "03h4468ge3qzlp0kxngunyby9",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03hcnioc3ofyxvi079nyx3emn": {
+        "id": "03hcnioc3ofyxvi079nyx3emn",
+        "tableId": "03h4468ge3qzlp0kxngunyby9",
+        "name": "checked_at",
+        "comment": "이 기기에서 OS 상태를 마지막으로 확인한 시각",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03hmnwffd9giau7z5kddcv7j6": {
+        "id": "03hmnwffd9giau7z5kddcv7j6",
+        "tableId": "03h4468ge3qzlp0kxngunyby9",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03hotyms4fnfs7ta48p337nby": {
+        "id": "03hotyms4fnfs7ta48p337nby",
+        "tableId": "03h4468ge3qzlp0kxngunyby9",
+        "name": "inaccessible_reason",
+        "comment": "PERMISSION / DOWNLOAD. INACCESSIBLE일 때만",
+        "dataType": "text",
         "options": 0
       },
       "03h4468ge3qzlp0kxnxd7d3zn": {
@@ -2268,7 +2531,7 @@
         "id": "03h4468ge977zqezlhvteit1r",
         "tableId": "03h4468ge977zqezlhqerbvdc",
         "name": "photo_id",
-        "comment": "photo.id, 모듈 간 ID 참조",
+        "comment": "대표 photo.id, 모듈 간 ID 참조",
         "dataType": "uuid",
         "options": 8
       },
@@ -2276,31 +2539,7 @@
         "id": "03h4468ge977zqezlhyfww2ig",
         "tableId": "03h4468ge977zqezlhqerbvdc",
         "name": "photo_version",
-        "comment": "접수 시 photo.content_version. 결과는 이 버전 기준",
-        "dataType": "text",
-        "options": 8
-      },
-      "03h4468ge977zqezli03mytnc": {
-        "id": "03h4468ge977zqezli03mytnc",
-        "tableId": "03h4468ge977zqezlhqerbvdc",
-        "name": "cause",
-        "comment": "NEW / RETRY / PRO_BACKLOG. 수정된 사진은 재분석하지 않으므로 MODIFIED 없음 (ADR-0024 #6-1)",
-        "dataType": "text",
-        "options": 8
-      },
-      "03h4468ge977zqezli3hld6f0": {
-        "id": "03h4468ge977zqezli3hld6f0",
-        "tableId": "03h4468ge977zqezlhqerbvdc",
-        "name": "priority",
-        "comment": "최근 추가 > 정리 중 > Pro 처리량",
-        "dataType": "int",
-        "options": 8
-      },
-      "03h4468ge977zqezli4c408gc": {
-        "id": "03h4468ge977zqezli4c408gc",
-        "tableId": "03h4468ge977zqezlhqerbvdc",
-        "name": "quota_kind",
-        "comment": "TRIAL / PRO_INITIAL / PRO_DAILY",
+        "comment": "접수 시 관측한 대표의 photo.observed_version. 결과는 이 버전 기준",
         "dataType": "text",
         "options": 8
       },
@@ -2308,7 +2547,7 @@
         "id": "03h4468ge977zqezli5q3gso3",
         "tableId": "03h4468ge977zqezlhqerbvdc",
         "name": "status",
-        "comment": "PENDING / AWAITING_UPLOAD / READY / RUNNING / NEEDS_CHECK / SUCCEEDED / FAILED / CANCELLED / INELIGIBLE",
+        "comment": "AWAITING_UPLOAD / READY / RUNNING / SUCCEEDED / FAILED / CANCELLED / INELIGIBLE. 접수는 AWAITING_UPLOAD로 생성. V5 CHECK에 단계 5-2 상태까지 미리 포함",
         "dataType": "text",
         "options": 8
       },
@@ -2316,6 +2555,7 @@
         "id": "03h4468ge977zqezli7i5vn9y",
         "tableId": "03h4468ge977zqezlhqerbvdc",
         "name": "attempt_count",
+        "comment": "V5에 없음, 단계 5-2 (V6)에서 기본값 열로 추가",
         "dataType": "int",
         "options": 8
       },
@@ -2323,6 +2563,7 @@
         "id": "03h4468ge977zqezliak6wzv6",
         "tableId": "03h4468ge977zqezlhqerbvdc",
         "name": "next_attempt_at",
+        "comment": "V5에 없음, 단계 5-2 (V6)에서 추가",
         "dataType": "timestamptz",
         "options": 0
       },
@@ -2330,43 +2571,15 @@
         "id": "03h4468ge977zqezlibne61mu",
         "tableId": "03h4468ge977zqezlhqerbvdc",
         "name": "locked_until",
+        "comment": "V5에 없음, 단계 5-2 (V6)에서 추가",
         "dataType": "timestamptz",
-        "options": 0
-      },
-      "03h4468ge977zqezlielqzn7y": {
-        "id": "03h4468ge977zqezlielqzn7y",
-        "tableId": "03h4468ge977zqezlhqerbvdc",
-        "name": "upload_object_key",
-        "comment": "S3 임시 객체 키",
-        "dataType": "text",
-        "options": 0
-      },
-      "03h4468ge977zqezlih699cc5": {
-        "id": "03h4468ge977zqezlih699cc5",
-        "tableId": "03h4468ge977zqezlhqerbvdc",
-        "name": "upload_expires_at",
-        "dataType": "timestamptz",
-        "options": 0
-      },
-      "03h4468ge977zqezlihboxcs2": {
-        "id": "03h4468ge977zqezlihboxcs2",
-        "tableId": "03h4468ge977zqezlhqerbvdc",
-        "name": "template_version",
-        "dataType": "text",
-        "options": 0
-      },
-      "03h4468ge977zqezlikssg79u": {
-        "id": "03h4468ge977zqezlikssg79u",
-        "tableId": "03h4468ge977zqezlhqerbvdc",
-        "name": "model_id",
-        "comment": "설정값. 시작은 Haiku 5.5",
-        "dataType": "text",
         "options": 0
       },
       "03h4468ge977zqezlim9j9qu0": {
         "id": "03h4468ge977zqezlim9j9qu0",
         "tableId": "03h4468ge977zqezlhqerbvdc",
         "name": "failure_code",
+        "comment": "V5에 없음, 단계 5-2 (V6)에서 추가",
         "dataType": "text",
         "options": 0
       },
@@ -2391,6 +2604,70 @@
         "dataType": "bigint",
         "options": 8
       },
+      "03h64loaov0xg701kxeg46iht": {
+        "id": "03h64loaov0xg701kxeg46iht",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "group_id",
+        "comment": "analysis_group.id. 그룹당 작업 1개 (uk_analysis_job_group)",
+        "dataType": "uuid",
+        "options": 12
+      },
+      "03h64loaov0xg701kxkv9ejr0": {
+        "id": "03h64loaov0xg701kxkv9ejr0",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "funding",
+        "comment": "TRIAL / PRO. 단계 5-1 접수는 모두 TRIAL, PRO는 단계 8",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h64loaov0xg701kxnwr5jzz": {
+        "id": "03h64loaov0xg701kxnwr5jzz",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "manifest_id",
+        "comment": "analysis_call_manifest.id. 접수 때 고정, uploadPolicy의 근원 (ADR-0031 #14)",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h64loap0cy71010fea5tgbf": {
+        "id": "03h64loap0cy71010fea5tgbf",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "base_priority",
+        "comment": "0~2. NEW_PHOTOS 0 / ORGANIZE 1 / PRO_BACKLOG 2 (ADR-0031 #10)",
+        "dataType": "smallint",
+        "options": 8
+      },
+      "03h64loap0cy71010fidwe5ho": {
+        "id": "03h64loap0cy71010fidwe5ho",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "queued_at",
+        "comment": "대기열 진입 시각. 우선순위 대기 항·동률 기준 (ADR-0031 #10)",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h64loap0cy71010fkt9tkn5": {
+        "id": "03h64loap0cy71010fkt9tkn5",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "upload_deadline",
+        "comment": "업로드 기한 = 접수 + pik.analysis.intake.upload-deadline (설정값)",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h64loap0cy71010fpyvh8a6": {
+        "id": "03h64loap0cy71010fpyvh8a6",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "processing_deadline",
+        "comment": "처리 기한 = 접수 + pik.analysis.intake.processing-deadline (설정값)",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03huodysqek1979lnd2mmzh5q": {
+        "id": "03huodysqek1979lnd2mmzh5q",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "request_id",
+        "comment": "analysis_request.id. NOT NULL (서버 배치도 접수 행에 귀속, ADR-0024 #4-2)",
+        "dataType": "uuid",
+        "options": 8
+      },
       "03h4468ge977zqezliv83sei0": {
         "id": "03h4468ge977zqezliv83sei0",
         "tableId": "03h4468ge977zqezliupy3y6i",
@@ -2410,9 +2687,9 @@
         "id": "03h4468ge977zqezliz6izgwq",
         "tableId": "03h4468ge977zqezliupy3y6i",
         "name": "job_id",
+        "comment": "결과를 만든 analysis_job.id. INHERITED면 원래 작업. 결과가 있는 동안 이 작업 행은 지우지 않음 (ADR-0024 #6-3)",
         "dataType": "uuid",
-        "options": 8,
-        "comment": "결과를 만든 analysis_job.id. INHERITED면 원래 작업. 결과가 있는 동안 이 작업 행은 지우지 않음 (ADR-0024 #6-3)"
+        "options": 8
       },
       "03h4468ge977zqezlj17dmzyt": {
         "id": "03h4468ge977zqezlj17dmzyt",
@@ -3011,6 +3288,46 @@
         "dataType": "timestamptz",
         "options": 0
       },
+      "03h4l4okluyftul2zes2ua82i": {
+        "id": "03h4l4okluyftul2zes2ua82i",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "place_lng",
+        "comment": "Google 좌표. place_coord_expires_at까지만 보관",
+        "dataType": "double precision",
+        "options": 0
+      },
+      "03hc3v6x6j7cqxiyz8y4eqbtd": {
+        "id": "03hc3v6x6j7cqxiyz8y4eqbtd",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "place_coord_expires_at",
+        "comment": "좌표 보관 기한 (조회 후 30일 이내). 장소 알림 예약이 있는 ACTIVE 이벤트만 기한 전에 place_ref로 다시 조회해 갱신. 그 밖의 이벤트, 갱신 실패, 동의 철회 때는 기한에 좌표를 지움",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03hqi9w4tfvaeep2p89rbfy4p": {
+        "id": "03hqi9w4tfvaeep2p89rbfy4p",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "place_ref",
+        "comment": "Google Places place_id. 계속 저장 가능 (ADR-0024 #13-5)",
+        "dataType": "text",
+        "options": 0
+      },
+      "03htk12gwad4xlomhwvpmm2sm": {
+        "id": "03htk12gwad4xlomhwvpmm2sm",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "place_status",
+        "comment": "NULL(장소 없음) / RESOLVED / AMBIGUOUS / NOT_FOUND. AMBIGUOUS면 단말이 후보를 실시간 조회해 사용자가 고름 (후보는 저장 안 함, ADR-0024 #13-5)",
+        "dataType": "text",
+        "options": 0
+      },
+      "03hzy67cy23e1kaqqlewwyymh": {
+        "id": "03hzy67cy23e1kaqqlewwyymh",
+        "tableId": "03h4468ge977zqezln1403jfq",
+        "name": "place_lat",
+        "comment": "Google 좌표. place_coord_expires_at까지만 보관",
+        "dataType": "double precision",
+        "options": 0
+      },
       "03h4468ge977zqezlodcjh963": {
         "id": "03h4468ge977zqezlodcjh963",
         "tableId": "03h4468ge977zqezloc297i0d",
@@ -3070,6 +3387,27 @@
         "name": "excluded_at",
         "dataType": "timestamptz",
         "options": 0
+      },
+      "03h737mkglfiuzs4z8kzxwbqu": {
+        "id": "03h737mkglfiuzs4z8kzxwbqu",
+        "tableId": "03h4468ge977zqezloc297i0d",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03hn2u4id7ckzia4lylbjq10z": {
+        "id": "03hn2u4id7ckzia4lylbjq10z",
+        "tableId": "03h4468ge977zqezloc297i0d",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03hu4gaqlst35v9y0wj7uoodj": {
+        "id": "03hu4gaqlst35v9y0wj7uoodj",
+        "tableId": "03h4468ge977zqezloc297i0d",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
       },
       "03h4468ge977zqezlovyajhgw": {
         "id": "03h4468ge977zqezlovyajhgw",
@@ -3212,9 +3550,9 @@
         "id": "03h4468ge977zqezlq5y13f3p",
         "tableId": "03h4468ge977zqezlpt9mf2c0",
         "name": "response_body",
+        "comment": "저장한 응답 본문. 업로드 URL (S3 presigned)은 넣지 않음",
         "dataType": "jsonb",
-        "options": 8,
-        "comment": "저장한 응답 본문. 업로드 URL (S3 presigned)은 넣지 않음"
+        "options": 8
       },
       "03h4468ge977zqezlq9ewtbfi": {
         "id": "03h4468ge977zqezlq9ewtbfi",
@@ -3437,17 +3775,17 @@
         "id": "03h4468geephs5erx6rn1axf6",
         "tableId": "03h4468geephs5erx6nws4bod",
         "name": "lock_until",
+        "comment": "UTC 시각 (ShedLock usingDbTime이 timezone('utc', CURRENT_TIMESTAMP)로 기록, ADR-0026)",
         "dataType": "timestamp",
-        "options": 8,
-        "comment": "UTC 시각 (ShedLock usingDbTime이 timezone('utc', CURRENT_TIMESTAMP)로 기록, ADR-0026)"
+        "options": 8
       },
       "03h4468geephs5erx6uw2x6ad": {
         "id": "03h4468geephs5erx6uw2x6ad",
         "tableId": "03h4468geephs5erx6nws4bod",
         "name": "locked_at",
+        "comment": "UTC 시각 (ShedLock usingDbTime이 timezone('utc', CURRENT_TIMESTAMP)로 기록, ADR-0026)",
         "dataType": "timestamp",
-        "options": 8,
-        "comment": "UTC 시각 (ShedLock usingDbTime이 timezone('utc', CURRENT_TIMESTAMP)로 기록, ADR-0026)"
+        "options": 8
       },
       "03h4468geephs5erx6w8l5evo": {
         "id": "03h4468geephs5erx6w8l5evo",
@@ -3612,9 +3950,9 @@
         "id": "03h46ggks8ij6t1ezljcwosbp",
         "tableId": "03h46ggkrxnffv4hjizyj1crb",
         "name": "exhausted_at",
+        "comment": "마지막 사진을 완료한 시각, 또는 같은 기기의 다른 설치가 체험을 시작한 것을 확인한 시각 (설치 등록 때나 이 설치의 시작 기록 직전, 체험 없음)",
         "dataType": "timestamptz",
-        "options": 0,
-        "comment": "마지막 사진을 완료한 시각, 또는 같은 기기의 다른 설치가 체험을 시작한 것을 확인한 시각 (설치 등록 때나 이 설치의 시작 기록 직전, 체험 없음)"
+        "options": 0
       },
       "03h46ggks8ij6t1ezlncrcoju": {
         "id": "03h46ggks8ij6t1ezlncrcoju",
@@ -3635,6 +3973,14 @@
         "tableId": "03h46ggkrxnffv4hjizyj1crb",
         "name": "version",
         "dataType": "bigint",
+        "options": 8
+      },
+      "03hf02v88ewn127imw1oboyby": {
+        "id": "03hf02v88ewn127imw1oboyby",
+        "tableId": "03h46ggkrxnffv4hjizyj1crb",
+        "name": "limit_count",
+        "comment": "생성 시 설정값(P01)을 기록 (ADR-0029 #15)",
+        "dataType": "int",
         "options": 8
       },
       "03h46ggksjkasekzaug8jqveg": {
@@ -3668,210 +4014,342 @@
         "dataType": "timestamptz",
         "options": 8
       },
-      "03hgckc5ub1epami4oyry0h9o": {
-        "id": "03hgckc5ub1epami4oyry0h9o",
-        "tableId": "03h4468ge3qzlp0kxisn9vsc9",
-        "name": "purpose",
-        "dataType": "text",
-        "options": 8,
-        "comment": "동의 목적. 첫 출시는 AI_ANALYSIS_AND_SEARCH 하나 (사진 분석 + 검색어 전송). 목적별 동의로 바꿀 때 값을 추가 (ADR-0021 #6)"
-      },
-      "03h59fjnemh81jnvofj01265f": {
-        "id": "03h59fjnemh81jnvofj01265f",
-        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
-        "name": "original_deleted_at",
-        "dataType": "timestamptz",
-        "options": 0,
-        "comment": "원본 삭제 확인 시각. '원본 없음' 보관 기한(P11 설정값)의 기준이며, OS '최근 삭제'에서 복구되면 NULL (ADR-0021 #7)"
-      },
-      "03hddvcejvp3kno6m1n9neihx": {
-        "id": "03hddvcejvp3kno6m1n9neihx",
-        "tableId": "03h4468ge3qzlp0kxktbzseyu",
-        "name": "photo_version",
-        "dataType": "text",
-        "options": 8,
-        "comment": "예약 당시 사진 버전 (기록용). 중복 차감 판단은 사진 단위 (ADR-0021 #3, ADR-0024 #4-1)"
-      },
-      "03hsfso8pnhizeytjdlvm91xu": {
-        "id": "03hsfso8pnhizeytjdlvm91xu",
-        "tableId": "03htygdnvz0ch9exiton03zyv",
+      "03h64la81jhdvsw3yytqev2v6": {
+        "id": "03h64la81jhdvsw3yytqev2v6",
+        "tableId": "03h64la81jhdvsw3yyscpqbvp",
         "name": "id",
-        "dataType": "uuid",
-        "options": 2,
-        "comment": "UUIDv7. 응답의 작업 ID"
+        "comment": "규칙 manifest SHA-256 소문자 hex 64자 (CHECK ^[0-9a-f]{64}$)",
+        "dataType": "text",
+        "options": 2
       },
-      "03hsjh2xbc8hvtixwo540yg5v": {
-        "id": "03hsjh2xbc8hvtixwo540yg5v",
-        "tableId": "03htygdnvz0ch9exiton03zyv",
+      "03h64la81jhdvsw3yyw8adbvy": {
+        "id": "03h64la81jhdvsw3yyw8adbvy",
+        "tableId": "03h64la81jhdvsw3yyscpqbvp",
+        "name": "content",
+        "comment": "규칙 manifest 정규 JSON",
+        "dataType": "jsonb",
+        "options": 8
+      },
+      "03h64la81jhdvsw3yyzjqf8g1": {
+        "id": "03h64la81jhdvsw3yyzjqf8g1",
+        "tableId": "03h64la81jhdvsw3yyscpqbvp",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h64la81jhdvsw3yz3dy6ozg": {
+        "id": "03h64la81jhdvsw3yz3dy6ozg",
+        "tableId": "03h64la81jhdvsw3yz1gsdcz2",
+        "name": "id",
+        "comment": "내용 SHA-256 hex",
+        "dataType": "text",
+        "options": 2
+      },
+      "03h64la81jhdvsw3yz4yrwyax": {
+        "id": "03h64la81jhdvsw3yz4yrwyax",
+        "tableId": "03h64la81jhdvsw3yz1gsdcz2",
+        "name": "content",
+        "comment": "manifest 정규 JSON",
+        "dataType": "jsonb",
+        "options": 8
+      },
+      "03h64la81jhdvsw3yz5nbil9n": {
+        "id": "03h64la81jhdvsw3yz5nbil9n",
+        "tableId": "03h64la81jhdvsw3yz1gsdcz2",
+        "name": "content_type",
+        "comment": "업로드 정책 contentType (설정값, 기본 image/jpeg)",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h64la81jhdvsw3yz8djwuzy": {
+        "id": "03h64la81jhdvsw3yz8djwuzy",
+        "tableId": "03h64la81jhdvsw3yz1gsdcz2",
+        "name": "max_bytes",
+        "comment": "업로드 정책 maxBytes (> 0, 설정값)",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h64la81jhdvsw3yza5krwzy": {
+        "id": "03h64la81jhdvsw3yza5krwzy",
+        "tableId": "03h64la81jhdvsw3yz1gsdcz2",
+        "name": "max_long_edge_px",
+        "comment": "업로드 정책 maxLongEdgePx (> 0, 설정값)",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h64la81jhdvsw3yzdedsj22": {
+        "id": "03h64la81jhdvsw3yzdedsj22",
+        "tableId": "03h64la81jhdvsw3yz1gsdcz2",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h64la81jhdvsw3yzgs6ih4o": {
+        "id": "03h64la81jhdvsw3yzgs6ih4o",
+        "tableId": "03h64la81jhdvsw3yze3zlz02",
+        "name": "id",
+        "comment": "UUIDv7. 응답 groupId",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h64la81jhdvsw3yzijvq9uk": {
+        "id": "03h64la81jhdvsw3yzijvq9uk",
+        "tableId": "03h64la81jhdvsw3yze3zlz02",
         "name": "owner_id",
         "dataType": "uuid",
         "options": 8
       },
-      "03h8p9vmgwg99ryan5298tb48": {
-        "id": "03h8p9vmgwg99ryan5298tb48",
-        "tableId": "03htygdnvz0ch9exiton03zyv",
-        "name": "photo_count",
-        "dataType": "int",
-        "options": 8,
-        "comment": "대상 사진 수 (대표 + 구성)"
-      },
-      "03hi1ctn7dmhzh59hxytngyex": {
-        "id": "03hi1ctn7dmhzh59hxytngyex",
-        "tableId": "03htygdnvz0ch9exiton03zyv",
-        "name": "representative_count",
-        "dataType": "int",
-        "options": 8,
-        "comment": "대표 분석 수 = 만든 analysis_job 수"
-      },
-      "03hhcpjbddajodzt2itduuszs": {
-        "id": "03hhcpjbddajodzt2itduuszs",
-        "tableId": "03htygdnvz0ch9exiton03zyv",
-        "name": "status",
-        "dataType": "text",
-        "options": 8,
-        "comment": "접수 단위 진행 상태. 상태명은 단계 5 구현 시 확정 (ADR-0016)"
-      },
-      "03hovv9ltyvkj632hjnteg3ud": {
-        "id": "03hovv9ltyvkj632hjnteg3ud",
-        "tableId": "03htygdnvz0ch9exiton03zyv",
-        "name": "created_at",
-        "dataType": "timestamptz",
-        "options": 8
-      },
-      "03hnmshwqvclnnk39dgy9x6kg": {
-        "id": "03hnmshwqvclnnk39dgy9x6kg",
-        "tableId": "03htygdnvz0ch9exiton03zyv",
-        "name": "updated_at",
-        "dataType": "timestamptz",
-        "options": 8
-      },
-      "03hgxqns6rei5a32r6t7t5rbg": {
-        "id": "03hgxqns6rei5a32r6t7t5rbg",
-        "tableId": "03htygdnvz0ch9exiton03zyv",
-        "name": "version",
-        "dataType": "bigint",
-        "options": 8
-      },
-      "03huodysqek1979lnd2mmzh5q": {
-        "id": "03huodysqek1979lnd2mmzh5q",
-        "tableId": "03h4468ge977zqezlhqerbvdc",
+      "03h64la81jhdvsw3yzjvqpfjf": {
+        "id": "03h64la81jhdvsw3yzjvqpfjf",
+        "tableId": "03h64la81jhdvsw3yze3zlz02",
         "name": "request_id",
+        "comment": "analysis_request.id",
         "dataType": "uuid",
-        "options": 8,
-        "comment": "analysis_request.id. NOT NULL (서버 배치도 접수 행에 귀속, ADR-0024 #4-2)"
-      },
-      "03hk7a4hty35b1cuhqurqmvpq": {
-        "id": "03hk7a4hty35b1cuhqurqmvpq",
-        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
-        "name": "cloud_ref",
-        "dataType": "text",
-        "options": 0,
-        "comment": "iOS PHCloudIdentifier. iCloud 동기화 사진만 기기 간 같은 사진으로 연결하고, 그 밖의 사진은 기기마다 별도 photo (ADR-0022)"
-      },
-      "03hotyms4fnfs7ta48p337nby": {
-        "id": "03hotyms4fnfs7ta48p337nby",
-        "tableId": "03h4468ge3qzlp0kxngunyby9",
-        "name": "inaccessible_reason",
-        "dataType": "text",
-        "options": 0,
-        "comment": "PERMISSION / DOWNLOAD. INACCESSIBLE일 때만"
-      },
-      "03hcnioc3ofyxvi079nyx3emn": {
-        "id": "03hcnioc3ofyxvi079nyx3emn",
-        "tableId": "03h4468ge3qzlp0kxngunyby9",
-        "name": "checked_at",
-        "dataType": "timestamptz",
-        "options": 0,
-        "comment": "이 기기에서 OS 상태를 마지막으로 확인한 시각"
-      },
-      "03h2lgokq5x9ivph4qsew8ev3": {
-        "id": "03h2lgokq5x9ivph4qsew8ev3",
-        "tableId": "03h4468ge3qzlp0kxngunyby9",
-        "name": "created_at",
-        "dataType": "timestamptz",
         "options": 8
       },
-      "03hmnwffd9giau7z5kddcv7j6": {
-        "id": "03hmnwffd9giau7z5kddcv7j6",
-        "tableId": "03h4468ge3qzlp0kxngunyby9",
-        "name": "updated_at",
-        "dataType": "timestamptz",
-        "options": 8
-      },
-      "03hclepjr6fpk93lwb9fud6tc": {
-        "id": "03hclepjr6fpk93lwb9fud6tc",
-        "tableId": "03h4468ge3qzlp0kxngunyby9",
-        "name": "version",
-        "dataType": "bigint",
-        "options": 8
-      },
-      "03hu4gaqlst35v9y0wj7uoodj": {
-        "id": "03hu4gaqlst35v9y0wj7uoodj",
-        "tableId": "03h4468ge977zqezloc297i0d",
-        "name": "created_at",
-        "dataType": "timestamptz",
-        "options": 8
-      },
-      "03hn2u4id7ckzia4lylbjq10z": {
-        "id": "03hn2u4id7ckzia4lylbjq10z",
-        "tableId": "03h4468ge977zqezloc297i0d",
-        "name": "updated_at",
-        "dataType": "timestamptz",
-        "options": 8
-      },
-      "03h737mkglfiuzs4z8kzxwbqu": {
-        "id": "03h737mkglfiuzs4z8kzxwbqu",
-        "tableId": "03h4468ge977zqezloc297i0d",
-        "name": "version",
-        "dataType": "bigint",
-        "options": 8
-      },
-      "03hgqcrj7wpm57tlbs61vebd4": {
-        "id": "03hgqcrj7wpm57tlbs61vebd4",
-        "tableId": "03h4468gdyciasr0yyd9e43nc",
-        "name": "revoked_at",
-        "dataType": "timestamptz",
-        "options": 0,
-        "comment": "설치 토큰 폐기 시각. 값이 있으면 access 교환 거부 (ADR-0023)"
-      },
-      "03heb5v0gfbwa7ndkm7115jih": {
-        "id": "03heb5v0gfbwa7ndkm7115jih",
-        "tableId": "03h4468ge3qzlp0kxhjodrf5h",
-        "name": "rotated_at",
-        "dataType": "timestamptz",
-        "options": 0,
-        "comment": "교체 시각. 이후 유예 시간 (설정값, 기본 30초) 안의 재사용은 family를 폐기하지 않음 (ADR-0023 #13)"
-      },
-      "03hd1dh643i2d068gexy0eoqj": {
-        "id": "03hd1dh643i2d068gexy0eoqj",
-        "tableId": "03htygdnvz0ch9exiton03zyv",
-        "name": "origin",
-        "dataType": "text",
-        "options": 8,
-        "comment": "CLIENT / SERVER_BATCH. 서버 배치(PRO_BACKLOG)는 실행할 때 주체별로 접수 행을 만듦 (ADR-0024 #4-2)"
-      },
-      "03hyh5ud70c8jcij43hkp2g37": {
-        "id": "03hyh5ud70c8jcij43hkp2g37",
-        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
-        "name": "photo_id",
+      "03h64la81jhdvsw3yzm67n5aq": {
+        "id": "03h64la81jhdvsw3yzm67n5aq",
+        "tableId": "03h64la81jhdvsw3yze3zlz02",
+        "name": "representative_photo_id",
+        "comment": "대표 photo.id, 모듈 간 ID 참조",
         "dataType": "uuid",
-        "options": 2,
-        "comment": "photo.id, 모듈 간 ID 참조"
+        "options": 8
       },
-      "03hbekkthepotmhxv372qmdhs": {
-        "id": "03hbekkthepotmhxv372qmdhs",
-        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
+      "03h64la81jhdvsw3yznxymjp7": {
+        "id": "03h64la81jhdvsw3yznxymjp7",
+        "tableId": "03h64la81jhdvsw3yze3zlz02",
+        "name": "photo_count",
+        "comment": "대표 포함 총 수 (>= 1)",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h64la81jhdvsw3yzph7m71q": {
+        "id": "03h64la81jhdvsw3yzph7m71q",
+        "tableId": "03h64la81jhdvsw3yze3zlz02",
         "name": "model_id",
+        "comment": "묶음에 쓴 벡터 모델 ID. 단독이면 NULL",
         "dataType": "text",
-        "options": 2,
-        "comment": "단말 벡터 모델 ID"
+        "options": 0
+      },
+      "03h64la81jhdvsw3yzslqiser": {
+        "id": "03h64la81jhdvsw3yzslqiser",
+        "tableId": "03h64la81jhdvsw3yze3zlz02",
+        "name": "model_version",
+        "comment": "묶음에 쓴 벡터 모델 버전. 단독이면 NULL",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h64la81jhdvsw3yztdqkqgn": {
+        "id": "03h64la81jhdvsw3yztdqkqgn",
+        "tableId": "03h64la81jhdvsw3yze3zlz02",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h64la81jhdvsw3yzx9er1jo": {
+        "id": "03h64la81jhdvsw3yzx9er1jo",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "request_id",
+        "comment": "analysis_request.id",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h64la81jhdvsw3yzzh1ab5f": {
+        "id": "03h64la81jhdvsw3yzzh1ab5f",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "photo_id",
+        "comment": "photo.id, 모듈 간 ID 참조",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h64la81jhdvsw3z01z1qd87": {
+        "id": "03h64la81jhdvsw3z01z1qd87",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h64la81jhdvsw3z03yvgc06": {
+        "id": "03h64la81jhdvsw3z03yvgc06",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "client_ref",
+        "comment": "응답 photoId (photo.client_ref). 재생 투영이 photo 모듈 호출 없이 사용",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h64la81jhdvsw3z06gsz36u": {
+        "id": "03h64la81jhdvsw3z06gsz36u",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "photo_version",
+        "comment": "접수 시 관측한 photo.observed_version",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h64la81jhdvsw3z075g5556": {
+        "id": "03h64la81jhdvsw3z075g5556",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "basis_change_seq",
+        "comment": "접수 시점 photo.source_change_seq (>= 0)",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h64la81jhdvsw3z0ae6oeru": {
+        "id": "03h64la81jhdvsw3z0ae6oeru",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "taken_at",
+        "comment": "요청 takenAt 스냅샷 (ADR-0034). 묶음 재현·5-2 검증 기준 시각",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h64la81jhdvsw3z0bfuyv3q": {
+        "id": "03h64la81jhdvsw3z0bfuyv3q",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "text_status",
+        "comment": "UNKNOWN / NO_TEXT / TEXT. 요청 text.status 스냅샷 (ADR-0034)",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h64la81jhdvsw3z0eora10s": {
+        "id": "03h64la81jhdvsw3z0eora10s",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "ocr_version",
+        "comment": "요청 text.ocrVersion 스냅샷 (ADR-0034)",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h64la81jhdvsw3z0gh0jt84": {
+        "id": "03h64la81jhdvsw3z0gh0jt84",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "admission_result",
+        "comment": "ACCEPTED / EXISTING_RESULT / IN_PROGRESS / NOT_ACCEPTED. EXISTING_RESULT 판정은 단계 5-2",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h64la81jhdvsw3z0iuhh2jy": {
+        "id": "03h64la81jhdvsw3z0iuhh2jy",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "code",
+        "comment": "NOT_ACCEPTED 오류 코드",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h64la81jhdvsw3z0j8rdqoq": {
+        "id": "03h64la81jhdvsw3z0j8rdqoq",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "reason",
+        "comment": "NOT_ACCEPTED 세부 사유",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h64la81jhdvsw3z0kwbnpzs": {
+        "id": "03h64la81jhdvsw3z0kwbnpzs",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "retryable",
+        "dataType": "boolean",
+        "options": 8
+      },
+      "03h64la81jhdvsw3z0opxn459": {
+        "id": "03h64la81jhdvsw3z0opxn459",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "group_id",
+        "comment": "analysis_group.id. group_role과 함께 있거나 함께 없음",
+        "dataType": "uuid",
+        "options": 0
+      },
+      "03h64la81jhdvsw3z0qi4qm4a": {
+        "id": "03h64la81jhdvsw3z0qi4qm4a",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "group_role",
+        "comment": "REPRESENTATIVE / MEMBER",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h64la81jhdvsw3z0qwb82w6": {
+        "id": "03h64la81jhdvsw3z0qwb82w6",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "analysis_job_id",
+        "comment": "analysis_job.id. IN_PROGRESS면 다른 접수의 진행 작업",
+        "dataType": "uuid",
+        "options": 0
+      },
+      "03h64la81jhdvsw3z0tmje3zn": {
+        "id": "03h64la81jhdvsw3z0tmje3zn",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "vector_id",
+        "comment": "묶음 계산에 쓴 photo_vector.id, 모듈 간 ID 참조 (ADR-0034)",
+        "dataType": "uuid",
+        "options": 0
+      },
+      "03h64la81jhdvsw3z0wiwye1k": {
+        "id": "03h64la81jhdvsw3z0wiwye1k",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "vector_ignored_reason",
+        "comment": "MALFORMED_BASE64 / UNKNOWN_MODEL / BAD_DIMENSION / NOT_FINITE / ZERO_NORM",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h64la81jhdvsw3z0wqsjwbh": {
+        "id": "03h64la81jhdvsw3z0wqsjwbh",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h64kzwmsfmys9ngrnckkdmw": {
+        "id": "03h64kzwmsfmys9ngrnckkdmw",
+        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
+        "name": "id",
+        "comment": "UUIDv7. 벡터 버전 ID, analysis_request_item.vector_id가 참조",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03h64kzwmxxliw1zf1fv6lozw": {
+        "id": "03h64kzwmxxliw1zf1fv6lozw",
+        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
+        "name": "encoding",
+        "comment": "F32LE만 (CHECK)",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h64kzwmxxliw1zf1kpu76nd": {
+        "id": "03h64kzwmxxliw1zf1kpu76nd",
+        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
+        "name": "dims",
+        "comment": "차원 수 (> 0)",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h64kzwmxxliw1zf1n0ujdoo": {
+        "id": "03h64kzwmxxliw1zf1n0ujdoo",
+        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
+        "name": "content_sha256",
+        "comment": "vector 바이트의 SHA-256 (32바이트, CHECK)",
+        "dataType": "bytea",
+        "options": 8
+      },
+      "03h7tsgz0fwv1165aetyfeyaf": {
+        "id": "03h7tsgz0fwv1165aetyfeyaf",
+        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
+        "name": "vector",
+        "comment": "수신한 F32LE 바이트 (정규화 전). 길이 = dims × 4 (CHECK)",
+        "dataType": "bytea",
+        "options": 8
       },
       "03hb5rb2z2ap9bdz7xxrl88hj": {
         "id": "03hb5rb2z2ap9bdz7xxrl88hj",
         "tableId": "03hjfcwl6ebn9795fj0udpy4t",
         "name": "model_version",
+        "comment": "단말 벡터 모델 버전 (1~64자)",
         "dataType": "text",
-        "options": 2
+        "options": 8
+      },
+      "03hbekkthepotmhxv372qmdhs": {
+        "id": "03hbekkthepotmhxv372qmdhs",
+        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
+        "name": "model_id",
+        "comment": "단말 벡터 모델 ID (1~64자)",
+        "dataType": "text",
+        "options": 8
       },
       "03hl0jogeer0auxb3twgejymv": {
         "id": "03hl0jogeer0auxb3twgejymv",
@@ -3880,22 +4358,6 @@
         "dataType": "uuid",
         "options": 8
       },
-      "03hxjdkn2oky21mddaasxt3vy": {
-        "id": "03hxjdkn2oky21mddaasxt3vy",
-        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
-        "name": "photo_version",
-        "dataType": "text",
-        "options": 8,
-        "comment": "벡터를 계산한 사진 버전. 사진이 수정돼도 다시 계산하지 않음 (ADR-0024 #6-1)"
-      },
-      "03h7tsgz0fwv1165aetyfeyaf": {
-        "id": "03h7tsgz0fwv1165aetyfeyaf",
-        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
-        "name": "vector",
-        "dataType": "bytea",
-        "options": 8,
-        "comment": "저장 형식(pgvector / bytea)·양자화는 단계 5에서 결정"
-      },
       "03hwfc20jtrcr4a5nv8hdaqeb": {
         "id": "03hwfc20jtrcr4a5nv8hdaqeb",
         "tableId": "03hjfcwl6ebn9795fj0udpy4t",
@@ -3903,81 +4365,13 @@
         "dataType": "timestamptz",
         "options": 8
       },
-      "03hjnn5tebz2bc1oabfslw5bm": {
-        "id": "03hjnn5tebz2bc1oabfslw5bm",
-        "tableId": "03h0grztwslns5gtmr59vipg3",
-        "name": "principal_id",
+      "03hyh5ud70c8jcij43hkp2g37": {
+        "id": "03hyh5ud70c8jcij43hkp2g37",
+        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
+        "name": "photo_id",
+        "comment": "photo.id (같은 photo 모듈 안 FK)",
         "dataType": "uuid",
-        "options": 2
-      },
-      "03h29c8t8j5ebbkpiog5w9gz0": {
-        "id": "03h29c8t8j5ebbkpiog5w9gz0",
-        "tableId": "03h0grztwslns5gtmr59vipg3",
-        "name": "window_kind",
-        "dataType": "text",
-        "options": 2,
-        "comment": "SHORT / DAILY"
-      },
-      "03hnq9tkza2r2eyy4c25r4bpk": {
-        "id": "03hnq9tkza2r2eyy4c25r4bpk",
-        "tableId": "03h0grztwslns5gtmr59vipg3",
-        "name": "window_start",
-        "dataType": "timestamptz",
-        "options": 2
-      },
-      "03h10enuw5jdoa1932on0zbcl": {
-        "id": "03h10enuw5jdoa1932on0zbcl",
-        "tableId": "03h0grztwslns5gtmr59vipg3",
-        "name": "call_count",
-        "dataType": "int",
         "options": 8
-      },
-      "03h2glmiy3ibdam8vek2erhwv": {
-        "id": "03h2glmiy3ibdam8vek2erhwv",
-        "tableId": "03h0grztwslns5gtmr59vipg3",
-        "name": "updated_at",
-        "dataType": "timestamptz",
-        "options": 8
-      },
-      "03h8jdato5y6ok94pelthc4e3": {
-        "id": "03h8jdato5y6ok94pelthc4e3",
-        "tableId": "03h4468ge3qzlp0kxk9r388k6",
-        "name": "guided_at",
-        "dataType": "timestamptz",
-        "options": 0,
-        "comment": "TRIAL만. 3회 클릭 구독 안내를 한 시각. 안내는 1회만. 새 계정으로 로그인하면 게스트 값을 이어받음 (ADR-0024 #7)"
-      },
-      "03hqi9w4tfvaeep2p89rbfy4p": {
-        "id": "03hqi9w4tfvaeep2p89rbfy4p",
-        "tableId": "03h4468ge977zqezln1403jfq",
-        "name": "place_ref",
-        "dataType": "text",
-        "options": 0,
-        "comment": "Google Places place_id. 계속 저장 가능 (ADR-0024 #13-5)"
-      },
-      "03hzy67cy23e1kaqqlewwyymh": {
-        "id": "03hzy67cy23e1kaqqlewwyymh",
-        "tableId": "03h4468ge977zqezln1403jfq",
-        "name": "place_lat",
-        "dataType": "double precision",
-        "options": 0,
-        "comment": "Google 좌표. place_coord_expires_at까지만 보관"
-      },
-      "03h4l4okluyftul2zes2ua82i": {
-        "id": "03h4l4okluyftul2zes2ua82i",
-        "tableId": "03h4468ge977zqezln1403jfq",
-        "name": "place_lng",
-        "dataType": "double precision",
-        "options": 0,
-        "comment": "Google 좌표. place_coord_expires_at까지만 보관"
-      },
-      "03hc3v6x6j7cqxiyz8y4eqbtd": {
-        "id": "03hc3v6x6j7cqxiyz8y4eqbtd",
-        "tableId": "03h4468ge977zqezln1403jfq",
-        "name": "place_coord_expires_at",
-        "dataType": "timestamptz",
-        "options": 0,
-        "comment": "좌표 보관 기한 (조회 후 30일 이내). 장소 알림 예약이 있는 ACTIVE 이벤트만 기한 전에 place_ref로 다시 조회해 갱신. 그 밖의 이벤트, 갱신 실패, 동의 철회 때는 기한에 좌표를 지움"
       },
       "03h6dzd9j8dvqykii8pzv2b6r": {
         "id": "03h6dzd9j8dvqykii8pzv2b6r",
@@ -3986,13 +4380,28 @@
         "dataType": "uuid",
         "options": 2
       },
+      "03h7w42dfjddrrqkn7ot3gnuz": {
+        "id": "03h7w42dfjddrrqkn7ot3gnuz",
+        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
+        "name": "sent_at",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03hhbed7dvrmevwr6d2pd4dum": {
+        "id": "03hhbed7dvrmevwr6d2pd4dum",
+        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
+        "name": "locked_until",
+        "comment": "SENDING 점유가 풀리는 시각. FCM 호출은 DB 트랜잭션 밖에서 함",
+        "dataType": "timestamptz",
+        "options": 0
+      },
       "03hhdp5mbc8611tugwmhhf0md": {
         "id": "03hhdp5mbc8611tugwmhhf0md",
         "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
         "name": "device_id",
+        "comment": "device.id, 모듈 간 ID 참조",
         "dataType": "uuid",
-        "options": 2,
-        "comment": "device.id, 모듈 간 ID 참조"
+        "options": 2
       },
       "03hjl0kqwsa6gjogfvd2x7guo": {
         "id": "03hjl0kqwsa6gjogfvd2x7guo",
@@ -4005,37 +4414,8 @@
         "id": "03hlcwvpw0kx35p5chf9p508l",
         "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
         "name": "status",
+        "comment": "PENDING / SENDING / SENT / FAILED / CANCELLED. 일시 실패는 PENDING으로 돌려 next_attempt_at에 재시도, FAILED는 최종 실패 (재시도 한도 초과·UNREGISTERED)",
         "dataType": "text",
-        "options": 8,
-        "comment": "PENDING / SENDING / SENT / FAILED / CANCELLED. 일시 실패는 PENDING으로 돌려 next_attempt_at에 재시도, FAILED는 최종 실패 (재시도 한도 초과·UNREGISTERED)"
-      },
-      "03huhbyoqhy140dgjkmdetskj": {
-        "id": "03huhbyoqhy140dgjkmdetskj",
-        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
-        "name": "attempt_count",
-        "dataType": "int",
-        "options": 8
-      },
-      "03h7w42dfjddrrqkn7ot3gnuz": {
-        "id": "03h7w42dfjddrrqkn7ot3gnuz",
-        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
-        "name": "sent_at",
-        "dataType": "timestamptz",
-        "options": 0
-      },
-      "03hvro0lfqlcr6j54gpey45ia": {
-        "id": "03hvro0lfqlcr6j54gpey45ia",
-        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
-        "name": "last_error_code",
-        "dataType": "text",
-        "options": 0,
-        "comment": "UNREGISTERED이면 notification_device.push_token을 지움"
-      },
-      "03hn01f3xveaxrchos860t750": {
-        "id": "03hn01f3xveaxrchos860t750",
-        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
-        "name": "created_at",
-        "dataType": "timestamptz",
         "options": 8
       },
       "03hldxyx9or3iudnsf1ojcqhp": {
@@ -4045,56 +4425,165 @@
         "dataType": "timestamptz",
         "options": 8
       },
+      "03hn01f3xveaxrchos860t750": {
+        "id": "03hn01f3xveaxrchos860t750",
+        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
       "03hqxoy32pwtxhgcjzgftywze": {
         "id": "03hqxoy32pwtxhgcjzgftywze",
         "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
         "name": "next_attempt_at",
+        "comment": "다음 발송 시도 시각",
         "dataType": "timestamptz",
-        "options": 8,
-        "comment": "다음 발송 시도 시각"
+        "options": 8
       },
-      "03hhbed7dvrmevwr6d2pd4dum": {
-        "id": "03hhbed7dvrmevwr6d2pd4dum",
+      "03huhbyoqhy140dgjkmdetskj": {
+        "id": "03huhbyoqhy140dgjkmdetskj",
         "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
-        "name": "locked_until",
-        "dataType": "timestamptz",
-        "options": 0,
-        "comment": "SENDING 점유가 풀리는 시각. FCM 호출은 DB 트랜잭션 밖에서 함"
+        "name": "attempt_count",
+        "dataType": "int",
+        "options": 8
       },
-      "03htk12gwad4xlomhwvpmm2sm": {
-        "id": "03htk12gwad4xlomhwvpmm2sm",
-        "tableId": "03h4468ge977zqezln1403jfq",
-        "name": "place_status",
+      "03hvro0lfqlcr6j54gpey45ia": {
+        "id": "03hvro0lfqlcr6j54gpey45ia",
+        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
+        "name": "last_error_code",
+        "comment": "UNREGISTERED이면 notification_device.push_token을 지움",
         "dataType": "text",
-        "options": 0,
-        "comment": "NULL(장소 없음) / RESOLVED / AMBIGUOUS / NOT_FOUND. AMBIGUOUS면 단말이 후보를 실시간 조회해 사용자가 고름 (후보는 저장 안 함, ADR-0024 #13-5)"
+        "options": 0
       },
-      "03hpvewqdzbsok24k40ubj5fv": {
-        "id": "03hpvewqdzbsok24k40ubj5fv",
-        "tableId": "03h0grztwslns5gtmr59vipg3",
-        "name": "api",
+      "03h64lgfh4y5l3nr2iovjfkmz": {
+        "id": "03h64lgfh4y5l3nr2iovjfkmz",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "trigger",
+        "comment": "NEW_PHOTOS / ORGANIZE / PRO_BACKLOG. 등록 원인 (FR-I-01 입력)",
         "dataType": "text",
-        "options": 2,
-        "comment": "SEARCH_INTERPRET / PLACE_LOOKUP"
+        "options": 8
       },
-      "03h2g80rhgcqcfsgwnhp5nzvv": {
-        "id": "03h2g80rhgcqcfsgwnhp5nzvv",
-        "tableId": "03h4468ge3qzlp0kxisn9vsc9",
-        "name": "version",
-        "comment": "주체·목적별 동의 순번 (데이터 버전). 결정마다 1 증가, 행은 수정하지 않음. 요청의 version과 다르면 409 (ADR-0028 #2)",
+      "03h64lgfhad526s671i36tzlh": {
+        "id": "03h64lgfhad526s671i36tzlh",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "device_id",
+        "comment": "요청 기기 device.id, 모듈 간 ID 참조. SERVER_BATCH는 NULL 허용",
+        "dataType": "uuid",
+        "options": 0
+      },
+      "03h64lgfhad526s671lhwt0s2": {
+        "id": "03h64lgfhad526s671lhwt0s2",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "trial_mark_id",
+        "comment": "device_trial_mark.id (usage 모듈), 모듈 간 ID 참조. 단계 5-2 기기 송신 예산·시도 속도 제한용",
+        "dataType": "uuid",
+        "options": 0
+      },
+      "03h64lgfhad526s671qbzadnp": {
+        "id": "03h64lgfhad526s671qbzadnp",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "consent_version",
+        "comment": "동의 기준 버전 (ai_consent.version, >= 1, ADR-0030 #1)",
         "dataType": "bigint",
         "options": 8
       },
-      "03hf02v88ewn127imw1oboyby": {
-        "id": "03hf02v88ewn127imw1oboyby",
-        "tableId": "03h46ggkrxnffv4hjizyj1crb",
-        "name": "limit_count",
-        "comment": "생성 시 설정값(P01)을 기록 (ADR-0029 #15)",
+      "03h64lgfhad526s671uoxo741": {
+        "id": "03h64lgfhad526s671uoxo741",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "grouping_rule_id",
+        "comment": "analysis_grouping_rule.id. 이 접수의 묶음 규칙 버전",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h64lgfhad526s671zes7mm1": {
+        "id": "03h64lgfhad526s671zes7mm1",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "first_result_at",
+        "comment": "첫 결과 저장 시각. 단계 5-2 완료 TX가 설정 (우선순위 '첫 결과 없음' 항, ADR-0031 #10)",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h8p9vmgwg99ryan5298tb48": {
+        "id": "03h8p9vmgwg99ryan5298tb48",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "photo_count",
+        "comment": "대상 사진 수 (대표 + 구성, >= 1)",
         "dataType": "int",
+        "options": 8
+      },
+      "03hd1dh643i2d068gexy0eoqj": {
+        "id": "03hd1dh643i2d068gexy0eoqj",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "origin",
+        "comment": "CLIENT / SERVER_BATCH. 서버 배치(PRO_BACKLOG)는 실행할 때 주체별로 접수 행을 만듦 (ADR-0024 #4-2). CLIENT면 device_id 필수 (CHECK)",
+        "dataType": "text",
+        "options": 8
+      },
+      "03hgxqns6rei5a32r6t7t5rbg": {
+        "id": "03hgxqns6rei5a32r6t7t5rbg",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03hi1ctn7dmhzh59hxytngyex": {
+        "id": "03hi1ctn7dmhzh59hxytngyex",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "representative_count",
+        "comment": "대표 분석 수 = 이번에 만든 analysis_job 수 (>= 0)",
+        "dataType": "int",
+        "options": 8
+      },
+      "03hnmshwqvclnnk39dgy9x6kg": {
+        "id": "03hnmshwqvclnnk39dgy9x6kg",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03hovv9ltyvkj632hjnteg3ud": {
+        "id": "03hovv9ltyvkj632hjnteg3ud",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "created_at",
+        "comment": "접수 시각",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03hsfso8pnhizeytjdlvm91xu": {
+        "id": "03hsfso8pnhizeytjdlvm91xu",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "id",
+        "comment": "UUIDv7. 응답의 작업 ID",
+        "dataType": "uuid",
+        "options": 2
+      },
+      "03hsjh2xbc8hvtixwo540yg5v": {
+        "id": "03hsjh2xbc8hvtixwo540yg5v",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "name": "owner_id",
+        "dataType": "uuid",
         "options": 8
       }
     },
     "relationshipEntities": {
+      "03h2x3shbywzf8y96wnq7226m": {
+        "id": "03h2x3shbywzf8y96wnq7226m",
+        "relationshipType": 16,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge977zqezlosz9hyo7",
+          "columnIds": [
+            "03h4468ge977zqezlovyajhgw"
+          ]
+        },
+        "end": {
+          "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
+          "columnIds": [
+            "03h6dzd9j8dvqykii8pzv2b6r"
+          ]
+        }
+      },
       "03h4468geephs5erx72aplmrf": {
         "id": "03h4468geephs5erx72aplmrf",
         "relationshipType": 16,
@@ -4765,8 +5254,62 @@
           ]
         }
       },
-      "03hvo1pplbidr4yi8pghoep3x": {
-        "id": "03hvo1pplbidr4yi8pghoep3x",
+      "03h64la81jhdvsw3z0z5xt6o4": {
+        "id": "03h64la81jhdvsw3z0z5xt6o4",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h64la81jhdvsw3yze3zlz02",
+          "columnIds": [
+            "03h64la81jhdvsw3yzgs6ih4o"
+          ]
+        },
+        "end": {
+          "tableId": "03h64la81jhdvsw3yzv8vh54g",
+          "columnIds": [
+            "03h64la81jhdvsw3z0opxn459"
+          ]
+        }
+      },
+      "03h64lgfhacz8m7i6uod5jgu2": {
+        "id": "03h64lgfhacz8m7i6uod5jgu2",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h64la81jhdvsw3yyscpqbvp",
+          "columnIds": [
+            "03h64la81jhdvsw3yytqev2v6"
+          ]
+        },
+        "end": {
+          "tableId": "03htygdnvz0ch9exiton03zyv",
+          "columnIds": [
+            "03h64lgfhad526s671uoxo741"
+          ]
+        }
+      },
+      "03h64lgfhacz8m7i6uou5n4g5": {
+        "id": "03h64lgfhacz8m7i6uou5n4g5",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03htygdnvz0ch9exiton03zyv",
+          "columnIds": [
+            "03hsfso8pnhizeytjdlvm91xu"
+          ]
+        },
+        "end": {
+          "tableId": "03h64la81jhdvsw3yze3zlz02",
+          "columnIds": [
+            "03h64la81jhdvsw3yzjvqpfjf"
+          ]
+        }
+      },
+      "03h64lgfhfv9s4hkyyznraj8y": {
+        "id": "03h64lgfhfv9s4hkyyznraj8y",
         "relationshipType": 16,
         "onDelete": 1,
         "onUpdate": 1,
@@ -4777,9 +5320,63 @@
           ]
         },
         "end": {
+          "tableId": "03h64la81jhdvsw3yzv8vh54g",
+          "columnIds": [
+            "03h64la81jhdvsw3yzx9er1jo"
+          ]
+        }
+      },
+      "03h64loaoux849eezbtq4xq0r": {
+        "id": "03h64loaoux849eezbtq4xq0r",
+        "relationshipType": 2,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h64la81jhdvsw3yze3zlz02",
+          "columnIds": [
+            "03h64la81jhdvsw3yzgs6ih4o"
+          ]
+        },
+        "end": {
           "tableId": "03h4468ge977zqezlhqerbvdc",
           "columnIds": [
-            "03huodysqek1979lnd2mmzh5q"
+            "03h64loaov0xg701kxeg46iht"
+          ]
+        }
+      },
+      "03h64loap0cj2pm8rqiksgl4q": {
+        "id": "03h64loap0cj2pm8rqiksgl4q",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h64la81jhdvsw3yz1gsdcz2",
+          "columnIds": [
+            "03h64la81jhdvsw3yz3dy6ozg"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge977zqezlhqerbvdc",
+          "columnIds": [
+            "03h64loaov0xg701kxnwr5jzz"
+          ]
+        }
+      },
+      "03h64loap0cj2pm8rqjrjgd8n": {
+        "id": "03h64loap0cj2pm8rqjrjgd8n",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge977zqezlhqerbvdc",
+          "columnIds": [
+            "03h4468ge977zqezlht52p33h"
+          ]
+        },
+        "end": {
+          "tableId": "03h64la81jhdvsw3yzv8vh54g",
+          "columnIds": [
+            "03h64la81jhdvsw3z0qwb82w6"
           ]
         }
       },
@@ -4801,21 +5398,21 @@
           ]
         }
       },
-      "03h2x3shbywzf8y96wnq7226m": {
-        "id": "03h2x3shbywzf8y96wnq7226m",
+      "03hvo1pplbidr4yi8pghoep3x": {
+        "id": "03hvo1pplbidr4yi8pghoep3x",
         "relationshipType": 16,
         "onDelete": 1,
         "onUpdate": 1,
         "start": {
-          "tableId": "03h4468ge977zqezlosz9hyo7",
+          "tableId": "03htygdnvz0ch9exiton03zyv",
           "columnIds": [
-            "03h4468ge977zqezlovyajhgw"
+            "03hsfso8pnhizeytjdlvm91xu"
           ]
         },
         "end": {
-          "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
+          "tableId": "03h4468ge977zqezlhqerbvdc",
           "columnIds": [
-            "03h6dzd9j8dvqykii8pzv2b6r"
+            "03huodysqek1979lnd2mmzh5q"
           ]
         }
       }
@@ -4939,17 +5536,6 @@
         "indexColumnIds": [
           "03h4468geka6y2ntyf5exg188",
           "03h4468geka6y2ntyf70vsfl1"
-        ],
-        "unique": false
-      },
-      "03h4468geka6y2ntyffx02fed": {
-        "id": "03h4468geka6y2ntyffx02fed",
-        "name": "ix_analysis_job_ready",
-        "tableId": "03h4468ge977zqezlhqerbvdc",
-        "indexColumnIds": [
-          "03h4468geka6y2ntyfj59uxjy",
-          "03h4468geka6y2ntyfk5dkx0w",
-          "03h4468geka6y2ntyfn7eelf4"
         ],
         "unique": false
       },
@@ -5121,64 +5707,6 @@
         ],
         "unique": true
       },
-      "03hvh0oej5atof0uj0zf90ze2": {
-        "id": "03hvh0oej5atof0uj0zf90ze2",
-        "name": "uk_ai_consent_principal_purpose_version",
-        "tableId": "03h4468ge3qzlp0kxisn9vsc9",
-        "indexColumnIds": [
-          "03h07q77u3l8clmxl0px8fgkx",
-          "03hrupybfbh5nmagvrkn5rc7z",
-          "03hvets059wubvmwnl80tjoyp"
-        ],
-        "unique": true
-      },
-      "03hr8oiz2t2vfr123yjl34sav": {
-        "id": "03hr8oiz2t2vfr123yjl34sav",
-        "name": "ix_photo_original_deleted",
-        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
-        "indexColumnIds": [
-          "03h4e8l0t7xb349kf7fainqow"
-        ],
-        "unique": false
-      },
-      "03hnq42h7pyx0zzgh0fgz5rs6": {
-        "id": "03hnq42h7pyx0zzgh0fgz5rs6",
-        "name": "ix_analysis_request_owner_created",
-        "tableId": "03htygdnvz0ch9exiton03zyv",
-        "indexColumnIds": [
-          "03hva62ow4vlm2gtcpi12r2o5",
-          "03hl1p6a1edsrwagbs76oy1b1"
-        ],
-        "unique": false
-      },
-      "03hsv9s34tyfrrx1o6tgp7pyg": {
-        "id": "03hsv9s34tyfrrx1o6tgp7pyg",
-        "name": "uk_photo_owner_cloud_ref",
-        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
-        "indexColumnIds": [
-          "03hc093dg0z6gjes0pqhglr6y",
-          "03hoofy5phb30h47ivtnxhnox"
-        ],
-        "unique": true
-      },
-      "03hhqhiojqago3zp0mp9fe1ud": {
-        "id": "03hhqhiojqago3zp0mp9fe1ud",
-        "name": "ix_analysis_job_request",
-        "tableId": "03h4468ge977zqezlhqerbvdc",
-        "indexColumnIds": [
-          "03hj59bnrqpg1crqubacf1zxu"
-        ],
-        "unique": false
-      },
-      "03hm0aljsf2p1ioh72tt3of0s": {
-        "id": "03hm0aljsf2p1ioh72tt3of0s",
-        "name": "ix_photo_vector_owner",
-        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
-        "indexColumnIds": [
-          "03hfnshyz68ayy1dac53a5bop"
-        ],
-        "unique": false
-      },
       "03h4wynmqmu1gnj4k9lelu1br": {
         "id": "03h4wynmqmu1gnj4k9lelu1br",
         "name": "uk_trial_click_target",
@@ -5190,15 +5718,54 @@
         ],
         "unique": true
       },
-      "03hq8751kxx725f793dglfpkz": {
-        "id": "03hq8751kxx725f793dglfpkz",
-        "name": "uk_analysis_job_photo_active",
-        "tableId": "03h4468ge977zqezlhqerbvdc",
+      "03h64kzwn3c9g4nitks0pcste": {
+        "id": "03h64kzwn3c9g4nitks0pcste",
+        "name": "uk_photo_vector_content",
+        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
         "indexColumnIds": [
-          "03huukffyjfhhdfo1it76fa3j",
-          "03hshfxoqr1ekkz4hnzpvvjxe"
+          "03h64kzwn3c9g4nitkvhqlbsw",
+          "03h64kzwn3c9g4nitkzrw0cgo",
+          "03h64kzwn3c9g4nitl404f141",
+          "03h64kzwn3c9g4nitl7tgktty"
         ],
         "unique": true
+      },
+      "03h64la81jhdvsw3z11shy8jn": {
+        "id": "03h64la81jhdvsw3z11shy8jn",
+        "name": "ix_analysis_group_request",
+        "tableId": "03h64la81jhdvsw3yze3zlz02",
+        "indexColumnIds": [
+          "03h64la81jhdvsw3z148qjqdf"
+        ],
+        "unique": false
+      },
+      "03h64la81jhdvsw3z16f1eqfl": {
+        "id": "03h64la81jhdvsw3z16f1eqfl",
+        "name": "ix_analysis_request_item_owner_photo",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "indexColumnIds": [
+          "03h64la81jhdvsw3z17egp0jo",
+          "03h64la81jhdvsw3z19aplh8o"
+        ],
+        "unique": false
+      },
+      "03h64la81jhdvsw3z1c6oo002": {
+        "id": "03h64la81jhdvsw3z1c6oo002",
+        "name": "ix_analysis_request_item_job",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "indexColumnIds": [
+          "03h64la81jhdvsw3z1e1jcy7a"
+        ],
+        "unique": false
+      },
+      "03h64phwvinhsenzz1j5h1ubb": {
+        "id": "03h64phwvinhsenzz1j5h1ubb",
+        "name": "ix_analysis_request_item_group",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "indexColumnIds": [
+          "03h64phwvinhsenzz1nvmn1zb"
+        ],
+        "unique": false
       },
       "03h6jvzg07bv5pctizzfeydig": {
         "id": "03h6jvzg07bv5pctizzfeydig",
@@ -5209,16 +5776,6 @@
           "03h1btdua3ijuz4c773csbysq"
         ],
         "unique": true
-      },
-      "03hlnnu5iae7wujmbxaeadqae": {
-        "id": "03hlnnu5iae7wujmbxaeadqae",
-        "name": "ix_notification_delivery_due",
-        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
-        "indexColumnIds": [
-          "03hcr4atwfmzmik0ed9vodf1o",
-          "03hjdgjmc6viae9eyfsyntnpo"
-        ],
-        "unique": false
       },
       "03h8ubyxj764q6dplogninvz7": {
         "id": "03h8ubyxj764q6dplogninvz7",
@@ -5238,12 +5795,12 @@
         ],
         "unique": false
       },
-      "03hqu1oig4ysptwuplrg52lfk": {
-        "id": "03hqu1oig4ysptwuplrg52lfk",
-        "name": "event_publication_serialized_event_hash_idx",
-        "tableId": "03h4468geephs5erx656317ly",
+      "03hhqhiojqago3zp0mp9fe1ud": {
+        "id": "03hhqhiojqago3zp0mp9fe1ud",
+        "name": "ix_analysis_job_request",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
         "indexColumnIds": [
-          "03hqxlhr8a29c751540ttig0v"
+          "03hj59bnrqpg1crqubacf1zxu"
         ],
         "unique": false
       },
@@ -5256,15 +5813,83 @@
         ],
         "unique": false
       },
-      "03hu5ds1pp8c4b796qcsgundh": {
-        "id": "03hu5ds1pp8c4b796qcsgundh",
-        "name": "ix_usage_reservation_job",
-        "tableId": "03h4468ge3qzlp0kxktbzseyu",
+      "03hlnnu5iae7wujmbxaeadqae": {
+        "id": "03hlnnu5iae7wujmbxaeadqae",
+        "name": "ix_notification_delivery_due",
+        "tableId": "03hnm2l1rr3ilai38jdtwi3o3",
         "indexColumnIds": [
-          "03hgv1gyiegimgdx5bwhktte4",
-          "03hdm446963llhx2z7xj5b77i"
+          "03hcr4atwfmzmik0ed9vodf1o",
+          "03hjdgjmc6viae9eyfsyntnpo"
         ],
         "unique": false
+      },
+      "03hm0aljsf2p1ioh72tt3of0s": {
+        "id": "03hm0aljsf2p1ioh72tt3of0s",
+        "name": "ix_photo_vector_owner",
+        "tableId": "03hjfcwl6ebn9795fj0udpy4t",
+        "indexColumnIds": [
+          "03hfnshyz68ayy1dac53a5bop"
+        ],
+        "unique": false
+      },
+      "03hnq42h7pyx0zzgh0fgz5rs6": {
+        "id": "03hnq42h7pyx0zzgh0fgz5rs6",
+        "name": "ix_analysis_request_owner_created",
+        "tableId": "03htygdnvz0ch9exiton03zyv",
+        "indexColumnIds": [
+          "03hva62ow4vlm2gtcpi12r2o5",
+          "03hl1p6a1edsrwagbs76oy1b1"
+        ],
+        "unique": false
+      },
+      "03hq8751kxx725f793dglfpkz": {
+        "id": "03hq8751kxx725f793dglfpkz",
+        "name": "uk_analysis_job_photo_active",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "indexColumnIds": [
+          "03huukffyjfhhdfo1it76fa3j",
+          "03hshfxoqr1ekkz4hnzpvvjxe"
+        ],
+        "unique": true
+      },
+      "03hqu1oig4ysptwuplrg52lfk": {
+        "id": "03hqu1oig4ysptwuplrg52lfk",
+        "name": "event_publication_serialized_event_hash_idx",
+        "tableId": "03h4468geephs5erx656317ly",
+        "indexColumnIds": [
+          "03hqxlhr8a29c751540ttig0v"
+        ],
+        "unique": false
+      },
+      "03hr8oiz2t2vfr123yjl34sav": {
+        "id": "03hr8oiz2t2vfr123yjl34sav",
+        "name": "ix_photo_original_deleted",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "indexColumnIds": [
+          "03h4e8l0t7xb349kf7fainqow"
+        ],
+        "unique": false
+      },
+      "03hsv9s34tyfrrx1o6tgp7pyg": {
+        "id": "03hsv9s34tyfrrx1o6tgp7pyg",
+        "name": "uk_photo_owner_cloud_ref",
+        "tableId": "03h4468ge3qzlp0kxmoxdncoo",
+        "indexColumnIds": [
+          "03hc093dg0z6gjes0pqhglr6y",
+          "03hoofy5phb30h47ivtnxhnox"
+        ],
+        "unique": true
+      },
+      "03hvh0oej5atof0uj0zf90ze2": {
+        "id": "03hvh0oej5atof0uj0zf90ze2",
+        "name": "uk_ai_consent_principal_purpose_version",
+        "tableId": "03h4468ge3qzlp0kxisn9vsc9",
+        "indexColumnIds": [
+          "03h07q77u3l8clmxl0px8fgkx",
+          "03hrupybfbh5nmagvrkn5rc7z",
+          "03hvets059wubvmwnl80tjoyp"
+        ],
+        "unique": true
       }
     },
     "indexColumnEntities": {
@@ -5416,24 +6041,6 @@
         "id": "03h4468geka6y2ntyf70vsfl1",
         "indexId": "03h4468geka6y2ntyf2g32t0c",
         "columnId": "03h4468ge3qzlp0kxp79fdsl5",
-        "orderType": 1
-      },
-      "03h4468geka6y2ntyfj59uxjy": {
-        "id": "03h4468geka6y2ntyfj59uxjy",
-        "indexId": "03h4468geka6y2ntyffx02fed",
-        "columnId": "03h4468ge977zqezli5q3gso3",
-        "orderType": 1
-      },
-      "03h4468geka6y2ntyfk5dkx0w": {
-        "id": "03h4468geka6y2ntyfk5dkx0w",
-        "indexId": "03h4468geka6y2ntyffx02fed",
-        "columnId": "03h4468ge977zqezli3hld6f0",
-        "orderType": 1
-      },
-      "03h4468geka6y2ntyfn7eelf4": {
-        "id": "03h4468geka6y2ntyfn7eelf4",
-        "indexId": "03h4468geka6y2ntyffx02fed",
-        "columnId": "03h4468ge977zqezliak6wzv6",
         "orderType": 1
       },
       "03h4468geka6y2ntyfqggd3eq": {
@@ -5676,6 +6283,180 @@
         "columnId": "03h46ggks30n8gsin8psp7e9e",
         "orderType": 1
       },
+      "03hbavb921a83pwttleo1f9rz": {
+        "id": "03hbavb921a83pwttleo1f9rz",
+        "indexId": "03h4wynmqmu1gnj4k9lelu1br",
+        "columnId": "03h4468ge3qzlp0kxli2dy4fu",
+        "orderType": 1
+      },
+      "03hcdyjjr6skwknbsvpey1xhu": {
+        "id": "03hcdyjjr6skwknbsvpey1xhu",
+        "indexId": "03h4wynmqmu1gnj4k9lelu1br",
+        "columnId": "03h4468ge3qzlp0kxldxmq81d",
+        "orderType": 1
+      },
+      "03hre4kwv9b1ed0bmgtyltl8n": {
+        "id": "03hre4kwv9b1ed0bmgtyltl8n",
+        "indexId": "03h4wynmqmu1gnj4k9lelu1br",
+        "columnId": "03h4468ge3qzlp0kxljsgwhi1",
+        "orderType": 1
+      },
+      "03h64kzwn3c9g4nitkvhqlbsw": {
+        "id": "03h64kzwn3c9g4nitkvhqlbsw",
+        "indexId": "03h64kzwn3c9g4nitks0pcste",
+        "columnId": "03hyh5ud70c8jcij43hkp2g37",
+        "orderType": 1
+      },
+      "03h64kzwn3c9g4nitkzrw0cgo": {
+        "id": "03h64kzwn3c9g4nitkzrw0cgo",
+        "indexId": "03h64kzwn3c9g4nitks0pcste",
+        "columnId": "03hbekkthepotmhxv372qmdhs",
+        "orderType": 1
+      },
+      "03h64kzwn3c9g4nitl404f141": {
+        "id": "03h64kzwn3c9g4nitl404f141",
+        "indexId": "03h64kzwn3c9g4nitks0pcste",
+        "columnId": "03hb5rb2z2ap9bdz7xxrl88hj",
+        "orderType": 1
+      },
+      "03h64kzwn3c9g4nitl7tgktty": {
+        "id": "03h64kzwn3c9g4nitl7tgktty",
+        "indexId": "03h64kzwn3c9g4nitks0pcste",
+        "columnId": "03h64kzwmxxliw1zf1n0ujdoo",
+        "orderType": 1
+      },
+      "03h64la81jhdvsw3z148qjqdf": {
+        "id": "03h64la81jhdvsw3z148qjqdf",
+        "indexId": "03h64la81jhdvsw3z11shy8jn",
+        "columnId": "03h64la81jhdvsw3yzjvqpfjf",
+        "orderType": 1
+      },
+      "03h64la81jhdvsw3z17egp0jo": {
+        "id": "03h64la81jhdvsw3z17egp0jo",
+        "indexId": "03h64la81jhdvsw3z16f1eqfl",
+        "columnId": "03h64la81jhdvsw3z01z1qd87",
+        "orderType": 1
+      },
+      "03h64la81jhdvsw3z19aplh8o": {
+        "id": "03h64la81jhdvsw3z19aplh8o",
+        "indexId": "03h64la81jhdvsw3z16f1eqfl",
+        "columnId": "03h64la81jhdvsw3yzzh1ab5f",
+        "orderType": 1
+      },
+      "03h64la81jhdvsw3z1e1jcy7a": {
+        "id": "03h64la81jhdvsw3z1e1jcy7a",
+        "indexId": "03h64la81jhdvsw3z1c6oo002",
+        "columnId": "03h64la81jhdvsw3z0qwb82w6",
+        "orderType": 1
+      },
+      "03h64phwvinhsenzz1nvmn1zb": {
+        "id": "03h64phwvinhsenzz1nvmn1zb",
+        "indexId": "03h64phwvinhsenzz1j5h1ubb",
+        "columnId": "03h64la81jhdvsw3z0opxn459",
+        "orderType": 1
+      },
+      "03h1btdua3ijuz4c773csbysq": {
+        "id": "03h1btdua3ijuz4c773csbysq",
+        "indexId": "03h6jvzg07bv5pctizzfeydig",
+        "columnId": "03h4468ge3qzlp0kxl231a1t9",
+        "orderType": 1
+      },
+      "03hid9awj3zjq2kn52i1fslmp": {
+        "id": "03hid9awj3zjq2kn52i1fslmp",
+        "indexId": "03h6jvzg07bv5pctizzfeydig",
+        "columnId": "03h4468ge3qzlp0kxkw3vc1jr",
+        "orderType": 1
+      },
+      "03h3us3xxggcc0kv2rxd8kp1y": {
+        "id": "03h3us3xxggcc0kv2rxd8kp1y",
+        "indexId": "03h8ubyxj764q6dplogninvz7",
+        "columnId": "03hc3v6x6j7cqxiyz8y4eqbtd",
+        "orderType": 1
+      },
+      "03hcoy5rf264iyb73ghfh34p9": {
+        "id": "03hcoy5rf264iyb73ghfh34p9",
+        "indexId": "03h96tf6luapcjplha68rmshw",
+        "columnId": "03h4468ge977zqezlqaixpvhr",
+        "orderType": 1
+      },
+      "03hj59bnrqpg1crqubacf1zxu": {
+        "id": "03hj59bnrqpg1crqubacf1zxu",
+        "indexId": "03hhqhiojqago3zp0mp9fe1ud",
+        "columnId": "03huodysqek1979lnd2mmzh5q",
+        "orderType": 1
+      },
+      "03he27hcddyi48hvjshyeei9n": {
+        "id": "03he27hcddyi48hvjshyeei9n",
+        "indexId": "03hkai8ej1t3rpyvajrxv4ghy",
+        "columnId": "03h4468geephs5erx6gl4ars7",
+        "orderType": 1
+      },
+      "03hcr4atwfmzmik0ed9vodf1o": {
+        "id": "03hcr4atwfmzmik0ed9vodf1o",
+        "indexId": "03hlnnu5iae7wujmbxaeadqae",
+        "columnId": "03hlcwvpw0kx35p5chf9p508l",
+        "orderType": 1
+      },
+      "03hjdgjmc6viae9eyfsyntnpo": {
+        "id": "03hjdgjmc6viae9eyfsyntnpo",
+        "indexId": "03hlnnu5iae7wujmbxaeadqae",
+        "columnId": "03hqxoy32pwtxhgcjzgftywze",
+        "orderType": 1
+      },
+      "03hfnshyz68ayy1dac53a5bop": {
+        "id": "03hfnshyz68ayy1dac53a5bop",
+        "indexId": "03hm0aljsf2p1ioh72tt3of0s",
+        "columnId": "03hl0jogeer0auxb3twgejymv",
+        "orderType": 1
+      },
+      "03hl1p6a1edsrwagbs76oy1b1": {
+        "id": "03hl1p6a1edsrwagbs76oy1b1",
+        "indexId": "03hnq42h7pyx0zzgh0fgz5rs6",
+        "columnId": "03hovv9ltyvkj632hjnteg3ud",
+        "orderType": 1
+      },
+      "03hva62ow4vlm2gtcpi12r2o5": {
+        "id": "03hva62ow4vlm2gtcpi12r2o5",
+        "indexId": "03hnq42h7pyx0zzgh0fgz5rs6",
+        "columnId": "03hsjh2xbc8hvtixwo540yg5v",
+        "orderType": 1
+      },
+      "03hshfxoqr1ekkz4hnzpvvjxe": {
+        "id": "03hshfxoqr1ekkz4hnzpvvjxe",
+        "indexId": "03hq8751kxx725f793dglfpkz",
+        "columnId": "03h4468ge977zqezlhvteit1r",
+        "orderType": 1
+      },
+      "03huukffyjfhhdfo1it76fa3j": {
+        "id": "03huukffyjfhhdfo1it76fa3j",
+        "indexId": "03hq8751kxx725f793dglfpkz",
+        "columnId": "03h4468ge977zqezlhu49kpu8",
+        "orderType": 1
+      },
+      "03hqxlhr8a29c751540ttig0v": {
+        "id": "03hqxlhr8a29c751540ttig0v",
+        "indexId": "03hqu1oig4ysptwuplrg52lfk",
+        "columnId": "03h4468geephs5erx6cktdrum",
+        "orderType": 1
+      },
+      "03h4e8l0t7xb349kf7fainqow": {
+        "id": "03h4e8l0t7xb349kf7fainqow",
+        "indexId": "03hr8oiz2t2vfr123yjl34sav",
+        "columnId": "03h59fjnemh81jnvofj01265f",
+        "orderType": 1
+      },
+      "03hc093dg0z6gjes0pqhglr6y": {
+        "id": "03hc093dg0z6gjes0pqhglr6y",
+        "indexId": "03hsv9s34tyfrrx1o6tgp7pyg",
+        "columnId": "03h4468ge3qzlp0kxmssx2mpj",
+        "orderType": 1
+      },
+      "03hoofy5phb30h47ivtnxhnox": {
+        "id": "03hoofy5phb30h47ivtnxhnox",
+        "indexId": "03hsv9s34tyfrrx1o6tgp7pyg",
+        "columnId": "03hk7a4hty35b1cuhqurqmvpq",
+        "orderType": 1
+      },
       "03h07q77u3l8clmxl0px8fgkx": {
         "id": "03h07q77u3l8clmxl0px8fgkx",
         "indexId": "03hvh0oej5atof0uj0zf90ze2",
@@ -5692,138 +6473,6 @@
         "id": "03hvets059wubvmwnl80tjoyp",
         "indexId": "03hvh0oej5atof0uj0zf90ze2",
         "columnId": "03h2g80rhgcqcfsgwnhp5nzvv",
-        "orderType": 1
-      },
-      "03h4e8l0t7xb349kf7fainqow": {
-        "id": "03h4e8l0t7xb349kf7fainqow",
-        "indexId": "03hr8oiz2t2vfr123yjl34sav",
-        "columnId": "03h59fjnemh81jnvofj01265f",
-        "orderType": 1
-      },
-      "03hva62ow4vlm2gtcpi12r2o5": {
-        "id": "03hva62ow4vlm2gtcpi12r2o5",
-        "indexId": "03hnq42h7pyx0zzgh0fgz5rs6",
-        "columnId": "03hsjh2xbc8hvtixwo540yg5v",
-        "orderType": 1
-      },
-      "03hl1p6a1edsrwagbs76oy1b1": {
-        "id": "03hl1p6a1edsrwagbs76oy1b1",
-        "indexId": "03hnq42h7pyx0zzgh0fgz5rs6",
-        "columnId": "03hovv9ltyvkj632hjnteg3ud",
-        "orderType": 1
-      },
-      "03hc093dg0z6gjes0pqhglr6y": {
-        "id": "03hc093dg0z6gjes0pqhglr6y",
-        "indexId": "03hsv9s34tyfrrx1o6tgp7pyg",
-        "columnId": "03h4468ge3qzlp0kxmssx2mpj",
-        "orderType": 1
-      },
-      "03hoofy5phb30h47ivtnxhnox": {
-        "id": "03hoofy5phb30h47ivtnxhnox",
-        "indexId": "03hsv9s34tyfrrx1o6tgp7pyg",
-        "columnId": "03hk7a4hty35b1cuhqurqmvpq",
-        "orderType": 1
-      },
-      "03hj59bnrqpg1crqubacf1zxu": {
-        "id": "03hj59bnrqpg1crqubacf1zxu",
-        "indexId": "03hhqhiojqago3zp0mp9fe1ud",
-        "columnId": "03huodysqek1979lnd2mmzh5q",
-        "orderType": 1
-      },
-      "03hfnshyz68ayy1dac53a5bop": {
-        "id": "03hfnshyz68ayy1dac53a5bop",
-        "indexId": "03hm0aljsf2p1ioh72tt3of0s",
-        "columnId": "03hl0jogeer0auxb3twgejymv",
-        "orderType": 1
-      },
-      "03hcdyjjr6skwknbsvpey1xhu": {
-        "id": "03hcdyjjr6skwknbsvpey1xhu",
-        "indexId": "03h4wynmqmu1gnj4k9lelu1br",
-        "columnId": "03h4468ge3qzlp0kxldxmq81d",
-        "orderType": 1
-      },
-      "03hbavb921a83pwttleo1f9rz": {
-        "id": "03hbavb921a83pwttleo1f9rz",
-        "indexId": "03h4wynmqmu1gnj4k9lelu1br",
-        "columnId": "03h4468ge3qzlp0kxli2dy4fu",
-        "orderType": 1
-      },
-      "03hre4kwv9b1ed0bmgtyltl8n": {
-        "id": "03hre4kwv9b1ed0bmgtyltl8n",
-        "indexId": "03h4wynmqmu1gnj4k9lelu1br",
-        "columnId": "03h4468ge3qzlp0kxljsgwhi1",
-        "orderType": 1
-      },
-      "03huukffyjfhhdfo1it76fa3j": {
-        "id": "03huukffyjfhhdfo1it76fa3j",
-        "indexId": "03hq8751kxx725f793dglfpkz",
-        "columnId": "03h4468ge977zqezlhu49kpu8",
-        "orderType": 1
-      },
-      "03hshfxoqr1ekkz4hnzpvvjxe": {
-        "id": "03hshfxoqr1ekkz4hnzpvvjxe",
-        "indexId": "03hq8751kxx725f793dglfpkz",
-        "columnId": "03h4468ge977zqezlhvteit1r",
-        "orderType": 1
-      },
-      "03hid9awj3zjq2kn52i1fslmp": {
-        "id": "03hid9awj3zjq2kn52i1fslmp",
-        "indexId": "03h6jvzg07bv5pctizzfeydig",
-        "columnId": "03h4468ge3qzlp0kxkw3vc1jr",
-        "orderType": 1
-      },
-      "03h1btdua3ijuz4c773csbysq": {
-        "id": "03h1btdua3ijuz4c773csbysq",
-        "indexId": "03h6jvzg07bv5pctizzfeydig",
-        "columnId": "03h4468ge3qzlp0kxl231a1t9",
-        "orderType": 1
-      },
-      "03hcr4atwfmzmik0ed9vodf1o": {
-        "id": "03hcr4atwfmzmik0ed9vodf1o",
-        "indexId": "03hlnnu5iae7wujmbxaeadqae",
-        "columnId": "03hlcwvpw0kx35p5chf9p508l",
-        "orderType": 1
-      },
-      "03hjdgjmc6viae9eyfsyntnpo": {
-        "id": "03hjdgjmc6viae9eyfsyntnpo",
-        "indexId": "03hlnnu5iae7wujmbxaeadqae",
-        "columnId": "03hqxoy32pwtxhgcjzgftywze",
-        "orderType": 1
-      },
-      "03h3us3xxggcc0kv2rxd8kp1y": {
-        "id": "03h3us3xxggcc0kv2rxd8kp1y",
-        "indexId": "03h8ubyxj764q6dplogninvz7",
-        "columnId": "03hc3v6x6j7cqxiyz8y4eqbtd",
-        "orderType": 1
-      },
-      "03hcoy5rf264iyb73ghfh34p9": {
-        "id": "03hcoy5rf264iyb73ghfh34p9",
-        "indexId": "03h96tf6luapcjplha68rmshw",
-        "columnId": "03h4468ge977zqezlqaixpvhr",
-        "orderType": 1
-      },
-      "03hqxlhr8a29c751540ttig0v": {
-        "id": "03hqxlhr8a29c751540ttig0v",
-        "indexId": "03hqu1oig4ysptwuplrg52lfk",
-        "columnId": "03h4468geephs5erx6cktdrum",
-        "orderType": 1
-      },
-      "03he27hcddyi48hvjshyeei9n": {
-        "id": "03he27hcddyi48hvjshyeei9n",
-        "indexId": "03hkai8ej1t3rpyvajrxv4ghy",
-        "columnId": "03h4468geephs5erx6gl4ars7",
-        "orderType": 1
-      },
-      "03hgv1gyiegimgdx5bwhktte4": {
-        "id": "03hgv1gyiegimgdx5bwhktte4",
-        "indexId": "03hu5ds1pp8c4b796qcsgundh",
-        "columnId": "03h4468ge3qzlp0kxkw3vc1jr",
-        "orderType": 1
-      },
-      "03hdm446963llhx2z7xj5b77i": {
-        "id": "03hdm446963llhx2z7xj5b77i",
-        "indexId": "03hu5ds1pp8c4b796qcsgundh",
-        "columnId": "03h4468ge3qzlp0kxl57mkayr",
         "orderType": 1
       }
     },
@@ -5903,7 +6552,7 @@
         "ui": {
           "x": 50,
           "y": 1794,
-          "width": 3385,
+          "width": 11800,
           "height": 1110
         }
       },
