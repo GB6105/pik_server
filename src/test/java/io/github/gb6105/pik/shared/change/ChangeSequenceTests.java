@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import io.github.gb6105.pik.TestcontainersConfiguration;
+import jakarta.persistence.EntityManager;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
@@ -32,6 +33,9 @@ class ChangeSequenceTests {
 
 	@Autowired
 	JdbcClient jdbc;
+
+	@Autowired
+	EntityManager entityManager;
 
 	@Test
 	void numbersIncreasePerOwner() {
@@ -97,10 +101,37 @@ class ChangeSequenceTests {
 	}
 
 	@Test
+	void pendingJpaChangesAreFlushedBeforeTheNumber() {
+		UUID principal = UUID.randomUUID();
+		jdbc.sql("""
+				INSERT INTO principal (id, kind, status, created_at, updated_at, version)
+				VALUES (:id, 'ANONYMOUS', 'ACTIVE', now(), now(), 0)
+				""").param("id", principal).update();
+
+		List<Long> rows = transactions.execute((status) -> {
+			entityManager.remove(entityManager.createQuery("SELECT p FROM Principal p WHERE p.id = :id")
+				.setParameter("id", principal)
+				.getSingleResult());
+			long beforeNumber = principalRows(principal);
+			changes.nextBlock(UUID.randomUUID(), 1);
+			long afterNumber = principalRows(principal);
+			status.setRollbackOnly();
+			return List.of(beforeNumber, afterNumber);
+		});
+
+		// JDBC reads do not flush, so the pending removal reaches the database only through nextBlock.
+		assertThat(rows).containsExactly(1L, 0L);
+	}
+
+	@Test
 	void requiresCallerTransaction() {
 		assertThatThrownBy(() -> changes.next(UUID.randomUUID())).isInstanceOf(IllegalTransactionStateException.class);
 		assertThatThrownBy(() -> changes.nextBlock(UUID.randomUUID(), 2))
 			.isInstanceOf(IllegalTransactionStateException.class);
+	}
+
+	private long principalRows(UUID id) {
+		return jdbc.sql("SELECT count(*) FROM principal WHERE id = :id").param("id", id).query(Long.class).single();
 	}
 
 	private long waitingLocks() {
