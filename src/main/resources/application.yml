@@ -70,6 +70,30 @@ pik:
     # HMAC keys for Android device IDs: "<version>:<base64 key>" entries separated by commas, at least 32 bytes each.
     # The highest version hashes new devices. Empty only in the local and test profiles, which use an ephemeral key.
     device-keys: ${PIK_USAGE_DEVICE_KEYS:}
+  analysis:
+    # POST /analysis-jobs stays off until stages 5-1 to 5-3 are merged and the listener tests pass (design 4.4).
+    intake-enabled: false
+    intake:
+      # Deadlines fixed on new jobs (design 2.2).
+      upload-deadline: PT24H
+      processing-deadline: PT48H
+    grouping:
+      # Off: vectors are only checked for structure, none is stored and every photo is single (design 1.4).
+      enabled: false
+      # Grouping rule v1 (design 1.3, P05). Any change of a grouping value gives a new rule version.
+      window: PT120S
+      max-group-size: 20
+      zero-norm-epsilon: 1e-6
+      # Registered vector models: model and model-version (1 to 64 printable ASCII characters), dims (1 to 2250)
+      # and threshold θ in (0, 1), each (model, model-version) once. Must not be empty when grouping is enabled.
+      models: []
+    manifest:
+      # Call manifest fixed on new jobs (design 2.5). Stage 5-1 holds the model and the upload policy only; the
+      # upload values are settled with the D-07 measurements.
+      model: claude-haiku-5-5
+      content-type: image/jpeg
+      max-bytes: 2097152
+      max-long-edge-px: 1568
 
 # Field allow list from ADR-0023 #9; anything else (thread, MDC extras, request data) is dropped.
 logging:
