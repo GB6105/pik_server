@@ -231,23 +231,24 @@ class IntakeRecords {
 
 	/**
 	 * The jobs the items of a request point at, once each: the jobs it created and the jobs of other requests its
-	 * {@code IN_PROGRESS} photos wait for (the scope of {@code counts} and {@code phase}). Ordered by the
-	 * {@code photoId} of their representatives (unsigned, as {@code uuid} compares), then by job ID, with the upload
-	 * policy of their manifest.
+	 * {@code IN_PROGRESS} photos wait for (the scope of {@code counts} and {@code phase}). Each carries the client's ID
+	 * of its representative photo, read from the photo row, and is ordered by it (unsigned, as {@code uuid} compares),
+	 * then by job ID, with the upload policy of its manifest.
 	 */
 	List<JobView> jobs(UUID requestId) {
 		return jdbc.sql("""
-				SELECT j.id, j.request_id, j.group_id, j.status, m.content_type, m.max_bytes, m.max_long_edge_px
+				SELECT j.id, j.request_id, j.group_id, p.client_ref AS representative, j.status, m.content_type,
+				       m.max_bytes, m.max_long_edge_px
 				FROM analysis_job j
 				JOIN analysis_call_manifest m ON m.id = j.manifest_id
-				JOIN analysis_request_item rep ON rep.request_id = j.request_id AND rep.photo_id = j.photo_id
+				JOIN photo p ON p.id = j.photo_id
 				WHERE j.id IN (SELECT i.analysis_job_id FROM analysis_request_item i
 				               WHERE i.request_id = :request AND i.analysis_job_id IS NOT NULL)
-				ORDER BY rep.client_ref, j.id
+				ORDER BY p.client_ref, j.id
 				""").param("request", requestId).query((rs, rowNum) -> {
 			JobStatus status = JobStatus.valueOf(rs.getString("status"));
 			return new JobView(rs.getObject("id", UUID.class), rs.getObject("request_id", UUID.class),
-					rs.getObject("group_id", UUID.class), status,
+					rs.getObject("group_id", UUID.class), rs.getObject("representative", UUID.class), status,
 					status == JobStatus.AWAITING_UPLOAD, new UploadPolicy(rs.getString("content_type"),
 							rs.getLong("max_bytes"), rs.getInt("max_long_edge_px")));
 		}).list();

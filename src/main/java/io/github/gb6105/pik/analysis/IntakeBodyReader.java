@@ -37,7 +37,7 @@ import tools.jackson.databind.json.JsonMapper;
  * its bytes can be hashed as sent (design 1.1, B6-2.E5). Failures are the same problem responses as framework errors:
  * {@code INVALID_INPUT} with {@code MEDIA_TYPE_NOT_SUPPORTED}, {@code REQUEST_TOO_LARGE}, {@code MALFORMED_BODY},
  * then, after the idempotency lookup, {@code VALIDATION_FAILED}, {@code DUPLICATE_PHOTO} and {@code TAKEN_AT_INVALID}
- * (plan 4.3). None of them is stored for the key.
+ * (plan 4.3). None of them is stored for the key. Only a body that could not be read whole is retryable.
  */
 @Component
 @RequiredArgsConstructor
@@ -91,8 +91,8 @@ class IntakeBodyReader {
 			body = request.getInputStream().readNBytes(limit + 1);
 		}
 		catch (IOException ex) {
-			// The body did not arrive whole; nothing was read for the key, so it may be sent again.
-			throw invalid("MALFORMED_BODY");
+			// The body did not arrive whole; nothing was read for the key, so it may be sent again as it is.
+			throw new PikException(ErrorCode.INVALID_INPUT, "MALFORMED_BODY", true);
 		}
 		if (body.length > limit) {
 			throw invalid("REQUEST_TOO_LARGE");

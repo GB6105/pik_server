@@ -78,6 +78,15 @@ class IntakeRequestChecksTests {
 		assertThatNoException().isThrownBy(() -> reader.validate(command(List.of(photo("v".repeat(128))))));
 	}
 
+	// Counted in code points, as PostgreSQL's char_length counts them: 128 emoji are 256 UTF-16 units.
+	@Test
+	void contentVersionLengthCountsCodePoints() {
+		String camera = "\ud83d\udcf7";
+
+		assertThatNoException().isThrownBy(() -> reader.validate(command(List.of(photo(camera.repeat(128))))));
+		assertRejected("VALIDATION_FAILED", () -> reader.validate(command(List.of(photo(camera.repeat(129))))));
+	}
+
 	@Test
 	void vectorModelHasOneTo64CharactersAndDataAtMost12000() {
 		assertRejected("VALIDATION_FAILED", () -> reader.validate(withVector(new VectorInput("m".repeat(65), "1", ""))));
@@ -148,9 +157,19 @@ class IntakeRequestChecksTests {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = { "v\0", "v\n1", "\u007f", "v\u00851" })
-	void contentVersionHasNoControlCharacter(String version) {
+	@ValueSource(strings = { "v\0", "v\n1", "\u007f", "v\u00851", "v\ud83d", "\udcf7v", "v\udcf7\ud83d" })
+	void contentVersionHasNoControlCharacterOrUnpairedSurrogate(String version) {
 		assertRejected("VALIDATION_FAILED", () -> reader.validate(command(List.of(photo(version)))));
+	}
+
+	// JSON escapes can carry a surrogate without its pair; UTF-8 cannot hold it.
+	@Test
+	void unpairedSurrogateFromJsonIsAValidationFailure() {
+		IntakeCommand command = reader.read(request("{\"trigger\": \"NEW_PHOTOS\", \"photos\": [{\"photoId\": \""
+				+ UUID.randomUUID() + "\", \"contentVersion\": \"v\\ud83d\"}]}")).command();
+
+		assertThat(command.photos().getFirst().contentVersion()).isEqualTo("v\ud83d");
+		assertRejected("VALIDATION_FAILED", () -> reader.validate(command));
 	}
 
 	@Test
@@ -225,7 +244,8 @@ class IntakeRequestChecksTests {
 		};
 		broken.setContentType("application/json");
 
-		assertRejected("MALFORMED_BODY", () -> reader.read(broken));
+		// Nothing was read for the key: the same body may be sent again.
+		assertRejected("MALFORMED_BODY", true, () -> reader.read(broken));
 	}
 
 	@Test
@@ -321,10 +341,14 @@ class IntakeRequestChecksTests {
 	}
 
 	private static void assertRejected(String reason, Executable check) {
+		assertRejected(reason, false, check);
+	}
+
+	private static void assertRejected(String reason, boolean retryable, Executable check) {
 		assertThatThrownBy(check::execute).isInstanceOfSatisfying(PikException.class, (ex) -> {
 			assertThat(ex.getCode()).isEqualTo(ErrorCode.INVALID_INPUT);
 			assertThat(ex.getReason()).isEqualTo(reason);
-			assertThat(ex.isRetryable()).isFalse();
+			assertThat(ex.isRetryable()).isEqualTo(retryable);
 		});
 	}
 

@@ -169,6 +169,11 @@ class AnalysisIntakeGroupingTests {
 		assertThat(jobs.get(0).get("analysisJobId")).isEqualTo(member.get("analysisJobId"));
 		assertThat(jobs.get(0).get("requestId")).isEqualTo(accepted.get("jobId"));
 		assertThat(jobs.get(0).get("groupId")).isEqualTo(member.get("groupId"));
+		// The representative to upload, which this request did not send.
+		Photo representative = (memberPhoto == a) ? b : a;
+		assertThat(jobs.get(0).get("representativePhotoId").asString()).isEqualTo(representative.photoId().toString());
+		assertThat(json(result).get("items")).extracting((sent) -> sent.get("photoId").asString())
+			.containsExactly(memberPhoto.photoId().toString());
 		assertThat(jobs.get(0).get("status").asString()).isEqualTo("AWAITING_UPLOAD");
 		assertThat(jobs.get(0).get("uploadRequired").asBoolean()).isTrue();
 		assertThat(json(result).get("counts").get("waiting").asInt()).isEqualTo(1);

@@ -86,7 +86,7 @@ pik:
       window: PT120S
       max-group-size: 20
       zero-norm-epsilon: 1e-6
-      # Registered vector models: model and model-version (1 to 64 printable ASCII characters), dims (1 to 2250)
+      # Registered vector models: model and model-version (1 to 64 visible ASCII characters), dims (1 to 2250)
       # and threshold θ in (0, 1), each (model, model-version) once. Must not be empty when grouping is enabled.
       models: []
     manifest:

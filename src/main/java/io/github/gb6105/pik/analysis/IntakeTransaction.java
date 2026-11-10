@@ -48,9 +48,12 @@ import org.springframework.util.Assert;
  * <p>
  * One exception: the jobs that hold photos of an {@link Reservation.AlreadyReserved} answer are not locked before
  * the usage allocation. The items that point at them take the FK {@code KEY SHARE} lock on those jobs after the usage
- * lock. This is safe only because {@code KEY SHARE} does not conflict with {@code FOR NO KEY UPDATE}: every
- * transaction of stage 5-2 that locks a job first and the usage after it (state transitions and the claim) must use
- * {@code FOR NO KEY UPDATE} or {@code FOR NO KEY UPDATE SKIP LOCKED}, never {@code FOR UPDATE}.
+ * lock. This is safe only because {@code KEY SHARE} does not conflict with {@code FOR NO KEY UPDATE}: a transaction
+ * that locks an {@code analysis_job} row before the usage lock (state transitions and the claim of stage 5-2) must not
+ * take a lock stronger than {@code FOR NO KEY UPDATE} on it, which rules out {@code FOR UPDATE}, {@code DELETE} and
+ * an {@code UPDATE} of {@code id} or {@code group_id}, unless it holds the principal's intake advisory lock first
+ * ({@link IntakeLocks}). Job locks are written in native SQL ({@code FOR NO KEY UPDATE [SKIP LOCKED]}), since a JPA
+ * lock with {@code SKIP_LOCKED} can emit {@code FOR UPDATE}.
  */
 @Component
 @RequiredArgsConstructor

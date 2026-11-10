@@ -27,14 +27,14 @@ class AnalysisSettingsTests {
 			"pik.analysis.manifest.model=claude-haiku-5-5", "pik.analysis.manifest.content-type=image/jpeg",
 			"pik.analysis.manifest.max-bytes=2097152", "pik.analysis.manifest.max-long-edge-px=1568" };
 
-	static final String MODEL_MESSAGE = "grouping.models[].model must have 1 to 64 printable ASCII characters"
+	static final String MODEL_MESSAGE = "grouping.models[].model must have 1 to 64 visible ASCII characters"
 			+ " (0x21 to 0x7E)";
 
-	static final String VERSION_MESSAGE = "grouping.models[].model-version must have 1 to 64 printable ASCII"
+	static final String VERSION_MESSAGE = "grouping.models[].model-version must have 1 to 64 visible ASCII"
 			+ " characters (0x21 to 0x7E)";
 
 	// Each has a character outside 0x21 to 0x7E inside; values are trimmed when bound, so none is at either end.
-	static final String[] NOT_PRINTABLE_ASCII = { "pik embed", "pik\tembed", "pik\u0000embed", "pik\u007fembed",
+	static final String[] NOT_VISIBLE_ASCII = { "pik embed", "pik\tembed", "pik\u0000embed", "pik\u007fembed",
 			"pik\ud800embed", "pik\u00e9mbed", "\ud53d\uc775" };
 
 	static final String ON = "pik.analysis.grouping.enabled=true";
@@ -108,15 +108,15 @@ class AnalysisSettingsTests {
 
 	@Test
 	void settingsThatGoIntoManifestsMustBePrintableAscii() {
-		for (String value : NOT_PRINTABLE_ASCII) {
+		for (String value : NOT_VISIBLE_ASCII) {
 			assertFails(MODEL_MESSAGE, properties(ON, model(0, value, "1", "512", "0.9")));
 			assertFails(VERSION_MESSAGE, properties(ON, model(0, "pik-embed", value, "512", "0.9")));
-			assertFails("manifest.model must have 1 or more printable ASCII characters (0x21 to 0x7E)",
+			assertFails("manifest.model must have 1 or more visible ASCII characters (0x21 to 0x7E)",
 					"pik.analysis.manifest.model=" + value);
-			assertFails("manifest.content-type must have 1 or more printable ASCII characters (0x21 to 0x7E)",
+			assertFails("manifest.content-type must have 1 or more visible ASCII characters (0x21 to 0x7E)",
 					"pik.analysis.manifest.content-type=" + value);
 		}
-		assertFails("manifest.content-type must have 1 or more printable ASCII characters (0x21 to 0x7E)",
+		assertFails("manifest.content-type must have 1 or more visible ASCII characters (0x21 to 0x7E)",
 				"pik.analysis.manifest.content-type=image/jpeg; q=1");
 	}
 
@@ -138,9 +138,9 @@ class AnalysisSettingsTests {
 		assertFails("grouping.max-group-size must be at least 1", "pik.analysis.grouping.max-group-size=0");
 		assertFails("grouping.zero-norm-epsilon must be positive", "pik.analysis.grouping.zero-norm-epsilon=0");
 		assertFails("grouping.zero-norm-epsilon must be positive", "pik.analysis.grouping.zero-norm-epsilon=NaN");
-		assertFails("manifest.model must have 1 or more printable ASCII characters (0x21 to 0x7E)",
+		assertFails("manifest.model must have 1 or more visible ASCII characters (0x21 to 0x7E)",
 				"pik.analysis.manifest.model=");
-		assertFails("manifest.content-type must have 1 or more printable ASCII characters (0x21 to 0x7E)",
+		assertFails("manifest.content-type must have 1 or more visible ASCII characters (0x21 to 0x7E)",
 				"pik.analysis.manifest.content-type= ");
 		assertFails("manifest.max-bytes must be positive", "pik.analysis.manifest.max-bytes=0");
 		assertFails("manifest.max-long-edge-px must be positive", "pik.analysis.manifest.max-long-edge-px=0");

@@ -87,8 +87,8 @@ record AnalysisProperties(boolean intakeEnabled, Intake intake, Grouping groupin
 	/**
 	 * A vector model the devices send.
 	 *
-	 * @param model the model ID, 1 to 64 printable ASCII characters
-	 * @param modelVersion the model version, 1 to 64 printable ASCII characters
+	 * @param model the model ID, 1 to 64 visible ASCII characters (no space)
+	 * @param modelVersion the model version, 1 to 64 visible ASCII characters (no space)
 	 * @param dims the number of float32 values of its vectors
 	 * @param threshold θ, the cosine similarity that every pair of photos in a group must reach. Below 1, since the
 	 * double cosine of equal vectors can be just below 1
@@ -96,12 +96,12 @@ record AnalysisProperties(boolean intakeEnabled, Intake intake, Grouping groupin
 	record Model(String model, String modelVersion, int dims, double threshold) {
 
 		Model {
-			Assert.isTrue(printableAscii(model) && model.length() <= MAX_MODEL_LENGTH,
+			Assert.isTrue(visibleAscii(model) && model.length() <= MAX_MODEL_LENGTH,
 					"grouping.models[].model must have 1 to " + MAX_MODEL_LENGTH
-							+ " printable ASCII characters (0x21 to 0x7E)");
-			Assert.isTrue(printableAscii(modelVersion) && modelVersion.length() <= MAX_MODEL_LENGTH,
+							+ " visible ASCII characters (0x21 to 0x7E)");
+			Assert.isTrue(visibleAscii(modelVersion) && modelVersion.length() <= MAX_MODEL_LENGTH,
 					"grouping.models[].model-version must have 1 to " + MAX_MODEL_LENGTH
-							+ " printable ASCII characters (0x21 to 0x7E)");
+							+ " visible ASCII characters (0x21 to 0x7E)");
 			Assert.isTrue(dims >= 1 && dims <= MAX_DIMS, "grouping.models[].dims must be between 1 and " + MAX_DIMS);
 			Assert.isTrue(threshold > 0 && threshold < 1, "grouping.models[].threshold must be in (0, 1)");
 		}
@@ -111,18 +111,18 @@ record AnalysisProperties(boolean intakeEnabled, Intake intake, Grouping groupin
 	/**
 	 * Call manifest of stage 5-1: the model and the upload policy only; stage 5-2 adds prompt, schema and prices.
 	 *
-	 * @param model the Claude model, printable ASCII
-	 * @param contentType the image type devices upload, printable ASCII
+	 * @param model the Claude model, visible ASCII (no space)
+	 * @param contentType the image type devices upload, visible ASCII (no space)
 	 * @param maxBytes the largest upload
 	 * @param maxLongEdgePx the longest image edge devices upload
 	 */
 	record Manifest(String model, String contentType, int maxBytes, int maxLongEdgePx) {
 
 		Manifest {
-			Assert.isTrue(printableAscii(model),
-					"manifest.model must have 1 or more printable ASCII characters (0x21 to 0x7E)");
-			Assert.isTrue(printableAscii(contentType),
-					"manifest.content-type must have 1 or more printable ASCII characters (0x21 to 0x7E)");
+			Assert.isTrue(visibleAscii(model),
+					"manifest.model must have 1 or more visible ASCII characters (0x21 to 0x7E)");
+			Assert.isTrue(visibleAscii(contentType),
+					"manifest.content-type must have 1 or more visible ASCII characters (0x21 to 0x7E)");
 			Assert.isTrue(maxBytes >= 1, "manifest.max-bytes must be positive");
 			Assert.isTrue(maxLongEdgePx >= 1, "manifest.max-long-edge-px must be positive");
 		}
@@ -130,10 +130,11 @@ record AnalysisProperties(boolean intakeEnabled, Intake intake, Grouping groupin
 	}
 
 	/**
-	 * Setting strings that go into a manifest are printable ASCII without spaces, so that no control character or
-	 * lone surrogate reaches {@link CanonicalJson} and the UTF-8 bytes it hashes.
+	 * Visible ASCII, 0x21 to 0x7E without space, for setting strings that go into a manifest, so that no control
+	 * character or lone surrogate reaches {@link CanonicalJson} and the UTF-8 bytes it hashes. Request values take
+	 * the wider rule with space ({@link IntakeCommand#ASCII_WITH_SPACE}).
 	 */
-	private static boolean printableAscii(@Nullable String value) {
+	private static boolean visibleAscii(@Nullable String value) {
 		return value != null && !value.isEmpty() && value.chars().allMatch((c) -> c >= 0x21 && c <= 0x7E);
 	}
 

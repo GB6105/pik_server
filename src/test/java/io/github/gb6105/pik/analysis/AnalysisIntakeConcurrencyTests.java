@@ -7,7 +7,6 @@ import static io.github.gb6105.pik.analysis.IntakeFixtures.key;
 import static io.github.gb6105.pik.analysis.IntakeFixtures.photo;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
@@ -18,6 +17,7 @@ import static org.mockito.Mockito.doAnswer;
 import io.github.gb6105.pik.TestcontainersConfiguration;
 import io.github.gb6105.pik.analysis.IntakeFixtures.Installed;
 import io.github.gb6105.pik.analysis.IntakeFixtures.Photo;
+import io.github.gb6105.pik.consent.AiConsents;
 import io.github.gb6105.pik.usage.TrialUsage;
 import io.github.gb6105.pik.usage.TrialUsage.Reservation;
 import java.sql.SQLException;
@@ -32,7 +32,6 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -62,8 +61,8 @@ import tools.jackson.databind.JsonNode;
 /**
  * C-1 to C-8 of plan 8.3: intake requests against each other, against consent decisions and against job transitions
  * of stage 5-2, on PostgreSQL with real installs, tokens and consents. The tests order the transactions with latches
- * and by polling {@code pg_stat_activity} for lock waits, never by sleeping, and bound every wait. A deadlock fails
- * one transaction with {@code deadlock_detected}, which reaches the client as 503.
+ * and by polling {@code pg_stat_activity} for the lock waits of known backends, never by sleeping, and bound every
+ * wait. A deadlock fails one transaction with {@code deadlock_detected}, which reaches the client as 503.
  */
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest(properties = "pik.analysis.intake-enabled=true")
@@ -74,6 +73,8 @@ class AnalysisIntakeConcurrencyTests {
 	private static final Duration WAIT = Duration.ofSeconds(15);
 
 	// Texts of the statements the tests wait in, as pg_stat_activity shows them.
+	private static final String KEY_LOCK = "pg_advisory_xact_lock(hashtextextended(CAST(";
+
 	private static final String INTAKE_LOCK = "'analysis.intake:'";
 
 	private static final String JOB_PRE_LOCK = "ORDER BY id FOR SHARE";
@@ -84,10 +85,12 @@ class AnalysisIntakeConcurrencyTests {
 
 	private static final String IDEMPOTENCY_INSERT = "INSERT INTO idempotency_record";
 
-	// The row locks a stage 5-2 transition may take on a job: the rule (ADR-0034) and the one it forbids.
-	private static final String NO_KEY_UPDATE = "FOR NO KEY UPDATE";
+	private static final String USAGE_LOCK = "usage_quota";
 
-	private static final String UPDATE = "FOR UPDATE";
+	// The row locks a stage 5-2 transition may take on a job: the rule (ADR-0034) and the one it forbids.
+	private static final String FOR_NO_KEY_UPDATE = "FOR NO KEY UPDATE";
+
+	private static final String FOR_UPDATE = "FOR UPDATE";
 
 	@Autowired
 	MockMvcTester mvc;
@@ -104,6 +107,12 @@ class AnalysisIntakeConcurrencyTests {
 	@MockitoSpyBean
 	IntakeRecords records;
 
+	@MockitoSpyBean
+	AiConsents consents;
+
+	// Set on the thread of an intake started by startIntake, to learn the backend of its business transaction.
+	final ThreadLocal<CompletableFuture<Integer>> backend = new ThreadLocal<>();
+
 	IntakeFixtures fixtures;
 
 	ExecutorService pool;
@@ -112,11 +121,20 @@ class AnalysisIntakeConcurrencyTests {
 	void setUp() {
 		fixtures = new IntakeFixtures(mvc, jdbc);
 		pool = Executors.newCachedThreadPool();
+		// 5a is the first step of the business transaction; stubbed on the spy behind the transaction proxy.
+		doAnswer((invocation) -> {
+			CompletableFuture<Integer> pid = backend.get();
+			if (pid != null) {
+				pid.complete(backendPid());
+			}
+			return invocation.callRealMethod();
+		}).when(AopTestUtils.<AiConsents>getUltimateTargetObject(consents)).lockGrantedBasis(any());
 	}
 
 	@AfterEach
-	void tearDown() {
+	void tearDown() throws InterruptedException {
 		pool.shutdownNow();
+		assertThat(pool.awaitTermination(WAIT.toSeconds(), SECONDS)).as("no task of the test is left running").isTrue();
 	}
 
 	// C-1: the later request waits for the intake lock and answers the shared photos with the earlier jobs.
@@ -128,16 +146,14 @@ class AnalysisIntakeConcurrencyTests {
 		Photo alsoShared = photo("v1");
 		Photo onlySecond = photo("v1");
 		Hold hold = holdFirstReservation(device);
-		Future<MvcTestResult> first = pool
-			.submit(() -> fixtures.intake(device, key(), body("NEW_PHOTOS", onlyFirst, shared, alsoShared)));
+		Intake first = startIntake(device, key(), body("NEW_PHOTOS", onlyFirst, shared, alsoShared));
 		awaitLatch(hold.reached());
-		Future<MvcTestResult> second = pool
-			.submit(() -> fixtures.intake(device, key(), body("NEW_PHOTOS", alsoShared, shared, onlySecond)));
-		awaitWaitIn(INTAKE_LOCK);
+		Intake second = startIntake(device, key(), body("NEW_PHOTOS", alsoShared, shared, onlySecond));
+		awaitWaitIn(second.pid(), INTAKE_LOCK);
 		hold.release().countDown();
 
-		JsonNode earlier = response(first, 202);
-		JsonNode later = response(second, 202);
+		JsonNode earlier = response(first.response(), 202);
+		JsonNode later = response(second.response(), 202);
 		for (Photo photo : List.of(shared, alsoShared)) {
 			assertThat(item(earlier, photo).get("admissionResult").asString()).isEqualTo("ACCEPTED");
 			assertThat(item(later, photo).get("admissionResult").asString()).isEqualTo("IN_PROGRESS");
@@ -173,14 +189,14 @@ class AnalysisIntakeConcurrencyTests {
 		}
 	}
 
-	// C-2
+	// C-2: started together; 6 requests leave the connection pool (10) room for the test thread.
 	@Test
 	void sameKeyAndBodyInParallelStoreOneRequest() throws Exception {
 		Installed device = fixtures.android();
 		String key = key();
 		String body = body("NEW_PHOTOS", photo("v1"), photo("v1"));
 
-		List<Callable<MvcTestResult>> requests = Collections.nCopies(8, () -> fixtures.intake(device, key, body));
+		List<Callable<MvcTestResult>> requests = Collections.nCopies(6, () -> fixtures.intake(device, key, body));
 		List<MvcTestResult> results = parallel(requests);
 
 		Set<String> requestIds = new HashSet<>();
@@ -197,16 +213,28 @@ class AnalysisIntakeConcurrencyTests {
 			}
 		}
 		assertThat(requestIds).hasSize(1);
-		assertThat(count("analysis_request", "owner_id", device)).isOne();
-		assertThat(count("analysis_job", "owner_id", device)).isEqualTo(2);
-		assertThat(count("usage_reservation", "principal_id", device)).isEqualTo(2);
-		assertThat(jdbc.sql("""
-				SELECT count(*) FROM idempotency_record WHERE owner_id = :owner AND operation = :operation
-				""")
-			.param("owner", device.principalId())
-			.param("operation", AnalysisIntake.OPERATION)
-			.query(Long.class)
-			.single()).isOne();
+		assertStoredOnce(device, 2);
+	}
+
+	// C-2: the second request passed the lookup before the first stored its record, waits for the key lock the first
+	// holds and replays the stored response without running the business transaction.
+	@Test
+	void sameKeyWaitingForTheFirstRequestReplaysItsResponse() throws Exception {
+		Installed device = fixtures.android();
+		String key = key();
+		String body = body("NEW_PHOTOS", photo("v1"), photo("v1"));
+		Hold hold = holdFirstReservation(device);
+		Intake first = startIntake(device, key, body);
+		awaitLatch(hold.reached());
+		Intake second = startIntake(device, key, body);
+		awaitBlockedBy(first.pid(), KEY_LOCK);
+		hold.release().countDown();
+
+		JsonNode stored = response(first.response(), 202);
+		JsonNode replayed = response(second.response(), 202);
+		assertThat(replayed).isEqualTo(stored);
+		assertThat(second.backend()).as("the replay reaches no business transaction").isNotDone();
+		assertStoredOnce(device, 2);
 	}
 
 	// C-3: a decision waits while the intake holds the consent and commits after it.
@@ -214,14 +242,13 @@ class AnalysisIntakeConcurrencyTests {
 	void decisionWaitsForTheIntakeHoldingTheConsent() throws Exception {
 		Installed device = fixtures.android();
 		Hold hold = holdFirstReservation(device);
-		Future<MvcTestResult> intake = pool
-			.submit(() -> fixtures.intake(device, key(), body("NEW_PHOTOS", photo("v1"))));
+		Intake intake = startIntake(device, key(), body("NEW_PHOTOS", photo("v1")));
 		awaitLatch(hold.reached());
 		Future<MvcTestResult> decision = pool.submit(() -> fixtures.decide(device, key(), "DENIED", 1));
-		awaitWaitIn(CONSENT_EXCLUSIVE_LOCK);
+		awaitBlockedBy(intake.pid(), CONSENT_EXCLUSIVE_LOCK);
 		hold.release().countDown();
 
-		JsonNode accepted = response(intake, 202);
+		JsonNode accepted = response(intake.response(), 202);
 		assertThat(decision.get(WAIT.toSeconds(), SECONDS)).hasStatusOk();
 		// The request keeps the grant it ran under; the decision replaced that grant afterwards.
 		assertThat(jdbc.sql("SELECT consent_version FROM analysis_request WHERE id = :id")
@@ -236,7 +263,7 @@ class AnalysisIntakeConcurrencyTests {
 	void intakeWaitsForADecisionInProgressAndStoresTheRefusal() throws Exception {
 		Installed device = fixtures.android();
 		String decisionKey = key();
-		CountDownLatch blocking = new CountDownLatch(1);
+		CompletableFuture<Integer> blockerPid = new CompletableFuture<>();
 		CountDownLatch unblock = new CountDownLatch(1);
 		// An uncommitted record for the decision's key holds the decision at its last write, after the consent lock.
 		Future<?> blocker = pool.submit(() -> transactions.executeWithoutResult((status) -> {
@@ -245,22 +272,22 @@ class AnalysisIntakeConcurrencyTests {
 					                                response_body, created_at, expires_at)
 					VALUES (:owner, :key, 'blocker', 'blocker', 200, '{}', now(), now() + INTERVAL '1 day')
 					""").param("owner", device.principalId()).param("key", UUID.fromString(decisionKey)).update();
-			blocking.countDown();
+			blockerPid.complete(backendPid());
 			awaitLatch(unblock);
 			status.setRollbackOnly();
 		}));
-		awaitLatch(blocking);
+		int blocking = blockerPid.get(WAIT.toSeconds(), SECONDS);
 		Future<MvcTestResult> decision = pool.submit(() -> fixtures.decide(device, decisionKey, "DENIED", 1));
-		awaitWaitIn(IDEMPOTENCY_INSERT);
+		awaitBlockedBy(blocking, IDEMPOTENCY_INSERT);
 		String key = key();
 		// The quick check outside the transaction still sees the grant; 5a waits for the decision.
-		Future<MvcTestResult> intake = pool.submit(() -> fixtures.intake(device, key, body("NEW_PHOTOS", photo("v1"))));
-		awaitWaitIn(CONSENT_SHARED_LOCK);
+		Intake intake = startIntake(device, key, body("NEW_PHOTOS", photo("v1")));
+		awaitWaitIn(intake.pid(), CONSENT_SHARED_LOCK);
 		unblock.countDown();
 		blocker.get(WAIT.toSeconds(), SECONDS);
 
 		assertThat(decision.get(WAIT.toSeconds(), SECONDS)).hasStatusOk();
-		JsonNode refused = response(intake, 403);
+		JsonNode refused = response(intake.response(), 403);
 		assertThat(refused.get("code").asString()).isEqualTo("FORBIDDEN");
 		assertThat(refused.get("reason").asString()).isEqualTo("AI_CONSENT_REQUIRED");
 		assertThat(jdbc.sql("""
@@ -281,15 +308,14 @@ class AnalysisIntakeConcurrencyTests {
 		Installed other = fixtures.android();
 		UUID photoId = UUID.randomUUID();
 		Hold hold = holdFirstReservation(one);
-		Future<MvcTestResult> first = pool
-			.submit(() -> fixtures.intake(one, key(), body("NEW_PHOTOS", photo(photoId, "v1"))));
+		Intake first = startIntake(one, key(), body("NEW_PHOTOS", photo(photoId, "v1")));
 		awaitLatch(hold.reached());
 
 		// Completes while the first request holds its uncommitted photo row.
-		JsonNode otherResponse = response(
-				pool.submit(() -> fixtures.intake(other, key(), body("NEW_PHOTOS", photo(photoId, "v2")))), 202);
+		Intake second = startIntake(other, key(), body("NEW_PHOTOS", photo(photoId, "v2")));
+		JsonNode otherResponse = response(second.response(), 202);
 		hold.release().countDown();
-		JsonNode oneResponse = response(first, 202);
+		JsonNode oneResponse = response(first.response(), 202);
 
 		assertThat(item(oneResponse, photoId).get("admissionResult").asString()).isEqualTo("ACCEPTED");
 		assertThat(item(otherResponse, photoId).get("admissionResult").asString()).isEqualTo("ACCEPTED");
@@ -335,7 +361,7 @@ class AnalysisIntakeConcurrencyTests {
 	// C-6: the intake locks the job it points at before the usage allocation (5c'), so a transaction holding the job
 	// and then taking the usage allocation goes first. Also with FOR UPDATE, which C-8's late reference cannot take.
 	@ParameterizedTest(name = "{0}")
-	@ValueSource(strings = { UPDATE, NO_KEY_UPDATE })
+	@ValueSource(strings = { FOR_UPDATE, FOR_NO_KEY_UPDATE })
 	void intakePointingAtALockedJobWaitsBeforeTheUsageLock(String lock) throws Exception {
 		Installed device = fixtures.android();
 		Photo existing = photo("v1");
@@ -353,13 +379,12 @@ class AnalysisIntakeConcurrencyTests {
 			return released;
 		}));
 		awaitLatch(locked);
-		Future<MvcTestResult> intake = pool
-			.submit(() -> fixtures.intake(device, key(), body("NEW_PHOTOS", existing, added)));
-		awaitWaitIn(JOB_PRE_LOCK);
+		Intake intake = startIntake(device, key(), body("NEW_PHOTOS", existing, added));
+		awaitWaitIn(intake.pid(), JOB_PRE_LOCK);
 		proceed.countDown();
 
 		assertThat(transition.get(WAIT.toSeconds(), SECONDS)).isEqualTo(1);
-		JsonNode response = response(intake, 202);
+		JsonNode response = response(intake.response(), 202);
 		assertThat(item(response, existing).get("admissionResult").asString()).isEqualTo("IN_PROGRESS");
 		assertThat(jobOf(response, existing)).isEqualTo(jobId);
 		assertThat(item(response, added).get("admissionResult").asString()).isEqualTo("ACCEPTED");
@@ -376,8 +401,10 @@ class AnalysisIntakeConcurrencyTests {
 		doAnswer((invocation) -> {
 			@SuppressWarnings("unchecked")
 			Map<UUID, List<UUID>> found = (Map<UUID, List<UUID>>) invocation.callRealMethod();
-			// The read of 5c; preparation reads outside the business transaction.
-			if (TransactionSynchronizationManager.isActualTransactionActive() && first.compareAndSet(true, false)) {
+			// The read of 5c, in the business transaction, which writes; preparation reads outside of it.
+			if (TransactionSynchronizationManager.isActualTransactionActive()
+					&& !TransactionSynchronizationManager.isCurrentTransactionReadOnly()
+					&& first.compareAndSet(true, false)) {
 				readLive.set(found);
 				pool.submit(() -> transactions.execute((status) -> endJob(device, jobId)))
 					.get(WAIT.toSeconds(), SECONDS);
@@ -407,13 +434,13 @@ class AnalysisIntakeConcurrencyTests {
 			return released;
 		}));
 		awaitLatch(ended);
-		Future<MvcTestResult> intake = pool.submit(() -> fixtures.intake(device, key(), body("NEW_PHOTOS", photo)));
+		Intake intake = startIntake(device, key(), body("NEW_PHOTOS", photo));
 		// 5c read the job live, as the transition has not committed; 5c' waits for it.
-		awaitWaitIn(JOB_PRE_LOCK);
+		awaitWaitIn(intake.pid(), JOB_PRE_LOCK);
 		commit.countDown();
 
 		assertThat(transition.get(WAIT.toSeconds(), SECONDS)).isEqualTo(1);
-		assertCandidateAgain(device, response(intake, 202), photo, jobId);
+		assertCandidateAgain(device, response(intake.response(), 202), photo, jobId);
 	}
 
 	// C-8: a photo answered AlreadyReserved points at a job 5c' did not lock, so the item's FK check (KEY SHARE on the
@@ -421,9 +448,12 @@ class AnalysisIntakeConcurrencyTests {
 	// does not conflict with that KEY SHARE: both transactions finish.
 	@Test
 	void lateReferenceToAJobDoesNotDeadlockWithANoKeyUpdateTransition() throws Exception {
-		LateReference late = lateReference(NO_KEY_UPDATE);
+		LateReference late = lateReference(FOR_NO_KEY_UPDATE);
 
-		assertLateReferenceAnswered(late);
+		JsonNode response = response(late.intake(), 200);
+		assertThat(item(response, late.photo()).get("admissionResult").asString()).isEqualTo("IN_PROGRESS");
+		assertThat(jobOf(response, late.photo())).isEqualTo(late.jobId());
+		assertThat(late.itemFailure().get()).isNull();
 		// The transition got the usage allocation once the intake committed, and released the job's reservation.
 		assertThat(late.transition().get(WAIT.toSeconds(), SECONDS)).isEqualTo(1);
 		assertThat(jdbc.sql("SELECT status FROM usage_reservation WHERE job_id = :job")
@@ -432,22 +462,28 @@ class AnalysisIntakeConcurrencyTests {
 			.single()).isEqualTo("RELEASED");
 	}
 
-	// C-8 control: the same schedule with FOR UPDATE, which conflicts with KEY SHARE, deadlocks. The transition waits
-	// first, so PostgreSQL finds the cycle in its check after deadlock_timeout and fails it.
+	// C-8 control: the same schedule with FOR UPDATE, which conflicts with KEY SHARE, deadlocks. Exactly one of the two
+	// transactions fails: the intake, whose wait closes the cycle and whose check after deadlock_timeout finds it.
 	@Test
 	void lateReferenceToAJobDeadlocksWithAForUpdateTransition() throws Exception {
-		LateReference late = lateReference(UPDATE);
+		LateReference late = lateReference(FOR_UPDATE);
 
-		assertThatExceptionOfType(ExecutionException.class)
-			.isThrownBy(() -> late.transition().get(WAIT.toSeconds(), SECONDS))
-			.satisfies((ex) -> assertThat(sqlState(ex)).isEqualTo("40P01"));
-		assertLateReferenceAnswered(late);
+		JsonNode failed = response(late.intake(), 503);
+		assertThat(failed.get("reason").asString()).isEqualTo("INTERNAL_ERROR");
+		assertThat(sqlState(late.itemFailure().get())).isEqualTo("40P01");
+		// The transition then got the usage allocation and released the job's reservation.
+		assertThat(late.transition().get(WAIT.toSeconds(), SECONDS)).isEqualTo(1);
+		assertThat(count("analysis_request", "owner_id", late.device())).isOne();
 	}
 
 	/**
-	 * Runs the C-8 schedule: the job ended in a committed transition whose release has not run, so 5c finds no live
-	 * job for the photo and the reservation answers {@code AlreadyReserved}. The transition locks the job, the intake
-	 * takes the usage allocation, the transition waits for it, and only then the intake inserts the item.
+	 * Runs the C-8 schedule. The job ended in a committed transition whose release has not run, so 5c finds no live
+	 * job for the photo and the reservation answers {@code AlreadyReserved}. No designed path of stage 5-2 leaves that
+	 * state, since a transition releases the reservation in its own transaction: an {@code AlreadyReserved} holder
+	 * that 5c' did not lock is a defensive branch, and C-8 pins the lock rule it relies on. The transition locks the
+	 * job, the intake takes the usage allocation, the transition waits for it, and only then the intake inserts the
+	 * item. The transition's {@code deadlock_timeout} is long, so that a cycle is always found by the intake, whose
+	 * wait starts last, whatever the scheduling.
 	 */
 	private LateReference lateReference(String lock) throws Exception {
 		Installed device = fixtures.android();
@@ -455,35 +491,37 @@ class AnalysisIntakeConcurrencyTests {
 		UUID jobId = acceptedJob(device, photo);
 		jdbc.sql("UPDATE analysis_job SET status = 'FAILED' WHERE id = :id").param("id", jobId).update();
 		Hold hold = holdFirstReservation(device);
+		AtomicReference<@Nullable Throwable> itemFailure = new AtomicReference<>();
+		doAnswer((invocation) -> {
+			try {
+				return invocation.callRealMethod();
+			}
+			catch (Throwable ex) {
+				itemFailure.set(ex);
+				throw ex;
+			}
+		}).when(records).insertItems(anyList());
 		CountDownLatch locked = new CountDownLatch(1);
 		CountDownLatch proceed = new CountDownLatch(1);
-		CompletableFuture<Integer> backend = new CompletableFuture<>();
+		CompletableFuture<Integer> transitionPid = new CompletableFuture<>();
 		Future<Integer> transition = pool.submit(() -> transactions.execute((status) -> {
-			backend.complete(jdbc.sql("SELECT pg_backend_pid()").query(Integer.class).single());
+			jdbc.sql("SELECT set_config('deadlock_timeout', '60s', true)").query(String.class).single();
+			transitionPid.complete(backendPid());
 			lockJob(jobId, lock);
 			locked.countDown();
 			awaitLatch(proceed);
 			return trialUsage.release(device.principalId(), jobId);
 		}));
 		awaitLatch(locked);
-		Future<MvcTestResult> intake = pool.submit(() -> fixtures.intake(device, key(), body("NEW_PHOTOS", photo)));
+		Intake intake = startIntake(device, key(), body("NEW_PHOTOS", photo));
 		// The intake holds the usage allocation and has not locked the job.
 		awaitLatch(hold.reached());
 		assertThat(hold.result().get())
 			.isEqualTo(new Reservation.AlreadyReserved(Map.of(serverPhotoId(device, photo), jobId)));
 		proceed.countDown();
-		int pid = backend.get(WAIT.toSeconds(), SECONDS);
-		await("the transition waits for the usage allocation").atMost(WAIT)
-			.pollInterval(Duration.ofMillis(10))
-			.until(() -> waitsForLock(pid));
+		awaitWaitIn(transitionPid.get(WAIT.toSeconds(), SECONDS), USAGE_LOCK);
 		hold.release().countDown();
-		return new LateReference(photo, jobId, intake, transition);
-	}
-
-	private void assertLateReferenceAnswered(LateReference late) throws Exception {
-		JsonNode response = response(late.intake(), 200);
-		assertThat(item(response, late.photo()).get("admissionResult").asString()).isEqualTo("IN_PROGRESS");
-		assertThat(jobOf(response, late.photo())).isEqualTo(late.jobId());
+		return new LateReference(device, photo, jobId, intake.response(), transition, itemFailure);
 	}
 
 	/**
@@ -491,7 +529,7 @@ class AnalysisIntakeConcurrencyTests {
 	 * @return the photos released
 	 */
 	private int endJob(Installed device, UUID jobId) {
-		lockJob(jobId, NO_KEY_UPDATE);
+		lockJob(jobId, FOR_NO_KEY_UPDATE);
 		jdbc.sql("""
 				UPDATE analysis_job SET status = 'CANCELLED', updated_at = now(), version = version + 1 WHERE id = :id
 				""").param("id", jobId).update();
@@ -513,12 +551,42 @@ class AnalysisIntakeConcurrencyTests {
 			.single()).isEqualTo(newJobId);
 	}
 
+	private void assertStoredOnce(Installed device, int photos) {
+		assertThat(count("analysis_request", "owner_id", device)).isOne();
+		assertThat(count("analysis_job", "owner_id", device)).isEqualTo(photos);
+		assertThat(count("usage_reservation", "principal_id", device)).isEqualTo(photos);
+		assertThat(jdbc.sql("""
+				SELECT count(*) FROM idempotency_record WHERE owner_id = :owner AND operation = :operation
+				""")
+			.param("owner", device.principalId())
+			.param("operation", AnalysisIntake.OPERATION)
+			.query(Long.class)
+			.single()).isOne();
+	}
+
 	private void lockJob(UUID jobId, String lock) {
 		jdbc.sql("SELECT id FROM analysis_job WHERE id = :id " + lock).param("id", jobId).query(UUID.class).single();
 	}
 
 	private UUID acceptedJob(Installed device, Photo photo) {
 		return jobOf(response(fixtures.intake(device, key(), body("NEW_PHOTOS", photo)), 202), photo);
+	}
+
+	/**
+	 * Sends the intake request on a thread of the pool; its backend is known once the business transaction starts.
+	 */
+	private Intake startIntake(Installed device, String key, String body) {
+		CompletableFuture<Integer> pid = new CompletableFuture<>();
+		Future<MvcTestResult> response = pool.submit(() -> {
+			backend.set(pid);
+			try {
+				return fixtures.intake(device, key, body);
+			}
+			finally {
+				backend.remove();
+			}
+		});
+		return new Intake(response, pid);
 	}
 
 	/**
@@ -604,24 +672,34 @@ class AnalysisIntakeConcurrencyTests {
 			.single();
 	}
 
+	// In the caller's transaction, if any: the backend that runs it.
+	private int backendPid() {
+		return jdbc.sql("SELECT pg_backend_pid()").query(Integer.class).single();
+	}
+
 	/**
-	 * Waits until another session of this database waits for a lock in a statement that contains the text.
+	 * Waits until the backend waits for a lock in a statement that contains the text.
 	 */
-	private void awaitWaitIn(String text) {
-		await("a session waits for a lock in " + text).atMost(WAIT)
+	private void awaitWaitIn(int pid, String text) {
+		await("backend " + pid + " waits for a lock in " + text).atMost(WAIT)
 			.pollInterval(Duration.ofMillis(10))
 			.until(() -> jdbc.sql("""
 					SELECT count(*) > 0 FROM pg_stat_activity
-					WHERE datname = current_database() AND pid <> pg_backend_pid() AND wait_event_type = 'Lock'
-					  AND position(:text IN query) > 0
-					""").param("text", text).query(Boolean.class).single());
+					WHERE pid = :pid AND wait_event_type = 'Lock' AND position(:text IN query) > 0
+					""").param("pid", pid).param("text", text).query(Boolean.class).single());
 	}
 
-	private boolean waitsForLock(int pid) {
-		return jdbc.sql("SELECT count(*) > 0 FROM pg_stat_activity WHERE pid = :pid AND wait_event_type = 'Lock'")
-			.param("pid", pid)
-			.query(Boolean.class)
-			.single();
+	/**
+	 * Waits until a backend waits, for a lock the given backend holds, in a statement that contains the text.
+	 */
+	private void awaitBlockedBy(int holder, String text) {
+		await("a backend waits for backend " + holder + " in " + text).atMost(WAIT)
+			.pollInterval(Duration.ofMillis(10))
+			.until(() -> jdbc.sql("""
+					SELECT count(*) > 0 FROM pg_stat_activity
+					WHERE wait_event_type = 'Lock' AND :holder = ANY (pg_blocking_pids(pid))
+					  AND position(:text IN query) > 0
+					""").param("holder", holder).param("text", text).query(Boolean.class).single());
 	}
 
 	private static JsonNode response(Future<MvcTestResult> future, int status) throws Exception {
@@ -641,7 +719,7 @@ class AnalysisIntakeConcurrencyTests {
 		return UUID.fromString(item(response, photoId).get("analysisJobId").asString());
 	}
 
-	private static @Nullable String sqlState(Throwable failure) {
+	private static @Nullable String sqlState(@Nullable Throwable failure) {
 		for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
 			if (cause instanceof SQLException sql) {
 				return sql.getSQLState();
@@ -661,6 +739,19 @@ class AnalysisIntakeConcurrencyTests {
 	}
 
 	/**
+	 * An intake request sent by {@link #startIntake}.
+	 *
+	 * @param backend completed with the backend of its business transaction when 5a starts
+	 */
+	private record Intake(Future<MvcTestResult> response, CompletableFuture<Integer> backend) {
+
+		int pid() throws Exception {
+			return backend.get(WAIT.toSeconds(), SECONDS);
+		}
+
+	}
+
+	/**
 	 * @param reached counted down when the reservation holds the usage allocation lock
 	 * @param release lets the reservation return
 	 * @param result what the reservation answered
@@ -669,7 +760,11 @@ class AnalysisIntakeConcurrencyTests {
 
 	}
 
-	private record LateReference(Photo photo, UUID jobId, Future<MvcTestResult> intake, Future<Integer> transition) {
+	/**
+	 * @param itemFailure what the intake's insert of its items threw, the FK check that waits for the job included
+	 */
+	private record LateReference(Installed device, Photo photo, UUID jobId, Future<MvcTestResult> intake,
+			Future<Integer> transition, AtomicReference<@Nullable Throwable> itemFailure) {
 
 	}
 

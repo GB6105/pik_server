@@ -27,11 +27,19 @@ record IntakeCommand(@NotNull Trigger trigger,
 
 	static final int MAX_OCR_VERSION_LENGTH = 64;
 
-	/** U+0020 to U+007E only: {@code vector.model}, {@code vector.modelVersion}, {@code text.ocrVersion}. */
-	static final String PRINTABLE_ASCII = "[\\x20-\\x7E]*";
+	/**
+	 * ASCII from U+0020 (space) to U+007E: {@code vector.model}, {@code vector.modelVersion}, {@code text.ocrVersion}.
+	 * Settings take the narrower visible ASCII without space ({@link AnalysisProperties}). Nothing outside ASCII
+	 * matches, so the UTF-16 length of a value that matches is its number of characters.
+	 */
+	static final String ASCII_WITH_SPACE = "[\\x20-\\x7E]*";
 
-	/** No control character ({@code \p{Cc}}, NUL included): {@code contentVersion}. */
-	static final String NO_CONTROL_CHARACTER = "\\P{Cc}*";
+	/**
+	 * {@code contentVersion}: 1 to 128 code points, as PostgreSQL's {@code char_length} counts them, none of them a
+	 * control character ({@code \p{Cc}}, NUL included) or a surrogate without its pair ({@code \p{Cs}}), which UTF-8
+	 * cannot hold. The pattern matches by code point, so a surrogate pair counts once.
+	 */
+	static final String CONTENT_VERSION = "[^\\p{Cc}\\p{Cs}]{1," + MAX_CONTENT_VERSION_LENGTH + "}";
 
 	@Override
 	public String toString() {
@@ -40,16 +48,15 @@ record IntakeCommand(@NotNull Trigger trigger,
 
 	/**
 	 * @param photoId the client's photo ID ({@code photo.client_ref})
-	 * @param contentVersion opaque token of the photo's source version, 1 to 128 characters without a control
-	 * character
+	 * @param contentVersion opaque token of the photo's source version, 1 to 128 code points without a control
+	 * character or an unpaired surrogate
 	 * @param takenAt RFC 3339 with an offset, kept as sent so that the hash stays stable; parsed by
 	 * {@link IntakeBodyReader#takenAt}. Missing = the photo stays single
 	 * @param vector the device's image vector, missing = the photo stays single
 	 * @param text whether the device found text, missing = {@link TextStatus#UNKNOWN}
 	 */
 	record PhotoInput(@NotNull UUID photoId,
-			@NotNull @Size(min = 1, max = MAX_CONTENT_VERSION_LENGTH) @Pattern(
-					regexp = NO_CONTROL_CHARACTER) String contentVersion,
+			@NotNull @Pattern(regexp = CONTENT_VERSION) String contentVersion,
 			@Nullable String takenAt,
 			@Valid @Nullable VectorInput vector, @Valid @Nullable TextInput text) {
 
@@ -61,15 +68,15 @@ record IntakeCommand(@NotNull Trigger trigger,
 	}
 
 	/**
-	 * @param model 1 to 64 printable ASCII characters
-	 * @param modelVersion 1 to 64 printable ASCII characters
+	 * @param model 1 to 64 ASCII characters from U+0020 to U+007E
+	 * @param modelVersion 1 to 64 ASCII characters from U+0020 to U+007E
 	 * @param data float32 little-endian values in RFC 4648 base64; checked by {@link VectorValidator}
 	 */
 	record VectorInput(
 			@NotNull @Size(min = 1, max = AnalysisProperties.MAX_MODEL_LENGTH) @Pattern(
-					regexp = PRINTABLE_ASCII) String model,
+					regexp = ASCII_WITH_SPACE) String model,
 			@NotNull @Size(min = 1, max = AnalysisProperties.MAX_MODEL_LENGTH) @Pattern(
-					regexp = PRINTABLE_ASCII) String modelVersion,
+					regexp = ASCII_WITH_SPACE) String modelVersion,
 			@NotNull @Size(max = MAX_VECTOR_DATA_LENGTH) String data) {
 
 		@Override
@@ -80,10 +87,10 @@ record IntakeCommand(@NotNull Trigger trigger,
 	}
 
 	/**
-	 * @param ocrVersion when present, 1 to 64 printable ASCII characters
+	 * @param ocrVersion when present, 1 to 64 ASCII characters from U+0020 to U+007E
 	 */
 	record TextInput(@NotNull TextStatus status,
-			@Size(min = 1, max = MAX_OCR_VERSION_LENGTH) @Pattern(regexp = PRINTABLE_ASCII) @Nullable String ocrVersion) {
+			@Size(min = 1, max = MAX_OCR_VERSION_LENGTH) @Pattern(regexp = ASCII_WITH_SPACE) @Nullable String ocrVersion) {
 
 	}
 

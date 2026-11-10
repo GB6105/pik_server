@@ -224,6 +224,9 @@ class AnalysisIntakeTests {
 		// The jobs the photos wait for, with the request that created them, in the photoId order.
 		assertThat(jobIds(response)).containsExactlyElementsOf(
 				Stream.of(first, second).sorted(PHOTO_ORDER).map((photo) -> jobOf(accepted, photo)).toList());
+		// Each job with the photo it analyzes, the one to upload.
+		assertThat(representatives(response)).containsExactlyElementsOf(
+				Stream.of(first, second).sorted(PHOTO_ORDER).map((photo) -> photo.photoId().toString()).toList());
 		assertThat(response.get("jobs")).allSatisfy((job) -> {
 			assertThat(job.get("requestId")).isEqualTo(accepted.get("jobId"));
 			assertThat(job.get("status").asString()).isEqualTo("AWAITING_UPLOAD");
@@ -284,6 +287,17 @@ class AnalysisIntakeTests {
 			.containsExactlyInAnyOrder("photoId", "admissionResult", "code", "reason", "retryable", "retryAfter",
 					"analysisJobId", "groupId", "role", "execution", "observedVersion", "analyzedVersion",
 					"vectorIgnored"));
+		assertThat(response.propertyNames()).containsExactlyInAnyOrder("jobId", "result", "retryable", "phase",
+				"counts", "items", "groups", "jobs");
+		assertThat(response.get("groups")).hasSize(6)
+			.allSatisfy((group) -> assertThat(group.propertyNames()).containsExactlyInAnyOrder("groupId",
+					"representativePhotoId", "photoCount", "analysisJobId"));
+		assertThat(response.get("jobs")).hasSize(5).allSatisfy((job) -> {
+			assertThat(job.propertyNames()).containsExactlyInAnyOrder("analysisJobId", "requestId", "groupId",
+					"representativePhotoId", "status", "uploadRequired", "uploadPolicy");
+			assertThat(job.get("uploadPolicy").propertyNames()).containsExactlyInAnyOrder("contentType", "maxBytes",
+					"maxLongEdgePx");
+		});
 
 		// Consumed photos never come back.
 		List<UUID> jobs = jdbc.sql("SELECT id FROM analysis_job WHERE request_id = :id")
@@ -599,9 +613,13 @@ class AnalysisIntakeTests {
 		MvcTestResult waiting = fixtures.intake(device, waitingKey, body);
 		assertThat(waiting).hasStatus(200);
 		assertThat(jobIds(json(waiting))).isEqualTo(jobIds(ready));
+		assertThat(representatives(json(waiting))).isEqualTo(representatives(ready));
 		assertThat(json(waiting).get("jobs")).allSatisfy((job) -> {
 			assertThat(job.get("requestId").asString()).isEqualTo(requestId.toString());
 			assertThat(job.get("status").asString()).isEqualTo("READY");
+			// The photo of the item waiting for the job.
+			assertThat(job.get("representativePhotoId"))
+				.isEqualTo(itemOfJob(json(waiting), job.get("analysisJobId").asString()).get("photoId"));
 		});
 
 		jdbc.sql("UPDATE analysis_job SET status = 'RUNNING' WHERE request_id = :id").param("id", requestId).update();
@@ -986,6 +1004,24 @@ class AnalysisIntakeTests {
 		List<String> ids = new ArrayList<>();
 		response.get("jobs").forEach((job) -> ids.add(job.get("analysisJobId").asString()));
 		return ids;
+	}
+
+	/**
+	 * The representative {@code photoId} of each job, in the order of {@code jobs}.
+	 */
+	static List<String> representatives(JsonNode response) {
+		List<String> ids = new ArrayList<>();
+		response.get("jobs").forEach((job) -> ids.add(job.get("representativePhotoId").asString()));
+		return ids;
+	}
+
+	private static JsonNode itemOfJob(JsonNode response, String jobId) {
+		for (JsonNode item : response.get("items")) {
+			if (jobId.equals(item.get("analysisJobId").asString())) {
+				return item;
+			}
+		}
+		throw new AssertionError("no item for the job");
 	}
 
 	static JsonNode job(JsonNode response, String jobId) {
