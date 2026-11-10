@@ -107,7 +107,7 @@ class AnalysisSettingsTests {
 	}
 
 	@Test
-	void settingsThatGoIntoManifestsMustBePrintableAscii() {
+	void settingsThatGoIntoManifestsMustBeVisibleAscii() {
 		for (String value : NOT_VISIBLE_ASCII) {
 			assertFails(MODEL_MESSAGE, properties(ON, model(0, value, "1", "512", "0.9")));
 			assertFails(VERSION_MESSAGE, properties(ON, model(0, "pik-embed", value, "512", "0.9")));

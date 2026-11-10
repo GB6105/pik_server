@@ -309,6 +309,24 @@ class IdempotencyTests {
 				""".formatted(key));
 	}
 
+	// A JSON escape can carry a surrogate without its pair, which bean validation lets through. The canonical JSON of
+	// the hash keeps it as an escape, so the command hashes, is stored once and is told apart from other texts.
+	@Test
+	void commandWithAnUnpairedSurrogateIsHashedAndReplayed() {
+		UUID key = uuidV7();
+
+		assertThat(post(key, "{\"name\": \"a\\ud83d\"}")).hasStatusOk().bodyJson().isLenientlyEqualTo("""
+				{"seq": 1}
+				""");
+		assertThat(post(key, "{\"name\": \"a\\ud83d\"}")).hasStatusOk().bodyJson().isLenientlyEqualTo("""
+				{"seq": 1}
+				""");
+		assertThat(post(key, "{\"name\": \"a\\udcf7\"}")).hasStatus(400).bodyJson().isLenientlyEqualTo("""
+				{"code": "INVALID_INPUT", "reason": "IDEMPOTENCY_KEY_REUSED", "jobId": "%s", "result": "FAILED"}
+				""".formatted(key));
+		assertThat(lastSeq()).hasValue(1L);
+	}
+
 	@Test
 	void concurrentRequestWithSameKeyFailsAfterLockTimeout() throws Exception {
 		UUID key = uuidV7();

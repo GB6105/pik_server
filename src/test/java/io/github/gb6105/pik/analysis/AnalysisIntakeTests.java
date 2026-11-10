@@ -34,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -70,6 +71,9 @@ import tools.jackson.databind.JsonNode;
 @AutoConfigureMockMvc
 @RecordApplicationEvents
 class AnalysisIntakeTests {
+
+	// Replaced in the sent JSON by an escaped high surrogate without its low half.
+	private static final String LONE = "LONE-SURROGATE";
 
 	static final Comparator<Photo> PHOTO_ORDER = Comparator.comparing(Photo::photoId, GroupingRuleV1.PHOTO_ID_ORDER);
 
@@ -710,6 +714,36 @@ class AnalysisIntakeTests {
 		assertThat(fixtures.intake(device, key, valid)).hasStatus(202);
 	}
 
+	// I-15: a JSON escape can put a surrogate without its pair in any text. The idempotency hash still has bytes for
+	// it (the canonical JSON keeps it as an escape), so the rule of the field decides, never a 503.
+	@Test
+	void unpairedSurrogateInAnyTextGetsTheRuleOfItsField() {
+		Installed device = fixtures.android();
+		Map<Photo, String> refused = new LinkedHashMap<>();
+		refused.put(photo(LONE), "VALIDATION_FAILED");
+		refused.put(photo("v1").vector(LONE, vector(1, 0)), "VALIDATION_FAILED");
+		refused.put(photo("v1").takenAt(LONE), "TAKEN_AT_INVALID");
+		for (Map.Entry<Photo, String> sent : refused.entrySet()) {
+			String key = key();
+			MvcTestResult result = fixtures.intake(device, key, withUnpairedSurrogate(sent.getKey()));
+			assertThat(result).hasStatus(400);
+			assertError(json(result), "INVALID_INPUT", sent.getValue(), false);
+			assertNothingStored(device, key);
+		}
+
+		// vector.data has no rule of its own: the vector is ignored, and the stored response is replayed.
+		Photo photo = photo("v1").vector(LONE);
+		String key = key();
+		MvcTestResult first = fixtures.intake(device, key, withUnpairedSurrogate(photo));
+		assertThat(first).hasStatus(202);
+		JsonNode accepted = json(first);
+		assertThat(item(accepted, photo).get("vectorIgnored").asString()).isEqualTo("MALFORMED_BASE64");
+		MvcTestResult replay = fixtures.intake(device, key, withUnpairedSurrogate(photo));
+		assertThat(replay).hasStatus(202);
+		assertThat(json(replay).get("jobId")).isEqualTo(accepted.get("jobId"));
+		assertThat(count("analysis_request", device)).isOne();
+	}
+
 	// I-16
 	@Test
 	void tokenForAnotherDeviceIsUnauthenticated() {
@@ -981,6 +1015,10 @@ class AnalysisIntakeTests {
 			values.add(counts.get(name).asInt());
 		}
 		return values;
+	}
+
+	private static String withUnpairedSurrogate(Photo photo) {
+		return body("NEW_PHOTOS", photo).replace(LONE, "v\\ud83d");
 	}
 
 	static JsonNode item(JsonNode response, Photo photo) {

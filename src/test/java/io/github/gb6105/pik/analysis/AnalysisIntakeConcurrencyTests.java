@@ -121,11 +121,14 @@ class AnalysisIntakeConcurrencyTests {
 	void setUp() {
 		fixtures = new IntakeFixtures(mvc, jdbc);
 		pool = Executors.newCachedThreadPool();
-		// 5a is the first step of the business transaction; stubbed on the spy behind the transaction proxy.
+		// 5a is the first step of the business transaction. Stubbed on the spy behind the transaction proxy, unlike
+		// the IntakeRecords stubs: through the proxy, the MANDATORY propagation of lockGrantedBasis refuses the call
+		// that stubbing makes outside a transaction.
 		doAnswer((invocation) -> {
 			CompletableFuture<Integer> pid = backend.get();
 			if (pid != null) {
-				pid.complete(backendPid());
+				// Last wins: after StartRequired the business transaction runs again, maybe on another connection.
+				pid.obtrudeValue(backendPid());
 			}
 			return invocation.callRealMethod();
 		}).when(AopTestUtils.<AiConsents>getUltimateTargetObject(consents)).lockGrantedBasis(any());
@@ -464,6 +467,8 @@ class AnalysisIntakeConcurrencyTests {
 
 	// C-8 control: the same schedule with FOR UPDATE, which conflicts with KEY SHARE, deadlocks. Exactly one of the two
 	// transactions fails: the intake, whose wait closes the cycle and whose check after deadlock_timeout finds it.
+	// Assumes the Testcontainers database user is a superuser, as set_config('deadlock_timeout', ...) needs one, and
+	// that the intake keeps the server default of 1 s, so its check runs long before the transition's 60 s.
 	@Test
 	void lateReferenceToAJobDeadlocksWithAForUpdateTransition() throws Exception {
 		LateReference late = lateReference(FOR_UPDATE);
@@ -505,6 +510,7 @@ class AnalysisIntakeConcurrencyTests {
 		CountDownLatch proceed = new CountDownLatch(1);
 		CompletableFuture<Integer> transitionPid = new CompletableFuture<>();
 		Future<Integer> transition = pool.submit(() -> transactions.execute((status) -> {
+			// Local to this transaction; a superuser setting, which the Testcontainers database user may change.
 			jdbc.sql("SELECT set_config('deadlock_timeout', '60s', true)").query(String.class).single();
 			transitionPid.complete(backendPid());
 			lockJob(jobId, lock);

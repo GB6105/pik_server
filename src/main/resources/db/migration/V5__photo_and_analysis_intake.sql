@@ -143,10 +143,12 @@ CREATE INDEX ix_analysis_group_request ON analysis_group (request_id);
 -- after the reservation, against the order analysis_job -> usage allocation (a cancel transaction locks the job, then
 -- releases the reservation). Intake therefore locks those jobs after photo and before the reservation with
 -- SELECT ... WHERE id IN (...) ORDER BY id FOR SHARE, so the FK checks on those jobs wait for nothing. FOR SHARE keeps
--- the rechecked job status until commit; claim (FOR UPDATE SKIP LOCKED) skips such a job instead of waiting.
--- Exception: an IN_PROGRESS item made from an AlreadyReserved reservation result (plan 5d) points at a job that was
--- not pre-locked, so its KEY SHARE comes after the usage lock. The intake transaction must retry with that job added
--- to the pre-lock set, or otherwise show the late lock cannot deadlock.
+-- the rechecked job status until commit; claim (FOR NO KEY UPDATE SKIP LOCKED) skips such a job instead of waiting.
+-- Rule for transactions that lock a job before the usage lock (stage 5-2 transitions and claim): FOR NO KEY UPDATE
+-- [SKIP LOCKED] only, never FOR UPDATE, DELETE or an UPDATE of id or group_id, unless they hold the principal's intake
+-- lock first. Under this rule an IN_PROGRESS item made from an AlreadyReserved reservation result (plan 5d), which
+-- points at a job that was not pre-locked and so takes its KEY SHARE after the usage lock, cannot deadlock: KEY SHARE
+-- does not conflict with FOR NO KEY UPDATE. Pinned by C-8 (AnalysisIntakeConcurrencyTests).
 -- The other FK parents are new rows of the same transaction (analysis_request, analysis_group, new jobs), immutable
 -- rows (analysis_call_manifest, analysis_grouping_rule) and photo rows already locked FOR UPDATE (photo_vector).
 -- IN_PROGRESS items never point at an existing group (ck_analysis_request_item_in_progress).
