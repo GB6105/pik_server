@@ -35,6 +35,12 @@
 - Modulith 모듈 = 도메인 후보 + `shared` (ERD 그룹 '공통 인프라': 오류·멱등·로그·보안)
 - 단계 2 = `shared`, `account` ('계정과 구독' 중 주체·설치·기기·토큰). 구독·이용량 경계와 나머지 모듈은 해당 단계에서 결정
 - 단계 5 = `photo` (사진 행·원본 버전 관측·`photo_vector`, `PhotoSourceChanged`), `analysis` (접수·작업·시도·호출·결과·예산·manifest, `AnalysisCompleted`). 소유 표·잠금 순서 = `docs/design/stage5-analysis-pipeline.md` 0.3·4.3 (ADR-0031)
+- 단계 5-1 구현 (ADR-0034): `photo` → `shared`만. `analysis` → `shared`·`account`·`consent`·`usage`·`photo`. `account`·`consent`·`usage`는 `photo`·`analysis`에 의존하지 않음
+  - `photo` 공개 = `PhotoObservations` (`observe`·`issueChangeSeqs`·`keepVectors` = 호출자 TX 필수, `findIds` = 읽기 TX), `PhotoSourceChanged` (발행만, 리스너 = 5-3). 5-1은 JPA 엔티티 없이 JDBC
+  - `analysis` 공개 API 없음 (`POST /analysis-jobs`만). 5-2에서 `AnalysisCompleted` 추가
+  - `account` 추가 공개: `RequestingDevices.find(principal, device)` → `RequestingDevice` (기기·설치·`Platform`·`trialMarkId`), `TrialStartAttestations` (`challenge`·`verify`, 포트 `AssertionVerifier` + `local`·`test` 전용 대역)
+  - `consent` 추가 공개: `AiConsents.lockGrantedBasis` → `ConsentBasis(version)` (공유 잠금, 호출자 TX 필수)
+  - `usage` 추가 공개: `Reservation.NotCovered(retryable)` (예약 반환을 기다리면 들어감), `recordStart(…, StartGuard)` (`StartGuard.beforeStart` = Apple 호출 직전에만 1회)
 - `action` 모듈 = 사진별 액션·웹페이지 후보·번역. `analysis`의 분석 완료 이벤트를 `action`과 `event`가 각자 구독 (ADR-0024). 생성 행 (`action_generation`·`event_generation`)은 각 모듈 소유, 리스너 = `NOT_SUPPORTED` 조정 + 별도 빈 TX + 실패 기록 TX (ADR-0031 #16)
 - `usage` 모듈 = 무료 체험 이용량 (`usage_quota`·`usage_reservation`·`device_trial_mark`, ERD 그룹 '계정과 구독'). `account`가 설치 등록 때 `TrialDevices`로 기기 기록을 만들고 `device.trial_mark_id`에 둠. 분석 접수는 `TrialUsage`로 접수 트랜잭션 안에서 예약·완료·반환. 잠금 순서 = 주체 할당량 → 기기 기록, 트랜잭션 하나에 주체 하나·기기 기록 하나만, 바꾼 트랜잭션 안의 `REQUIRES_NEW`에서 다시 바꾸기 금지 (일괄 처리는 주체·기기마다 트랜잭션 분리, 어기면 `IllegalStateException`). Pro 한도·3회 클릭은 해당 단계에서 추가 (ADR-0029). 단계 5에서 사진별 `settle`·기기 송신 예약을 추가 (ADR-0031)
 - `consent` 모듈 = 외부 전송 동의 (`ai_consent`, ERD 그룹 '계정과 구독'). 다른 모듈은 `AiConsents.isGranted`로 전송 직전·결과 저장 직전에 확인, 철회 이벤트 없음 (ADR-0028)

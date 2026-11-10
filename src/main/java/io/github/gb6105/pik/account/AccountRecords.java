@@ -40,6 +40,14 @@ class AccountRecords {
 			.getSingleResult();
 	}
 
+	Optional<Device> findDevice(UUID principalId, UUID deviceId) {
+		return Optional.ofNullable(entityManager
+			.createQuery("SELECT d FROM Device d WHERE d.id = :id AND d.principalId = :principalId", Device.class)
+			.setParameter("id", deviceId)
+			.setParameter("principalId", principalId)
+			.getSingleResultOrNull());
+	}
+
 	/**
 	 * Moves {@code last_seen_at} of a principal's install and devices to {@code now} when the install's is older than
 	 * {@code staleBefore}. Conditional statements instead of entity changes: concurrent exchanges neither fail on the

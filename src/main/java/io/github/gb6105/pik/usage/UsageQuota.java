@@ -55,6 +55,13 @@ class UsageQuota {
 		return limitCount - reservedCount - consumedCount >= photos;
 	}
 
+	/**
+	 * Whether the photos would fit once every pending reservation is released; consumed photos never come back.
+	 */
+	boolean coversOnceReleased(int photos) {
+		return limitCount - consumedCount >= photos;
+	}
+
 	void reserve(int photos, Instant now) {
 		reservedCount += photos;
 		updatedAt = now;

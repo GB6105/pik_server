@@ -24,7 +24,7 @@
 ## 외부 전송 동의 판정
 - 접수 = 그 시점 동의 버전을 접수 행에 기록
 - 전송 직전·결과 저장 직전 = 현재 동의 유효 + 기준 버전보다 큰 버전의 비동의 결정 없음. 둘 중 하나라도 어기면 전송하지 않거나 응답을 저장하지 않음 (ADR-0021 #5, ADR-0030)
-- 판정과 동의 결정 기록의 순서 = 주체별 트랜잭션 범위 잠금 (결정 기록 = 배타, 판정 = 공유)
+- 판정과 동의 결정 기록의 순서 = 주체별 트랜잭션 범위 잠금 (결정 기록 = 배타, 판정 = 공유). 구현 = advisory 잠금 (`consent:` 접두사), `AiConsents.decide` 첫 줄 배타, `AiConsents.lockGrantedBasis` = 공유 잠금 + 기준 버전 (`ConsentBasis`, 호출자 TX 필수, ADR-0034)
 
 ## 멱등성
 - 변경 요청 = 작업 식별자 + 데이터 버전
@@ -33,15 +33,24 @@
 - 키 = `Idempotency-Key` (UUIDv7), 범위 = (주체, 키), 보관 7일 (설정값), 탈퇴 시 삭제 (ADR-0023)
 - 멱등 기록 = 업무 변경과 같은 트랜잭션에 저장. 비정상 종료 시 함께 롤백 (처리 중 기록 없음)
 - 같은 키 동시 요청 = 키 단위 advisory 잠금 (트랜잭션 범위) 대기 → 대기 시간 (설정값, 기본 3초) 초과 시 409 `CONFLICT`/`IDEMPOTENCY_IN_PROGRESS` (재시도 가능, ADR-0026)
-- 실행 = `IdempotentExecutor.execute`를 트랜잭션 밖에서 호출 (트랜잭션은 실행기가 시작). 저장 대상 4xx = 업무 트랜잭션 전체 롤백 → 새 트랜잭션에서 잠금·기록 재확인 후 저장, 그 사이 저장된 기록이 있으면 그 기록 반환, 본문이 다르면 `IDEMPOTENCY_KEY_REUSED` (ADR-0026)
+- 실행 = `IdempotentExecutor.execute`를 트랜잭션 밖에서 호출 (트랜잭션은 실행기가 시작). 단계가 나뉜 Command (분석 접수) = `lookup` (읽기 TX 사전 조회·해시 비교) → TX 밖 검사 실패 = `reject` (키 잠금 → 기록 재확인 → 있으면 재생, 없으면 저장 대상만 저장) → `commit(Supplier<Outcome>)` (업무 TX, 202 등 상태 코드 저장). `execute` = `commit` 위임 (ADR-0034). 저장 대상 4xx = 업무 트랜잭션 전체 롤백 → 새 트랜잭션에서 잠금·기록 재확인 후 저장, 그 사이 저장된 기록이 있으면 그 기록 반환, 본문이 다르면 `IDEMPOTENCY_KEY_REUSED` (ADR-0026)
 - 커맨드 record = 업무 변경이 의존하는 입력 전부 (경로 변수·쿼리 포함). 나중에 추가하는 필드는 null 허용 (해시에서 빠짐)
 - 재시도마다 새로 받는 일회성 증거 (DeviceCheck 토큰 등) = 본문·커맨드 제외, 헤더로 받음. 같은 키의 기록이 있으면 증거 검증·외부 호출·예약 없이 재생 (ADR-0030)
 - 커넥션 격리 수준 = READ COMMITTED 고정 (`application.yml`, 풀 설정 + 커넥션 초기화 SQL). 멱등 실행기가 의존
-- 저장 = 결과가 확정된 2xx·4xx → 같은 응답 반환. 4xx는 업무 변경 롤백 + 멱등 기록만 커밋. 401·`IDEMPOTENCY_IN_PROGRESS`·429 `RATE_LIMITED` (ADR-0024)·`Retry-After`가 있는 4xx·503·처리 중 예외·첫 체험 assertion 증거 오류 (`ATTESTATION_REQUIRED`·409 counter 경합·`ATTESTATION_FAILED`, ADR-0032 #6-2)는 저장 안 함. `IDEMPOTENCY_KEY_REUSED`는 원본 기록 유지
+- 저장 = 결과가 확정된 2xx·4xx → 같은 응답 반환. 4xx는 업무 변경 롤백 + 멱등 기록만 커밋. 401·`IDEMPOTENCY_IN_PROGRESS`·429 `RATE_LIMITED` (ADR-0024)·`Retry-After`가 있는 4xx·503·처리 중 예외·첫 체험 assertion 증거 오류 (`ATTESTATION_REQUIRED`·409 counter 경합·`ATTESTATION_FAILED`, ADR-0032 #6-2)는 저장 안 함. 저장 대상 4xx를 기록에서 빼려면 `PikException.unstored` (예외 지정은 이 플래그로만, ADR-0034). `IDEMPOTENCY_KEY_REUSED`는 원본 기록 유지
 - 200 응답 `items[]`의 재시도 가능한 실패 = 그 대상만 새 키로 재전송
 - 같은 키 = 같은 작업의 재전송만. 본문 변경·사용자 재시도 = 새 키 (저장된 4xx는 `retryable`이어도 같은 키면 같은 응답). 같은 키·다른 본문 = 400 `INVALID_INPUT`/`IDEMPOTENCY_KEY_REUSED`. 키 누락 = 400 `INVALID_INPUT`/`IDEMPOTENCY_KEY_REQUIRED`
-- 장기 작업 접수 재전송 = 저장 응답 대신 현재 작업 상태. 접수 응답·저장 본문에 업로드 URL 없음. URL = 시도 발급 API, 같은 키 재생 = 저장된 시도를 같은 만료로 재서명 (ADR-0031 #5)
+- 장기 작업 접수 재전송 = 저장 응답 대신 현재 작업 상태 (`ReplayProjection`, 2xx 재생만, 최초 상태 코드 유지. 오류 재생은 저장 본문 그대로). 5-2 조건: 투영은 한 스냅샷으로 읽음 (REPEATABLE READ 읽기 TX 또는 단일 조회). 접수 응답·저장 본문에 업로드 URL 없음. URL = 시도 발급 API, 같은 키 재생 = 저장된 시도를 같은 만료로 재서명 (ADR-0031 #5)
 - 보관 기간 이후 재전송 = 데이터 버전·`client_ref` 유니크·사진 단위 부분 유니크 (`analysis_job`·`usage_reservation`)로 중복 반영·차감 차단 (ADR-0021·0022·0024)
+
+## 잠금 순서 (단계 5, `docs/design/stage5-analysis-pipeline.md` 0.3)
+- advisory 잠금 = 문자열 접두사로 네임스페이스 분리 (`hashtextextended('<접두사>' || id, 0)`): 동의 `consent:`, 주체 접수 `analysis.intake:`. 멱등 키 잠금은 기존 방식
+- 접수 업무 TX = 멱등 키 → 동의 (공유) → 주체 접수 → `photo` (id 순 `FOR UPDATE`) → 참조할 기존 `analysis_job` (id 순 `FOR SHARE`, 예약 전 재확인) → 이용량 할당 → 기기 기록 → `owner_change_counter`
+- 삽입 위치 예외: 접수·묶음·작업·항목 행은 예약 뒤에 삽입 ("이미 잠근 상위 행 아래에서만 충돌하는 삽입"). `uk_analysis_job_photo_active` 충돌은 주체 접수 잠금 아래에서만 생김. 불변 조건 = `analysis_job`을 삽입하는 모든 경로 (5-2 `SERVER_BATCH` 포함)는 주체 접수 잠금을 먼저 잡음 (V5 주석)
+- `analysis_job` 잠금: 이용량 잠금보다 먼저 작업 행을 잠그는 TX (5-2 상태 전이·완료·취소·claim)는 `FOR NO KEY UPDATE`보다 강한 잠금 금지. `FOR UPDATE`·`DELETE`·`id`·`group_id` UPDATE 포함. claim = `FOR NO KEY UPDATE SKIP LOCKED`. 예외 = 주체 접수 잠금을 먼저 잡은 TX
+  - 이유: `AlreadyReserved`로 생긴 `IN_PROGRESS` 항목은 미리 잠그지 않은 작업을 FK로 참조 → `KEY SHARE`가 이용량 잠금 뒤에 옴. `KEY SHARE`는 `FOR NO KEY UPDATE`와 충돌하지 않음 (상태만 바꾸는 UPDATE도 같은 등급)
+  - 작업 잠금 SQL = 네이티브 (`FOR NO KEY UPDATE [SKIP LOCKED]`). JPA `PESSIMISTIC_WRITE` + `SKIP_LOCKED`는 `FOR UPDATE`를 낼 수 있음
+  - 고정 시험 = `AnalysisIntakeConcurrencyTests` C-8 (`FOR NO KEY UPDATE` 전이 = 교착 없음, `FOR UPDATE` 대조 = 교착). 5-2 조건: claim 경로 변형 추가
 
 ## 부분 성공
 - 목록 작업은 항목별 `성공·실패·취소·확인 필요` 반환
@@ -49,7 +58,8 @@
 
 ## 동기화
 - 로컬 저장 성공 ≠ 서버 보관 성공. 상태 분리
-- 변경 번호 (`change_seq`) = `ChangeSequence.next` (호출자 트랜잭션 필수, 커밋 순서대로 보임). DB 시퀀스 금지 (ADR-0026)
+- 변경 번호 (`change_seq`) = `ChangeSequence.next`·`nextBlock(owner, n)` (호출자 트랜잭션 필수, 커밋 순서대로 보임, 발급 전 `EntityManager.flush()`). DB 시퀀스 금지 (ADR-0026, ADR-0034)
+- `photo` 생성·`source_change_seq` 증가 = 업무 TX 마지막에 `PhotoObservations.issueChangeSeqs`로 발급 (빠지면 커밋 실패). `observe`는 TX당 1회, 중첩 TX (`REQUIRES_NEW`)에서 호출 = 즉시 실패. 관측은 `photo.version`을 올리지 않음 (ADR-0034)
 - 외부 앱 열림 ≠ 통화·구매·예매 완료. 확인 가능한 결과만 반환
 
 ## 구독·결제
