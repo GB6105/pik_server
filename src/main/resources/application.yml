@@ -77,6 +77,8 @@ pik:
       # Deadlines fixed on new jobs (design 2.2).
       upload-deadline: PT24H
       processing-deadline: PT48H
+      # Request bodies above it are refused before they are parsed: 2 MiB, 2,097,152 bytes (design 1.1, Q16).
+      max-body-size: 2MB
     grouping:
       # Off: vectors are only checked for structure, none is stored and every photo is single (design 1.4).
       enabled: false

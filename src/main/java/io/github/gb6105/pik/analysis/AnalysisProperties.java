@@ -8,6 +8,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.util.Assert;
+import org.springframework.util.unit.DataSize;
 
 /**
  * Analysis settings. The range checks run when the settings are bound, so wrong values fail startup.
@@ -32,12 +33,17 @@ record AnalysisProperties(boolean intakeEnabled, Intake intake, Grouping groupin
 	/**
 	 * @param uploadDeadline time from intake until the image must be uploaded (design 2.2)
 	 * @param processingDeadline time from intake until the analysis must be done (design 2.2)
+	 * @param maxBodySize the largest request body, checked before it is parsed (design 1.1, decision Q16)
 	 */
-	record Intake(Duration uploadDeadline, Duration processingDeadline) {
+	record Intake(Duration uploadDeadline, Duration processingDeadline, DataSize maxBodySize) {
 
 		Intake {
 			Assert.isTrue(uploadDeadline.isPositive(), "intake.upload-deadline must be positive");
 			Assert.isTrue(processingDeadline.isPositive(), "intake.processing-deadline must be positive");
+			// The body is read into one array with one byte more than the limit.
+			Assert.isTrue(maxBodySize != null && maxBodySize.toBytes() >= 1
+					&& maxBodySize.toBytes() < Integer.MAX_VALUE - 8,
+					"intake.max-body-size must be between 1 byte and 2 GB");
 		}
 
 	}

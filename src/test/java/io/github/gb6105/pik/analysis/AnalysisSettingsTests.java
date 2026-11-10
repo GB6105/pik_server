@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.util.unit.DataSize;
 
 /**
  * Startup checks of {@code pik.analysis.*} (plan 7, design 1.4): wrong values fail the start. The runner binds only
@@ -20,6 +21,7 @@ class AnalysisSettingsTests {
 
 	static final String[] DEFAULTS = { "pik.analysis.intake-enabled=false",
 			"pik.analysis.intake.upload-deadline=PT24H", "pik.analysis.intake.processing-deadline=PT48H",
+			"pik.analysis.intake.max-body-size=2MB",
 			"pik.analysis.grouping.enabled=false", "pik.analysis.grouping.window=PT120S",
 			"pik.analysis.grouping.max-group-size=20", "pik.analysis.grouping.zero-norm-epsilon=1e-6",
 			"pik.analysis.manifest.model=claude-haiku-5-5", "pik.analysis.manifest.content-type=image/jpeg",
@@ -47,7 +49,8 @@ class AnalysisSettingsTests {
 			AnalysisProperties properties = context.getBean(AnalysisProperties.class);
 			assertThat(properties.intakeEnabled()).isFalse();
 			assertThat(properties.intake())
-				.isEqualTo(new AnalysisProperties.Intake(Duration.ofHours(24), Duration.ofHours(48)));
+				.isEqualTo(new AnalysisProperties.Intake(Duration.ofHours(24), Duration.ofHours(48),
+						DataSize.ofBytes(2_097_152)));
 			assertThat(properties.grouping())
 				.isEqualTo(new AnalysisProperties.Grouping(false, Duration.ofSeconds(120), 20, 1e-6, List.of()));
 			assertThat(properties.manifest())
@@ -129,6 +132,8 @@ class AnalysisSettingsTests {
 	void otherRangesFailStartup() {
 		assertFails("intake.upload-deadline must be positive", "pik.analysis.intake.upload-deadline=PT0S");
 		assertFails("intake.processing-deadline must be positive", "pik.analysis.intake.processing-deadline=-PT1H");
+		assertFails("intake.max-body-size must be between 1 byte and 2 GB", "pik.analysis.intake.max-body-size=0B");
+		assertFails("intake.max-body-size must be between 1 byte and 2 GB", "pik.analysis.intake.max-body-size=2GB");
 		assertFails("grouping.window must be positive", "pik.analysis.grouping.window=PT0S");
 		assertFails("grouping.max-group-size must be at least 1", "pik.analysis.grouping.max-group-size=0");
 		assertFails("grouping.zero-norm-epsilon must be positive", "pik.analysis.grouping.zero-norm-epsilon=0");
