@@ -611,7 +611,7 @@
       "03h4468ge977zqezlhqerbvdc": {
         "id": "03h4468ge977zqezlhqerbvdc",
         "name": "analysis_job",
-        "comment": "대표 사진 1장의 분석 호출 단위이자 작업 큐 (analysis 모듈). 접수 때 AWAITING_UPLOAD로 만들고 id는 예약 전에 미리 발급. 구성 사진은 group_id의 analysis_group (접수 항목 MEMBER)으로 결과를 이어받음. uk_analysis_job_photo_active는 WHERE status NOT IN (FAILED, CANCELLED, INELIGIBLE) 부분 유니크 (사진당 살아 있는 작업 1개, 버전 무관). 결과가 있는 사진은 버전과 관계없이 재접수에서 빼고, FAILED·CANCELLED·INELIGIBLE만 남은 사진의 재접수는 새 행, 자동 재시도는 같은 행 (ADR-0024 #4-1·#6-1). analysis_job을 삽입하는 모든 경로는 주체 접수 잠금을 먼저 잡음 (V5 잠금 순서 주석). uploadPolicy는 manifest_id의 analysis_call_manifest에서 조회. 결과 저장 직전 사진 버전·작업 버전·principal 상태·동의 상태 대조. 사진 버전만 다르면 분석한 버전으로 결과를 저장하고 재분석하지 않음 (ADR-0024 #6-1). 동의 철회 시 전송 전 작업은 CANCELLED로 바꾸고 예약을 반환하며, 이미 보낸 요청의 응답은 저장하지 않음. V5 (단계 5-1)는 접수 열만 만든다. 실행 열 (attempt_count·run_token·locked_until·next_attempt_at·issued_count·failure_code·종료 시각)과 claim용 ix_analysis_job_ready (새 정의, READY·RUNNING 인덱스, FOR UPDATE SKIP LOCKED)는 단계 5-2 (V6)에서 추가. cause·priority·quota_kind·template_version·model_id·upload_object_key·upload_expires_at과 상태 PENDING·NEEDS_CHECK는 설계 변경으로 삭제 (FR-I-01·03·06, FR-G-01, ADR-0021 #5, ADR-0022, ADR-0031 #10·#14·#18)",
+        "comment": "대표 사진 1장의 분석 호출 단위이자 작업 큐 (analysis 모듈). 접수 때 AWAITING_UPLOAD로 만들고 id는 예약 전에 미리 발급. 구성 사진은 group_id의 analysis_group (접수 항목 MEMBER)으로 결과를 이어받음. uk_analysis_job_photo_active는 WHERE status NOT IN (FAILED, CANCELLED, INELIGIBLE) 부분 유니크 (사진당 살아 있는 작업 1개, 버전 무관). 결과가 있는 사진은 버전과 관계없이 재접수에서 빼고, FAILED·CANCELLED·INELIGIBLE만 남은 사진의 재접수는 새 행, 자동 재시도는 같은 행 (ADR-0024 #4-1·#6-1). analysis_job을 삽입하는 모든 경로는 주체 접수 잠금을 먼저 잡음 (V5 잠금 순서 주석). 이용량보다 먼저 작업 행을 잠그는 TX (상태 전이·claim)는 FOR NO KEY UPDATE까지만 사용, FOR UPDATE·DELETE·id·group_id 변경 금지 (주체 접수 잠금을 먼저 잡은 경우 예외, ADR-0034). uploadPolicy는 manifest_id의 analysis_call_manifest에서 조회. 결과 저장 직전 사진 버전·작업 버전·principal 상태·동의 상태 대조. 사진 버전만 다르면 분석한 버전으로 결과를 저장하고 재분석하지 않음 (ADR-0024 #6-1). 동의 철회 시 전송 전 작업은 CANCELLED로 바꾸고 예약을 반환하며, 이미 보낸 요청의 응답은 저장하지 않음. V5 (단계 5-1)는 접수 열만 만든다. 실행 열 (attempt_count·run_token·locked_until·next_attempt_at·issued_count·failure_code·종료 시각)과 claim용 ix_analysis_job_ready (새 정의, READY·RUNNING 인덱스, FOR NO KEY UPDATE SKIP LOCKED)는 단계 5-2 (V6)에서 추가. cause·priority·quota_kind·template_version·model_id·upload_object_key·upload_expires_at과 상태 PENDING·NEEDS_CHECK는 설계 변경으로 삭제 (FR-I-01·03·06, FR-G-01, ADR-0021 #5, ADR-0022, ADR-0031 #10·#14·#18, ADR-0034)",
         "columnIds": [
           "03h4468ge977zqezlht52p33h",
           "03h4468ge977zqezlhu49kpu8",
@@ -1029,7 +1029,7 @@
       "03h64la81jhdvsw3yyscpqbvp": {
         "id": "03h64la81jhdvsw3yyscpqbvp",
         "name": "analysis_grouping_rule",
-        "comment": "묶음 규칙 버전 (analysis 모듈, ADR-0034). id = 규칙 manifest (algorithmVersion·W·θ·최대 크기·정렬·동률·정규화·글자 조건) 정규 JSON의 SHA-256. 기동 때 설정에서 만들고 없으면 삽입, 행은 바꾸지 않음. analysis_request.grouping_rule_id가 참조하고, 단계 9 photo_group.rule_version도 같은 행을 참조 (FR-I-02, P05)",
+        "comment": "묶음 규칙 버전 (analysis 모듈, ADR-0034). id = 규칙 manifest (algorithmVersion·enabled·W·ε·최대 크기·모델별 dims·θ·대상·정렬·합류·대표·정규화 설명) 정규 JSON의 SHA-256. 모델 목록은 (model, version) 정렬, W는 Duration.toString()이라 같은 설정 = 같은 ID. 기동 때 설정에서 만들고 없으면 삽입, 행은 바꾸지 않음. analysis_request.grouping_rule_id가 참조하고, 단계 9 photo_group.rule_version도 같은 행을 참조 (FR-I-02, P05, 설계 1.3)",
         "columnIds": [
           "03h64la81jhdvsw3yytqev2v6",
           "03h64la81jhdvsw3yyw8adbvy",
@@ -1082,7 +1082,7 @@
       "03h64la81jhdvsw3yzv8vh54g": {
         "id": "03h64la81jhdvsw3yzv8vh54g",
         "name": "analysis_request_item",
-        "comment": "접수의 사진별 판정 (analysis 모듈, 불변). 상태별 CHECK: ACCEPTED ⇒ analysis_job_id·group_id·group_role NOT NULL / IN_PROGRESS ⇒ analysis_job_id NOT NULL ∧ group_id NULL (다른 접수의 진행 작업을 참조할 수 있고 기존 그룹은 참조하지 않음) / NOT_ACCEPTED ⇒ code·reason NOT NULL / group_role NOT NULL ⇔ group_id NOT NULL / vector_id NOT NULL ⇒ vector_ignored_reason NULL. 참조할 기존 작업은 photo 뒤·예약 앞에 FOR SHARE로 먼저 잠금 (V5 잠금 순서 주석). reused_result_id·reused_photo_version과 EXISTING_RESULT ⇒ reused_result_id NOT NULL CHECK, retry_at은 단계 5-2에서 추가 (FR-I-01·02, ADR-0031 #4)",
+        "comment": "접수의 사진별 판정 (analysis 모듈, 불변). 상태별 CHECK: ACCEPTED ⇒ analysis_job_id·group_id·group_role NOT NULL / IN_PROGRESS ⇒ analysis_job_id NOT NULL ∧ group_id NULL (다른 접수의 진행 작업을 참조할 수 있고 기존 그룹은 참조하지 않음) / NOT_ACCEPTED ⇒ code·reason NOT NULL / group_role NOT NULL ⇔ group_id NOT NULL / vector_id NOT NULL ⇒ vector_ignored_reason NULL. 참조할 기존 작업은 photo 뒤·예약 앞에 FOR SHARE로 먼저 잠금 (V5 잠금 순서 주석). 예외: 예약 결과 AlreadyReserved가 알려 준 보유 작업은 미리 잠그지 않고 이용량 잠금 뒤 FK 검사 (KEY SHARE)로만 참조. 작업 잠금 FOR NO KEY UPDATE 규칙으로 교착 없음 (ADR-0034, C-8 시험). reused_result_id·reused_photo_version과 EXISTING_RESULT ⇒ reused_result_id NOT NULL CHECK, retry_at은 단계 5-2에서 추가 (FR-I-01·02, ADR-0031 #4)",
         "columnIds": [
           "03h64la81jhdvsw3yzx9er1jo",
           "03h64la81jhdvsw3yzzh1ab5f",
@@ -2146,7 +2146,7 @@
         "id": "03h4468ge3qzlp0kxmxh4j4lx",
         "tableId": "03h4468ge3qzlp0kxmoxdncoo",
         "name": "observed_version",
-        "comment": "마지막 관측 contentVersion (OS 원본 버전, 1~128자). 늦은 분석 결과 대조 기준. 이전 이름 content_version (V5)",
+        "comment": "마지막 관측 contentVersion (OS 원본 버전, 1~128자). 늦은 분석 결과 대조 기준. V5 이전 ERD의 content_version을 V5에서 이 이름으로 바꿈",
         "dataType": "text",
         "options": 8
       },

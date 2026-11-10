@@ -25,7 +25,7 @@
 | [0011](0011-ci-github-actions.md) | GitHub Actions CI (빌드·테스트) | 채택 | 2026-10-25 |
 | [0012](0012-lombok-restricted-usage.md) | Lombok 제한적 사용 (허용 목록) | 채택 | 2026-10-25 |
 | [0013](0013-branch-protection-pr-required.md) | 원격 브랜치 보호: PR·CI 필수 | 채택 | 2026-10-25 |
-| [0014](0014-application-architecture-and-stack.md) | 서버 애플리케이션 아키텍처와 기술 스택 | 채택 | 2026-10-25 |
+| [0014](0014-application-architecture-and-stack.md) | 서버 애플리케이션 아키텍처와 기술 스택 | 채택 (`analysis_job` 큐 잠금 = `FOR NO KEY UPDATE SKIP LOCKED`: ADR-0034 #37) | 2026-10-25 |
 | [0015](0015-aws-infrastructure-and-deployment.md) | AWS 인프라와 배포·비밀 값 주입 | 채택 (NAT 제거·공인 IP 출구: ADR-0032 #1) | 2026-10-25 |
 | [0016](0016-external-ai-and-analysis-pipeline.md) | 외부 AI 연동, 사진 분석 파이프라인, 외부 전송 동의 범위 | 채택 (파이프라인 확정·접수 단계 대체: ADR-0021, 웹 탐색 모델·장소 제공자: ADR-0024, 결과 불명 처리 대체·업로드 형식 JPEG 한정·체험 첫 실행 Messages: ADR-0031) | 2026-10-25 |
 | [0017](0017-search-interpret-on-server-execute-on-device.md) | 검색 구조: 자연어 해석은 서버, 실행은 단말 | 채택 (호출 제한: ADR-0024, 로컬 인덱스의 분석 출처: ADR-0031 #20, 무료 범위 P02: ADR-0033 #11) | 2026-10-25 |
@@ -37,11 +37,12 @@
 | [0023](0023-stage2-foundation-details.md) | 단계 2 공통 기반 세부 결정 (API·오류·멱등·인증·로그) | 채택 (429 확정: ADR-0024, 잠금 방식: ADR-0026) | 2026-10-26 |
 | [0024](0024-pre-implementation-decisions.md) | 구현 전 미결 결정 일괄 확정 (서버 우선 원칙, 체험·분석·이벤트·구독·알림·검색·장소) | 채택 (근거 #1 비용 상한 문구 정정: ADR-0030) | 2026-10-27 |
 | [0025](0025-stage2-implementation-conventions.md) | 단계 2 구현 규약 (하위 작업 분할·오류 대응·로그·토큰 발급) | 채택 (인증 실패 응답 렌더링: ADR-0027) | 2026-10-28 |
-| [0026](0026-idempotency-implementation.md) | 멱등 기록 구현 방식 (잠금·4xx 롤백·변경 요청 구분·내부 이벤트 완료 처리) | 채택 (필터 단계 거부의 `jobId`: ADR-0027, assertion 증거 오류 비저장 예외: ADR-0032 #6-2) | 2026-10-28 |
+| [0026](0026-idempotency-implementation.md) | 멱등 기록 구현 방식 (잠금·4xx 롤백·변경 요청 구분·내부 이벤트 완료 처리) | 채택 (필터 단계 거부의 `jobId`: ADR-0027, assertion 증거 오류 비저장 예외: ADR-0032 #6-2, 실행기 단계 API·비저장 플래그·장기 작업 오류 `jobId = null`: ADR-0034) | 2026-10-28 |
 | [0027](0027-anonymous-auth-implementation.md) | 익명 인증 구현 방식 (대역·서명 키 공급·설치 ID·기기 증명 요청·인증 실패 응답) | 채택 (서명 키 2단계 교체 절차: ADR-0030) | 2026-10-28 |
 | [0028](0028-ai-consent-implementation.md) | 외부 전송 동의 기록 구현 방식 (모듈·데이터 버전·서버 제공 안내·최소 안내 버전·철회 확인) | 채택 (철회 판정 기준 보완: ADR-0030) | 2026-10-29 |
-| [0029](0029-trial-usage-implementation.md) | 무료 체험 이용량 구현 방식 (모듈·요청 기기 식별·재설치 판별·DeviceCheck 시작 기록·묶음 단위 예약) | 채택 (HMAC 활성 쓰기 버전·접수 토큰 헤더: ADR-0030, #18 DeviceCheck 장애 시 설치 진행: ADR-0032 #7) | 2026-10-29 |
+| [0029](0029-trial-usage-implementation.md) | 무료 체험 이용량 구현 방식 (모듈·요청 기기 식별·재설치 판별·DeviceCheck 시작 기록·묶음 단위 예약) | 채택 (HMAC 활성 쓰기 버전·접수 토큰 헤더: ADR-0030, #18 DeviceCheck 장애 시 설치 진행: ADR-0032 #7, `NotCovered` 재시도 여부·`StartGuard`·체험 기록 없는 기기: ADR-0034) | 2026-10-29 |
 | [0030](0030-design-review-r1-corrections.md) | 설계 검토 1차 반영 (동의 철회 판정·멱등 입력 경계·키 교체 절차·SSOT 차이 목록) | 채택 (#1·#2·#3 단계 5 보완: ADR-0031, #5 키 2개 이상 활성 버전 필수: ADR-0032) | 2026-11-01 |
-| [0031](0031-stage5-analysis-pipeline.md) | 단계 5 분석 파이프라인 설계 (접수·실행·정산·생성) | 채택 | 2026-11-01 |
+| [0031](0031-stage5-analysis-pipeline.md) | 단계 5 분석 파이프라인 설계 (접수·실행·정산·생성) | 채택 (5-1 구현 보완: 규칙 버전 표·최소 manifest·벡터 버전·claim 잠금 등급: ADR-0034) | 2026-11-01 |
 | [0032](0032-operations-infrastructure-security.md) | 운영·인프라·보안 설계 (네트워크·RDS·SLO·actuator·CI·기기 증명·복구·키) | 채택 (출구·assertion·DeviceCheck 장애·보안 원장 = 사용자 결정 2026-11-01) | 2026-11-01 |
 | [0033](0033-later-stage-policy-proposals.md) | 이후 단계 정책 제안 (구독 처리량·분석 측정·OCR·검색·사진 수렴·보관·알림) | 일부 채택 (#1 RevenueCat, 사용자 결정 #2·#3 임시 기준·#4·#10·#11. #5~#9 제안) | 2026-11-01 |
+| [0034](0034-stage5-1-intake-implementation.md) | 분석 접수·묶음 구현 방식 (단계 5-1: 실행기 단계 API·표 구성·스냅샷·벡터 버전·응답 범위·작업 잠금 규칙) | 채택 (#1~#19 사용자 결정, #20~#38 구현 관례) | 2026-11-10 |
