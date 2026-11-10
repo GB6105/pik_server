@@ -102,14 +102,22 @@ final class IntakeFixtures {
 			.param("id", installed.principalId())
 			.query(Long.class)
 			.single();
-		assertThat(mvc.put()
+		assertThat(decide(installed, UuidV7.generate().toString(), "GRANTED", version)).hasStatusOk();
+	}
+
+	/**
+	 * {@code PUT /consents/ai} on the current notice.
+	 * @param version the consent version the decision replaces
+	 */
+	MvcTestResult decide(Installed installed, String key, String decision, long version) {
+		return mvc.put()
 			.uri("/consents/ai")
 			.header("API-Version", "1")
-			.header("Idempotency-Key", UuidV7.generate().toString())
+			.header("Idempotency-Key", key)
 			.header(HttpHeaders.AUTHORIZATION, installed.bearer())
 			.contentType(MediaType.APPLICATION_JSON)
-			.content("{\"decision\": \"GRANTED\", \"noticeVersion\": 1, \"version\": %d}".formatted(version))
-			.exchange()).hasStatusOk();
+			.content("{\"decision\": \"%s\", \"noticeVersion\": 1, \"version\": %d}".formatted(decision, version))
+			.exchange();
 	}
 
 	MvcTestResult intake(Installed installed, String key, String body) {
