@@ -1,6 +1,6 @@
 # ADR-0029: 무료 체험 이용량 구현 방식 (단계 4)
 
-- 상태: 채택 (HMAC 활성 쓰기 버전·교체 절차, 접수 DeviceCheck 토큰 헤더: ADR-0030)
+- 상태: 채택 (HMAC 활성 쓰기 버전·교체 절차, 접수 DeviceCheck 토큰 헤더: ADR-0030, `NotCovered` 재시도 여부·`StartGuard`·체험 기록 없는 기기: ADR-0034 #9·결과)
 - 날짜: 2026-10-29
 - 관련: ADR-0020, ADR-0021 #3·8, ADR-0022, ADR-0024 #1·4-1·6-2, ADR-0027, ADR-0028, FR-B-01, 브랜치 `feature/FR-B-01-usage`
 

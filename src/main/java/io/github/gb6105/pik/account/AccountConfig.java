@@ -19,4 +19,12 @@ class AccountConfig {
 		return new FakeAttestationVerifier();
 	}
 
+	// First trial assertions are verified with D-21; until then other profiles fail at startup (ADR-0027).
+	@Bean
+	AssertionVerifier assertionVerifier(Environment environment) {
+		Assert.state(DevelopmentProfiles.active(environment),
+				"App Attest assertions are not verified yet; only the local and test profiles may start with the fake");
+		return new FakeAssertionVerifier();
+	}
+
 }

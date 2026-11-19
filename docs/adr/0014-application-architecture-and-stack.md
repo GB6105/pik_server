@@ -1,6 +1,6 @@
 # ADR-0014: 서버 애플리케이션 아키텍처와 기술 스택
 
-- 상태: 채택
+- 상태: 채택 (`analysis_job` 큐 잠금 = `FOR NO KEY UPDATE SKIP LOCKED`: ADR-0034 #37)
 - 날짜: 2026-10-25
 - 관련: ADR-0003, ADR-0005, ADR-0010, ADR-0015, D-03, FR-G-01~04, FR-I-01~06, FR-A-02, FR-B-04, 브랜치 `feature/tech-stack-design`
 

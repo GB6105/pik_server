@@ -7,11 +7,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Stand-in until Apple DeviceCheck is called: a token {@code fake-device-check:<device>} names the device, and the bits
- * live in memory. Created in the local and test profiles only ({@link UsageConfig}, ADR-0029).
+ * live in memory. A token {@code fake-device-check-unavailable:<device>} fails as if Apple could not be reached.
+ * Created in the local and test profiles only ({@link UsageConfig}, ADR-0029).
  */
 class FakeDeviceCheck implements DeviceCheck {
 
 	static final String TOKEN_PREFIX = "fake-device-check:";
+
+	static final String UNAVAILABLE_PREFIX = "fake-device-check-unavailable:";
 
 	private final Set<String> started = ConcurrentHashMap.newKeySet();
 
@@ -26,6 +29,9 @@ class FakeDeviceCheck implements DeviceCheck {
 	}
 
 	private static String device(String deviceToken) {
+		if (deviceToken.startsWith(UNAVAILABLE_PREFIX)) {
+			throw new PikException(ErrorCode.TEMPORARY_FAILURE, "DEVICE_CHECK_UNAVAILABLE", true);
+		}
 		if (!deviceToken.startsWith(TOKEN_PREFIX) || deviceToken.length() == TOKEN_PREFIX.length()) {
 			throw new PikException(ErrorCode.FORBIDDEN, "DEVICE_CHECK_FAILED", false);
 		}

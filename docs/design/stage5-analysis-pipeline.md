@@ -36,58 +36,68 @@
 `멱등 키 → 동의 (공유/배타) → 주체 접수 → 주체 이벤트 → 전역 claim → photo (id 순) → analysis_request → analysis_job (id 순) → external_call → 이용량 할당 → 주체 일일 송신 → 기기 기록 → photo_ai_budget → 일일 비용 → 생성 행 → photo_action·event (id 순) → owner_change_counter`
 - 행 생성 (`INSERT … ON CONFLICT`)은 그 자원의 순서 위치에서 한다 (마지막이 아님). 이미 잠근 상위 행 아래에서만 충돌하는 삽입 (예: 작업 잠금 아래의 `external_call`)은 위치 제약 없음
 - `owner_change_counter`는 도메인 쓰기·flush 뒤 발급
-- 예외: claim의 우선순위 순 `FOR UPDATE SKIP LOCKED` (대기하지 않음)
+- 예외: claim의 우선순위 순 `FOR NO KEY UPDATE SKIP LOCKED` (대기하지 않음)
+- `analysis_job` 잠금 (ADR-0034): 이용량보다 먼저 작업을 잠그는 TX (claim·상태 전이·완료·취소)는 `FOR NO KEY UPDATE`보다 강한 잠금 금지 (`FOR UPDATE`·`DELETE`·`id`·`group_id` UPDATE 포함). 예외 = 주체 접수 잠금을 먼저 잡은 TX. 작업 잠금은 네이티브 SQL (JPA `SKIP_LOCKED`는 `FOR UPDATE`를 낼 수 있음). 근거 = 접수의 `AlreadyReserved` 항목 FK 검사 (`KEY SHARE`)가 이용량 잠금 뒤에 옴 (1.2 5d). 시험 C-8이 고정
 - 만료·취소·회수 배치 = 후보 조회 (잠금 없음) + 작업별 전이 TX
 - advisory 잠금 네임스페이스 분리 (멱등·동의·접수·이벤트·claim·기기)
 
 ## 1. 단계 5-1 접수·묶음
 ### 1.1 요청 `POST /analysis-jobs`
-- 헤더: `Idempotency-Key`, `API-Version`, iOS = `Device-Check-Token` 매 접수 (필요할 때만 사용, 해시 제외). iOS 체험 시작 접수 = `App-Attest-Assertion`·`App-Attest-Challenge-Id`·`App-Attest-Nonce` (서버가 challenge를 줄 때만, 해시 제외, `operations-infrastructure.md` B6-2)
-- 본문: `trigger` (`NEW_PHOTOS`/`ORGANIZE`), `photos[]` 1~100
-  - `photoId` UUID (= `photo.client_ref`, 내부 `photo.id`와 다름), `contentVersion` 1~128자 불투명 토큰
-  - `takenAt` 선택, RFC 3339 오프셋 필수. 누락 = 단독, 형식 오류 = 400
-  - `vector` 선택: `model`·`modelVersion` 1~64자, `data` float32 LE base64 ≤ 12,000자
-  - `text` 선택: `status` (`UNKNOWN`/`NO_TEXT`/`TEXT`), `ocrVersion`. 누락 = `UNKNOWN`
-- 본문 2MB 역직렬화 전 검사 (400 `REQUEST_TOO_LARGE`), 압축 본문 = 400 `MEDIA_TYPE_NOT_SUPPORTED`, 같은 `photoId` = 400 `DUPLICATE_PHOTO`
+- 헤더: `Idempotency-Key`, `API-Version`, iOS = `Device-Check-Token` 매 접수 (필요할 때만 사용, 해시 제외). iOS 체험 시작 접수 = `App-Attest-Assertion`·`App-Attest-Challenge-Id`·`App-Attest-Nonce` (서버가 challenge를 줄 때만, 해시 제외, 각 4,096자 이하, `operations-infrastructure.md` B6-2)
+- 본문 (멱등 해시 대상 = `IntakeCommand`): `trigger` (`NEW_PHOTOS`/`ORGANIZE`, `PRO_BACKLOG`는 서버 배치 전용), `photos[]` 1~100
+  - `photoId` UUID (= `photo.client_ref`, 내부 `photo.id`와 다름), `contentVersion` 1~128 code point 불투명 토큰 (제어 문자 `\p{Cc}`·짝 없는 서로게이트 금지, 길이 = DB `char_length`)
+  - `takenAt` 선택, RFC 3339 오프셋 필수 (초 필수, 소수 1~9자리). 원문 문자열로 해시, 마이크로초로 절삭해 묶음·저장 (DB 정밀도). 누락 = 단독, 형식 오류 = 400 `TAKEN_AT_INVALID`
+  - `vector` 선택: `model`·`modelVersion` 1~64자 ASCII U+0020~U+007E, `data` float32 LE base64 (RFC 4648 표준 알파벳, padding 선택) ≤ 12,000자
+  - `text` 선택: `status` (`UNKNOWN`/`NO_TEXT`/`TEXT`), `ocrVersion` 1~64자 ASCII U+0020~U+007E. 누락 = `UNKNOWN`
+  - 길이·문자 규칙 위반 = 400 `VALIDATION_FAILED`
+- 본문 읽기 = 메시지 변환기 대신 원본 바이트 (크기 검사·assertion 서명 입력 SHA-256). 순서: `Content-Encoding` (모든 헤더·코딩이 `identity`가 아니면 400 `MEDIA_TYPE_NOT_SUPPORTED`) → `Content-Type` (`application/json`·`application/*+json` 아니거나 없음 = 400 `MEDIA_TYPE_NOT_SUPPORTED`) → 2 MiB (2,097,152바이트, 설정값 `pik.analysis.intake.max-body-size`) 초과 = 파싱 전 400 `REQUEST_TOO_LARGE` → 파싱 오류 = 400 `MALFORMED_BODY` (읽기 중 입출력 오류 = 같은 사유, `retryable=true`)
+- 같은 `photoId` = 400 `DUPLICATE_PHOTO`. 전체 검사 순서·저장 여부 = `.claude/docs/api-contract.md` `POST /analysis-jobs`
 
 ### 1.2 처리 순서
-1. 인증 → 실행기 사전 조회 (해시 비교, 같으면 재생)
-2. 형식 검증 → 빠른 동의 확인 (TX 밖, 아니면 403 `AI_CONSENT_REQUIRED`)
-3. TX 밖 준비: `groupingEnabled`면 요청의 **모든** 유효 벡터 디코딩·정규화·쌍별 유사도. 기존 결과·진행 작업 조회, 예비 묶음
-4. iOS이고 체험 예약 예정 (TX 밖): (a) 체험 **시작이 필요한** 경우만 (B6-2.E1: `device_trial_mark` NEW·D-23 확인 전·`STARTING` 복구) assertion 검증·challenge 소비·counter CAS (증거 없으면 비저장 403 `ATTESTATION_REQUIRED` + challenge, B6-2). 이미 시작된 기기 (`TRIAL_STARTED`)·Pro 접수는 assertion 헤더 없이 통과 → (b) `recordStart(예비 묶음 중 가장 작은 크기)`
-5. 업무 TX:
-   a. 동의 공유 잠금 → 기준 버전 확보 (유효 GRANTED가 아니면 403)
-   b. 주체 접수 잠금 → `photo` 찾기·생성 (id 순). 관측 기록 (1.6)
-   c. 재분류 (`EXISTING_RESULT`/`IN_PROGRESS`/후보, 입력 반복 실패 차단 2.7) → 준비한 유사도로 묶음 재계산
-   d. 묶음을 `max(takenAt)` 내림차순 (동률 `photoId`)으로 `reserve`:
-      - `Reserved` 진행 / `NotCovered` 다음 묶음 / `AlreadyReserved` 매핑 사진은 `IN_PROGRESS`, 나머지는 다시 묶음
-      - `StartRequired` = TX 롤백 → (iOS: 4단계 검증 증표 재사용, 증표가 없으면 비저장 challenge 응답) → 막힌 묶음 크기로 `recordStart` → 1회 재시도 → 또 나오면 503 (저장 안 함)
-   e. 접수 (기준 동의 버전, 규칙 버전, trigger, 접수 시각, `first_result_at = null`), 항목 (사진마다 `photo_version`·`basis_change_seq` 스냅샷), 벡터, 묶음, 작업 (`AWAITING_UPLOAD`, `funding`, manifest ID 고정, `uploadPolicy`, `upload_deadline`, `processing_deadline`, `base_priority`, `queued_at`). JDBC batch
-   f. 멱등 기록
-- 체험 기기 송신 한도가 소진된 기기 = 항목 `NOT_ACCEPTED`/`ANALYSIS_UNAVAILABLE` (빠른 거절, 최종 판정은 허가)
+1. 인증 → 본문 읽기·파싱 (1.1) → 요청 기기 확인 (`RequestingDevices.find(주체, did)`, 없으면 401 `ACCESS_TOKEN_INVALID`, B6-2.E3 1단계) → 실행기 사전 조회 (`lookup`, 해시 비교, 같으면 재생) → `pik.analysis.intake-enabled=false`면 503 `TEMPORARY_FAILURE`/`INTAKE_DISABLED` (비저장, `retryable=true`. 사전 조회 뒤라 기존 기록 재생은 허용)
+2. 값 검증 (`VALIDATION_FAILED` → `DUPLICATE_PHOTO` → `TAKEN_AT_INVALID`, 비저장) → 빠른 동의 확인 (TX 밖, `AiConsents.isGranted`, 아니면 `reject`로 403 `AI_CONSENT_REQUIRED` 저장)
+3. TX 밖 준비: 벡터 검사 (1.4). `groupingEnabled`면 요청의 **모든** 유효 벡터 디코딩·정규화·쌍별 유사도. 사진 ID·활성 작업 조회 (잠금 없음), 예비 묶음
+4. 체험 시작 (TX 밖, usage 내부 짧은 TX만): 기기 `trial_mark_id` = null이면 `recordStart`·`reserve`를 부르지 않음 (사용자 결정 Q10, 5d). 그 밖에 후보 ≥ 1이면 `recordStart(예비 묶음 중 가장 작은 크기, token, guard)`. Android·시작된 iOS (`TRIAL_STARTED`)는 usage가 바로 반환. `StartGuard.beforeStart` = usage가 Apple 호출 직전 (B6-2.E1: NEW·`STARTING` 복구)에만 1회 호출 → 증거 없으면 비저장 403 `ATTESTATION_REQUIRED` + challenge, 있으면 `TrialStartAttestations.verify` → 증표를 이 HTTP 요청 안에 보관 (재시도 재사용, counter 1회). 이 단계의 `PikException` = `reject` (저장 대상만 저장)
+5. 업무 TX (`executor.commit`, 멱등 키 잠금 아래):
+   a. 동의 공유 잠금 → 기준 버전 확보 (`lockGrantedBasis`, 비어 있으면 403 `AI_CONSENT_REQUIRED`, 전체 롤백 후 저장)
+   b. 주체 접수 advisory 잠금 → `photo` 찾기·생성 (없는 행 `client_ref` 순 `ON CONFLICT DO NOTHING`, 전체 id 순 `FOR UPDATE`). 관측 기록 (1.6). 한 TX에 1회
+   c. 재분류: 대표 활성 작업 또는 활성 작업의 `ACCEPTED` 항목 (구성원) = `IN_PROGRESS` 예비. c': 찾은 기존 작업을 id 순 `FOR SHARE`로 잠그고 상태 재확인 (종료된 작업의 사진 = 후보로 되돌림) → 후보만 준비한 유사도로 묶음 재계산 (결정적)
+   d. `trial_mark_id` = null이면 예약 없이 신규 후보 전부 `NOT_ACCEPTED`/`FORBIDDEN`/`TRIAL_UNAVAILABLE`, `retryable=false` (`IN_PROGRESS`는 그대로). 그 밖에 묶음을 `max(takenAt)` 내림차순 (NULL 뒤, 동률 = 대표 `photoId` 부호 없는 순)으로 작업 ID를 미리 발급해 `reserve`:
+      - `Reserved` 진행 / `NotCovered` = 묶음 `NOT_ACCEPTED`/`FORBIDDEN`/`SUBSCRIPTION_REQUIRED` (`retryable` = `NotCovered.retryable`), 다음 묶음 / `AlreadyReserved` 매핑 사진은 그 작업의 `IN_PROGRESS`, 나머지는 같은 규칙으로 다시 묶어 대기열에 정렬 삽입. 이 작업은 c'에서 잠그지 않음 → 항목 FK `KEY SHARE`가 이용량 잠금 뒤 (0.3 `analysis_job` 잠금 규칙. 설계 경로로는 생기지 않는 방어 분기)
+      - `StartRequired` = 신호 예외로 TX 전체 롤백 (기록 없음) → 막힌 묶음 크기로 `recordStart` (같은 guard, 증표 재사용, 없으면 비저장 challenge 응답) → `commit` 1회 재시도 (a부터 다시) → 또 나오면 503 `TEMPORARY_FAILURE`/`TRIAL_START_CONFLICT` (저장 안 함)
+   e. `keepVectors` (묶음 켜짐 ∧ 유효 벡터 ∧ c' 후보 = 계산 입력 전부, 판정 무관) → JDBC batch: 접수 (기준 동의 버전, 규칙 ID, trigger, 기기·체험 기록 ID, 접수 시각, `first_result_at = null`) → 묶음 → 작업 (`AWAITING_UPLOAD`, `funding = TRIAL`, 현재 manifest ID, `base_priority`, `queued_at = now`, 기한 = now + 설정) → 항목 (스냅샷 + `vector_id`). 0.3보다 늦은 삽입 = 4.3 잠금 순서 예외
+   f. `issueChangeSeqs` (생성·`source_change_seq` 증가 사진만, 도메인 쓰기·flush 뒤 마지막 `owner_change_counter`)
+   g. 실행기가 `Outcome(새 작업 ≥ 1 = 202, 그 밖 = 200, 투영 응답)`과 멱등 기록 저장 후 커밋
+- 5-2가 같은 자리 (5c)에 더할 판정 (사용자 결정 Q11): `EXISTING_RESULT`, 입력 반복 실패 차단 (`INPUT_RETRY_LATER`, 2.7), 사진 평생 송신 (`ATTEMPTS_EXHAUSTED`), 체험 기기 송신 한도 소진 = 항목 `NOT_ACCEPTED`/`ANALYSIS_UNAVAILABLE` (빠른 거절, 최종 판정은 허가). 5-1은 enum·CHECK만
+- 5-1 `funding` = `TRIAL` 고정 (사용자 결정 Q14, Pro = 단계 8). 체험 시작 판정 = usage `needsDeviceCheck()`, B7 "확인 전" 설치 경로는 D-23 구현 (사용자 결정 Q9)
 
 ### 1.3 묶음 규칙 v1 (P05 초기값, 설정값)
 - 대상: `groupingEnabled` ∧ 같은 (`model`, `modelVersion`) 유효 벡터 + `takenAt` + `text.status = NO_TEXT`. 그 밖은 단독
 - `(takenAt, photoId)` 순으로, 모든 구성원과 코사인 ≥ θ ∧ 시간 폭 ≤ W (120초) ∧ 크기 < 20인 묶음 중 최소 유사도가 가장 큰 곳 (동률 = 먼저 만든 묶음). 없으면 새 묶음
 - 대표 = 평균 유사도 최대 → 이른 `takenAt` → `photoId`
 - 유사도 = 저장한 F32 값을 double로 계산 (재현 기준)
-- 규칙 버전 = manifest (algorithmVersion, W, θ, 최대 크기, 정렬·동률, 정규화, 글자 조건) SHA-256, `grouping_rule`에 보관. 범위 = 한 접수 안
+- 규칙 버전 = manifest (algorithmVersion, `enabled`, W, ε, 최대 크기, 모델별 dims·θ, 대상·정렬·합류·대표·정규화 설명) 정규 JSON의 SHA-256, `analysis_grouping_rule`에 보관 (기동 때 없으면 삽입, 사용자 결정 Q2). 모델 목록은 (model, version) 정렬, W는 `Duration.toString()` → 같은 설정 = 같은 ID. 범위 = 한 접수 안 (`analysis_group`, 사진의 영속 묶음은 단계 9, D-28)
+- `photoId` 순서 = 부호 없는 128비트 (PostgreSQL `uuid` 순서와 같음, `UUID.compareTo` 금지). 단독 묶음 (크기 1)의 model = null, 등록 dims와 다른 벡터 = 단독. 대표 평균 = 다른 구성원과의 유사도 합 / (k − 1). θ 허용 범위 = (0, 1) (자기 코사인이 double에서 1을 벗어날 수 있음)
 
 ### 1.4 벡터
-- `groupingEnabled=false` (초기 허용) = 벡터 등록 목록 없이 기동, 벡터는 검사만 하고 저장 안 함, 모두 단독
-- `groupingEnabled=true` = 등록 목록 `(model, modelVersion, dims, threshold)`이 비거나 잘못되면 기동 실패
-- 검사: base64 (`MALFORMED_BASE64`) → 등록 (`UNKNOWN_MODEL`) → 길이 (`BAD_DIMENSION`) → 유한 (`NOT_FINITE`) → double norm > ε (`ZERO_NORM`) → 정규화 후 유한 재확인. 어기면 그 벡터만 무시, 사진은 단독
-- 저장 `photo_vector`: 사진 버전·model·modelVersion·`F32LE`·dims. 지표 라벨은 등록 모델·허용 사유만
+- `groupingEnabled=false` (기본값) = 벡터 등록 목록 없이 기동, 벡터는 구조 검사만 (base64 → 디코딩 길이 > 0 ∧ 4의 배수 (`BAD_DIMENSION`) → 유한 → norm > ε, 사용자 결정 Q6), 저장 안 함, 모두 단독. 미등록 모델·차원 불일치는 사유 없음
+- `groupingEnabled=true` = 등록 목록 `(model, modelVersion, dims, threshold)`이 비거나 잘못되면 기동 실패 (중복 쌍, model·version 1~64자 ASCII U+0021~U+007E, dims 1~2,250, θ (0, 1)). 목록 형식은 꺼짐에도 기동 때 검사
+- 검사: base64 (RFC 4648 표준 알파벳, padding 선택, 공백·URL-safe = `MALFORMED_BASE64`) → 등록 (`UNKNOWN_MODEL`) → 길이 (`BAD_DIMENSION`) → 유한 (`NOT_FINITE`) → double norm > ε (`ZERO_NORM`, ε 기본 1e-6 설정값) → 정규화 후 유한 재확인. 어기면 그 벡터만 무시 (항목 `vectorIgnored`, 400 아님), 사진은 단독
+- 저장 `photo_vector` (사용자 결정 Q5): 묶음 켜짐일 때 묶음 계산에 쓴 유효 벡터 전부 (판정 무관, 거절 포함). 불변 벡터 버전 = 수신 F32LE 바이트 (정규화 전)·`content_sha256`·model·modelVersion·dims, (사진, 모델, 버전, sha256) 유니크로 같은 내용 재사용·다른 내용 새 행. 사진 버전은 항목 스냅샷이 보유, 항목 `vector_id`가 참조. 삽입은 photo 행 잠금 아래만. 지표 라벨은 등록 모델·허용 사유만
 
 ### 1.5 항목·응답·재생
-- `analysis_request_item` (불변): `photo_version`, `admission_result` (`ACCEPTED`/`EXISTING_RESULT`/`IN_PROGRESS`/`NOT_ACCEPTED`), reason, group, role, `analysis_job_id`, `reused_result_id`·`reused_photo_version`, `vector_ignored_reason`
-- 상태 (계산): 사진 기준 `requested = accepted + existingResult + inProgress + notAccepted`, 실행 수량 `waiting/running/done`, phase (`WAITING`/`RUNNING`/`DONE`). 진행 작업 참조는 그 작업이 끝나기 전에는 `DONE` 아님. `DONE` = 분석 처리 종료 (생성 미포함, 생성은 4.2 조회)
-- HTTP: 새 작업 ≥ 1 = 202, 그 밖 = 200 + 원장. 요청 자체 거절 = 4xx
-- 본문: `jobId` (= 접수 ID), `result=ACCEPTED`, `retryable`, phase, 수량, `items[]` (`admissionResult`, `code`·`reason`·`retryable`·`retryAfter`, `analysisJobId`, 그룹·역할, 현재 실행 결과, `observedVersion`·`analyzedVersion`, `vectorIgnored`), 작업별 `uploadRequired`·`uploadPolicy` (`image/jpeg`, `maxBytes`, `maxLongEdgePx`). **URL 없음**
-- 오류 층 고정: `admissionResult` (접수 판정) / `code` (오류 분류, api-contract) / `reason` (세부 사유). 예: 이용 자격 부족 = `admissionResult=NOT_ACCEPTED`, `code=FORBIDDEN`, `reason=SUBSCRIPTION_REQUIRED`, `retryable` = 예약 대기면 true, 소진·체험 없음이면 false. 숫자 비노출
-- 재전송 = 최초 상태 코드 + 저장 판정 + 현재 실행 상태. 오류는 저장 응답 그대로
-- 사전 검사 오류 = 실행기 확정 오류 경로 (키 잠금 → 재확인 → 저장). 저장 = 403 동의, 400 토큰 누락, DeviceCheck 거절 403. 저장 안 함 = 503, B6-2 증거 오류 (`ATTESTATION_REQUIRED`·409 counter 경합·`ATTESTATION_FAILED`, ADR-0026 저장 규칙의 명시적 예외). 인수 조건: 증거 오류 뒤 같은 키로 증거를 보완한 재전송은 저장된 403에 막히지 않음
-- 실행기 확장: 사전 조회·해시 비교, 확정 오류 저장, 202 저장, 성공 재생 투영
+- `analysis_request_item` (불변, PK (`request_id`, `photo_id`)): `client_ref`, 스냅샷 (`photo_version`, `basis_change_seq`, `taken_at`, `text_status`, `ocr_version`, 사용자 결정 Q4), `admission_result` (`ACCEPTED`/`EXISTING_RESULT`/`IN_PROGRESS`/`NOT_ACCEPTED`), `code`·`reason`·`retryable`, `group_id`·`group_role`, `analysis_job_id` (`IN_PROGRESS` = 다른 접수의 작업 가능), `vector_id`·`vector_ignored_reason`. `reused_result_id`·`reused_photo_version` (+ `EXISTING_RESULT` CHECK)·`retry_at`은 5-2 (사용자 결정 Q12)
+- 상태 (계산): 사진 기준 `requested = accepted + existingResult + inProgress + notAccepted`, 실행 수량 `waiting/running/done`, phase. 수량·phase 범위 = 응답 `jobs[]` (이 접수가 만든 작업 + `IN_PROGRESS` 항목이 참조한 작업, 중복 제거). phase: 작업 없음 또는 모두 종료 = `DONE`, 모두 `AWAITING_UPLOAD`/`READY` = `WAITING`, 그 밖 = `RUNNING`. 진행 작업 참조는 그 작업이 끝나기 전에는 `DONE` 아님. `DONE` = 분석 처리 종료 (생성 미포함, 생성은 4.2 조회)
+- HTTP: 새 작업 ≥ 1 = 202, 그 밖 = 200 (접수 행·항목은 항상 저장). 요청 자체 거절 = 4xx·503 (모든 오류 `jobId = null`, `result = FAILED`, 사용자 결정 Q13)
+- 본문: `jobId` (= 접수 ID), `result=ACCEPTED`, `retryable=false`, `phase`, `counts`, `items[]`, `groups[]`, `jobs[]`. **URL 없음**
+  - `items[]` = 사진마다 1개: `photoId`, `admissionResult`, `code`·`reason`·`retryable`·`retryAfter` (5-2부터), `analysisJobId`, `groupId`·`role`, `execution` (현재 작업 상태), `observedVersion` (이번 요청 값)·`analyzedVersion` (그 작업이 분석하는 버전), `vectorIgnored`
+  - `groups[]` (FR-I-02 반환) = 이 접수가 만든 묶음: `groupId`, `representativePhotoId`, `photoCount` (대표 포함), `analysisJobId` (거절 묶음 = null). 구성 = 같은 `groupId`의 `items[]`
+  - `jobs[]` (사용자 결정 2026-11-10 "참조 작업 포함") = `analysisJobId`, `requestId` (작업을 만든 접수, 5-2 업로드 경로 `/analysis-jobs/{requestId}/...`), `groupId`, `representativePhotoId` (업로드할 사진. 구성원만 다시 보낸 요청의 `items[]`에는 없음), `status`, `uploadRequired` (`AWAITING_UPLOAD`), `uploadPolicy` (`contentType`, `maxBytes`, `maxLongEdgePx`, 작업 manifest에서 조회)
+  - 정렬: `items[]` = `photoId`, `groups[]` = 대표 `photoId`, `jobs[]` = 대표 `photoId` → 작업 ID. `photoId` = 부호 없는 순 (`uuid` 순서). 단말은 순서가 아니라 `photoId`로 대응
+- 오류 층 고정: `admissionResult` (접수 판정) / `code` (오류 분류, api-contract) / `reason` (세부 사유). 예: 이용 자격 부족 = `admissionResult=NOT_ACCEPTED`, `code=FORBIDDEN`, `reason=SUBSCRIPTION_REQUIRED`, `retryable` = 예약 대기면 true, 소진·체험 없음이면 false. 체험 기록 없는 기기 = `reason=TRIAL_UNAVAILABLE`, `retryable=false` (사용자 결정 Q10). 숫자 비노출
+- 재전송 = 최초 상태 코드 + 저장 판정 (DB 항목) + 현재 실행 상태 (`IntakeProjection`, 첫 응답과 같은 함수). 접수 행이 없으면 저장 본문 그대로. 오류는 저장 응답 그대로
+- 사전 검사 오류 = 실행기 확정 오류 경로 (`reject`: 키 잠금 → 재확인 → 저장). 저장 = 403 동의, 400 토큰 누락, DeviceCheck 거절 403. 저장 안 함 = 503 (`INTAKE_DISABLED`·`TRIAL_START_CONFLICT`·`DEVICE_CHECK_UNAVAILABLE`), B6-2 증거 오류 (`ATTESTATION_REQUIRED`·409 `ATTESTATION_CONFLICT`·`ATTESTATION_FAILED`, ADR-0026 저장 규칙의 명시적 예외), 본문·값 오류 (1.1). 인수 조건: 증거 오류 뒤 같은 키로 증거를 보완한 재전송은 저장된 403에 막히지 않음
+- 실행기 확장 (구현, ADR-0034): `lookup` (사전 조회·해시 비교), `reject` (확정 오류 저장), `commit` + `Outcome` (202 저장), `ReplayProjection` (2xx 재생만 투영). 비저장 = `PikException.unstored` (`reject`·`commit` 안에서만 의미. 그 전 단계에서 던진 오류는 실행기를 거치지 않아 저장되지 않음)
 
 ### 1.6 원본 버전 관측 (단순화)
 - `photo.observed_version`, `photo.source_change_seq` (관측값이 직전 `observed_version`과 **다를 때만** +1)
@@ -141,7 +151,7 @@
 - 상태 조회 `GET /analysis-jobs/{requestId}` = URL 없는 안정 투영, `ETag`/304 (소유 검증 뒤), `pollAfterSeconds` + 지터
 
 ### 2.4 실행
-1. claim TX: `ai_gate`의 모든 원인 중 최대 `blocked_until > now()`면 claim 안 함 (잠금 없이 읽음) → 전역 claim 잠금 → 빈 전역 슬롯 → `READY ∧ next_attempt_at ≤ now() ∧ 처리 기한 전`을 정렬 `effective_priority, queued_at, job_id` 순 `SKIP LOCKED` → 주체 동시 실행 상한 (초기 4) 초과 주체 건너뜀
+1. claim TX: `ai_gate`의 모든 원인 중 최대 `blocked_until > now()`면 claim 안 함 (잠금 없이 읽음) → 전역 claim 잠금 → 빈 전역 슬롯 → `READY ∧ next_attempt_at ≤ now() ∧ 처리 기한 전`을 정렬 `effective_priority, queued_at, job_id` 순 `FOR NO KEY UPDATE SKIP LOCKED` (네이티브 SQL, 0.3) → 주체 동시 실행 상한 (초기 4) 초과 주체 건너뜀
    - `effective_priority = max(0, 2×base_priority + 1 − floor(대기/10분) − (접수의 first_result_at이 null이면 1))` (조회 때 계산, 노화 배치 없음). 같은 등급에서 첫 결과가 1단계 앞서고, 후속 작업은 10분 대기면 따라잡음
    - `base_priority` = `NEW_PHOTOS` 0, `ORGANIZE` 1, `PRO_BACKLOG` 2. `queued_at`은 재시도 때 초기화하지 않음. 실행 자원이 계속 공급되고 작업이 자격을 유지하면 base b 작업은 `(2b+1)×10분` 뒤 최상위에 도달 (예산 차단·기한 초과까지 막는다는 뜻은 아님)
    - 대표 부하에서 실행 계획·읽은 행 수·정렬 spill·claim 잠금 p95 측정. 병목이면 오래 기다린 후보를 반드시 포함하는 제한 조회 또는 저장한 승격 시각으로 바꿈
@@ -337,23 +347,39 @@
 ### 4.3 모듈 소유·DDL 계약
 | 모듈 | 소유 | 공개 함수·이벤트 |
 |---|---|---|
-| `photo` (신규) | `photo` (`client_ref`, `observed_version`, `source_change_seq`), `photo_vector` | 관측 기록, 변경 세대 공유 조회, `PhotoSourceChanged` |
-| `analysis` (신규) | `analysis_request`·`_item`, `analysis_group`, `analysis_job`, `analysis_upload_attempt`, `external_call`, `analysis_result`, `photo_ai_budget`, `ai_spend_day`, `ai_send_daily`, `ai_gate`, `analysis_call_manifest` | `AnalysisCompleted`, 결과·현재 epoch 조회, 수동 재처리 |
+| `photo` (5-1 구현, `shared`만 의존) | `photo` (`client_ref`, `observed_version`, `source_change_seq`, `change_seq`), `photo_vector` (불변 벡터 버전) | `PhotoObservations` (`observe`·`issueChangeSeqs`·`findIds`·`keepVectors`), `PhotoSourceChanged`. 변경 세대 공유 조회 = 5-3 |
+| `analysis` (5-1 구현, `shared`·`account`·`consent`·`usage`·`photo` 의존) | 5-1: `analysis_grouping_rule`, `analysis_call_manifest`, `analysis_request`, `analysis_request_item`, `analysis_group`, `analysis_job` (접수 열). 5-2: `analysis_upload_attempt`, `external_call`, `analysis_result`, `photo_ai_budget`, `ai_spend_day`, `ai_send_daily`, `ai_gate`, `analysis_job` 실행 열 | 5-1 공개 API 없음. 5-2: `AnalysisCompleted`, 결과·현재 epoch 조회, 수동 재처리 |
 | `usage` | 체험 할당·예약, `device_trial_mark.send_count` | reserve, 사진별 `settle(principal, job, consumeIds, releaseIds)` (신규), 작업 전체 release (실패·취소), 기기 송신 예약·정산 |
 | `action` | `photo_action`, `action_generation` | 리스너 2개, 확인 Command, 생성 투영 |
 | `event` | `event`, `event_photo`, `event_generation` | 리스너 2개, 비로그인 판단 Query |
 - FK는 모듈 안에서만. 모듈 밖 참조는 ID 값
 - 결과 저장·삭제 = 같은 TX에서 `owner_change_counter`로 `change_seq` 발급 + 출처·버전 기록 (단말 검색 색인 동기화의 기반). 결과 변경 피드·전체 동기화 API는 단계 9 공통 동기화 (`later-stage-policies.md` C10)
 - 유니크·부분 인덱스: `uk_analysis_job_photo_active` (`owner_id`, `photo_id`) `WHERE status NOT IN (FAILED, CANCELLED, INELIGIBLE)` (ADR-0024 #4-1, `SUCCEEDED` 포함), `uk_usage_reservation_photo` (`principal_id`, `photo_id`) `WHERE status <> RELEASED`, 작업당 현재 `ISSUED` 시도 1개, `external_call (job, run_token)`, `READY` (`next_attempt_at`, `base_priority`, `queued_at`), 주체별 `RUNNING`, 생성 행 PK (owner, photo), `ai_gate` PK (원인)
+- V5 (5-1, `V5__photo_and_analysis_intake.sql`): 시각 = `TIMESTAMP WITH TIME ZONE`, ID = UUIDv7, 모듈 밖 ID (주체·기기·체험 기록·사진·벡터)는 FK 없음. 표별 요약은 아래
+
+| 표 | 열·제약 (요약) |
+|---|---|
+| `photo` | `owner_id`·`client_ref` (UNIQUE), `observed_version` (1~128자), `source_change_seq` (새 행 0), `change_seq` (0 = 커밋 전 임시값, 업무 TX 마지막 발급), `version` DEFAULT 0 (관측은 올리지 않음). ERD의 `cloud_ref`·`os_taken_at`·`os_modified_at`·`availability`·`original_deleted_at`·`memo`·`deleted_at`·관련 인덱스는 소유 단계 (9·P11) |
+| `photo_vector` | `id` PK, `photo_id` FK, `model_id`·`model_version` (1~64자), `encoding = 'F32LE'`, `dims > 0`, `vector` (`octet_length = dims × 4`), `content_sha256` (32바이트), UNIQUE (`photo_id`, `model_id`, `model_version`, `content_sha256`), `ix_photo_vector_owner` |
+| `analysis_grouping_rule` | `id` = 규칙 manifest SHA-256 (`^[0-9a-f]{64}$`), `content` JSONB. 불변 |
+| `analysis_call_manifest` | `id` = 내용 SHA-256 hex, `content` JSONB (5-1 = `{model, uploadPolicy}`), `content_type`·`max_bytes`·`max_long_edge_px` (> 0). 불변. 5-2가 내용·열 확장 (새 ID) |
+| `analysis_request` | `origin` (`CLIENT`/`SERVER_BATCH`, `CLIENT` ⇒ `device_id`), `trigger` (`NEW_PHOTOS`/`ORGANIZE`/`PRO_BACKLOG`), `trial_mark_id`, `consent_version ≥ 1`, `grouping_rule_id` FK, `photo_count ≥ 1`, `representative_count ≥ 0` (만든 작업 수), `first_result_at`, `version`. 상태 열 없음 (계산) |
+| `analysis_group` | `request_id` FK, `representative_photo_id` (photo.id), `photo_count ≥ 1`, `model_id`·`model_version` (단독 = NULL). 묶음 판단을 거친 후보마다 1개 (거절 묶음 포함), 불변 |
+| `analysis_job` | `request_id`·`group_id` (UNIQUE)·`manifest_id` FK, `photo_id` (대표 photo.id)·`photo_version`, `funding` (`TRIAL`/`PRO`), `status` CHECK = 2.1 전체 상태, `base_priority` 0~2, `queued_at`·`upload_deadline`·`processing_deadline`, `version`. 실행 열·READY 인덱스는 5-2 (V6) |
+| `analysis_request_item` | 1.5. CHECK: `ACCEPTED` ⇒ 작업·묶음·역할 / `IN_PROGRESS` ⇒ 작업 ∧ 묶음 없음 / `NOT_ACCEPTED` ⇒ `code`·`reason` / 역할 ⇔ 묶음 / `vector_id` ⇒ 사유 없음. 인덱스 (`owner_id`, `photo_id`)·(`analysis_job_id`)·(`group_id`) |
+
+- 잠금 순서 예외 (V5 주석, `consistency-rules.md`): 접수·묶음·작업·항목 삽입은 예약 뒤. `uk_analysis_job_photo_active` 충돌은 주체 접수 잠금 아래에서만 생김 (불변 조건: `analysis_job`을 삽입하는 모든 경로는 주체 접수 잠금을 먼저 잡음, 5-2 `SERVER_BATCH` 포함). `IN_PROGRESS` 항목이 참조할 기존 작업은 photo 뒤·예약 앞에 id 순 `FOR SHARE`로 먼저 잠금 (1.2 5c'). `AlreadyReserved` 작업만 늦은 `KEY SHARE` (0.3 `analysis_job` 잠금 규칙). 그 밖의 FK 부모 = 같은 TX의 새 행, 불변 행 (manifest·규칙), 이미 `FOR UPDATE`로 잠근 `photo`
 - 보관:
   - `SUCCEEDED` 작업과 그 접수 = 그 작업을 가리키는 결과가 있는 동안 유지 (ADR-0024 #6-3·#4-2)
   - `FAILED`·`CANCELLED`·`INELIGIBLE` 작업 = 종료 + 90일. 항목·시도 = 접수의 모든 작업 종료·미정산 없음 + 90일. 남은 작업이 없는 접수도 함께
   - `external_call` 상세 = 90일 (주체·사진 ID로 다른 데이터와 연결되므로 개인 관련 데이터로 취급)
   - `photo_ai_budget`·`analysis_result` = 사진 메타데이터 수명 (P11 삭제 때 함께). 멱등 7일. 임시 이미지 = 2.2
+  - 후속 (보관 단계): `IN_PROGRESS` 항목이 다른 접수의 작업을 FK로 참조 (`fk_analysis_request_item_job`) → 두 접수의 삭제 기한이 묶임. 참조 항목을 먼저 삭제하거나 작업 기한을 마지막 참조 접수 기준으로 둠. 어떤 항목도 참조하지 않는 `photo_vector` 행 정리도 이때 (R19 O2)
 
 ### 4.4 PR·활성화 경계
 - PR 5-1 (photo + 접수), 5-2 (업로드·실행·정산), 5-3 (생성·API)
 - 접수 활성화 설정 `pik.analysis.intake-enabled` (기본 false). Unit A 세 PR이 모두 병합되고 프로필별 리스너 시험이 통과한 뒤 켠다
+- 꺼짐 응답 = 503 `TEMPORARY_FAILURE`/`INTAKE_DISABLED`, `retryable=true`, 멱등 기록 저장 안 함. 실행기 사전 조회 뒤에 검사하므로 기존 기록 재생은 허용 (사용자 결정 Q7)
 - 리스너는 모든 프로필에 등록. 리스너가 없는 상태로 발행하는 경로가 없도록 5-1·5-2의 이벤트 발행 코드는 5-3과 같은 배포에서만 활성 (설정 false면 접수가 생기지 않으므로 발행도 없음)
 
 ## 5. 성능 계약 (측정 전 기본값)

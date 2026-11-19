@@ -83,6 +83,13 @@ class DeviceTrialMark {
 	}
 
 	/**
+	 * Whether the photos would fit once every pending reservation is released; consumed photos never come back.
+	 */
+	boolean coversOnceReleased(int photos) {
+		return exhaustedAt == null && limitCount - consumedCount >= photos;
+	}
+
+	/**
 	 * Whether the DeviceCheck bits must record the start before the device's first trial reservation.
 	 */
 	boolean needsDeviceCheck() {

@@ -16,21 +16,23 @@ public final class IdempotentCommands {
 
 	/**
 	 * Marks the request as a change request when {@code handler} is an {@link IdempotentCommand}, so that its error
-	 * response carries {@code jobId} (the {@code Idempotency-Key}, when valid) and {@code result}.
+	 * response carries {@code jobId} (the {@code Idempotency-Key}, when valid and the job is not long-running) and
+	 * {@code result}.
 	 */
 	public static void markIfCommand(HttpServletRequest request, Object handler) {
-		if (isCommand(handler)) {
-			mark(request);
+		IdempotentCommand command = command(handler);
+		if (command != null) {
+			mark(request, command);
 		}
 	}
 
-	static boolean isCommand(Object handler) {
-		return handler instanceof HandlerMethod method && method.hasMethodAnnotation(IdempotentCommand.class);
+	static @Nullable IdempotentCommand command(Object handler) {
+		return (handler instanceof HandlerMethod method) ? method.getMethodAnnotation(IdempotentCommand.class) : null;
 	}
 
-	static @Nullable IdempotencyKey mark(HttpServletRequest request) {
+	static @Nullable IdempotencyKey mark(HttpServletRequest request, IdempotentCommand command) {
 		IdempotencyKey key = IdempotencyKey.parse(request.getHeader(IdempotencyKey.HEADER));
-		CommandRequests.mark(request, key != null ? key.value() : null);
+		CommandRequests.mark(request, (key != null && !command.longRunning()) ? key.value() : null);
 		return key;
 	}
 

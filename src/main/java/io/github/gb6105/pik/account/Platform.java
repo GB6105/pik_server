@@ -1,6 +1,6 @@
 package io.github.gb6105.pik.account;
 
-enum Platform {
+public enum Platform {
 
 	IOS, ANDROID
 

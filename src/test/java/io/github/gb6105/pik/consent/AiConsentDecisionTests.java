@@ -33,6 +33,8 @@ class AiConsentDecisionTests {
 
 	final ConsentRecords records = mock(ConsentRecords.class);
 
+	final ConsentLocks locks = mock(ConsentLocks.class);
+
 	final UUID principal = UuidV7.generate();
 
 	final UUID device = UuidV7.generate();
@@ -155,7 +157,7 @@ class AiConsentDecisionTests {
 	}
 
 	private AiConsents consents(int noticeVersion, int minimumNoticeVersion) {
-		return new AiConsents(records, new ConsentProperties(noticeVersion, minimumNoticeVersion));
+		return new AiConsents(records, new ConsentProperties(noticeVersion, minimumNoticeVersion), locks);
 	}
 
 	private void latest(@Nullable AiConsent consent) {

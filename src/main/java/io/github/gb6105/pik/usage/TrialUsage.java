@@ -57,6 +57,17 @@ public class TrialUsage {
 	 * needed, or as {@link DeviceCheck}
 	 */
 	public void recordStart(UUID principalId, UUID trialMarkId, int photos, @Nullable String deviceCheckToken) {
+		recordStart(principalId, trialMarkId, photos, deviceCheckToken, () -> {
+		});
+	}
+
+	/**
+	 * As {@link #recordStart(UUID, UUID, int, String)}, calling {@code guard} once right before Apple is asked: after
+	 * the token check, only when the start is to be written or resumed (B6-2.E1).
+	 * @throws PikException also as {@code guard} throws, before anything is written
+	 */
+	public void recordStart(UUID principalId, UUID trialMarkId, int photos, @Nullable String deviceCheckToken,
+			StartGuard guard) {
 		Assert.state(!TransactionSynchronizationManager.isActualTransactionActive(),
 				"recordStart calls Apple and must run outside database transactions");
 		Assert.isTrue(photos >= 1, "photos must be at least 1");
@@ -79,6 +90,7 @@ public class TrialUsage {
 		if (!StringUtils.hasText(deviceCheckToken)) {
 			throw new PikException(ErrorCode.INVALID_INPUT, "DEVICE_CHECK_TOKEN_REQUIRED", false);
 		}
+		guard.beforeStart();
 		if (start == Start.NEW) {
 			// Another install of the device may have started the trial since this one was registered.
 			if (deviceCheck.trialStarted(deviceCheckToken)) {
@@ -122,7 +134,7 @@ public class TrialUsage {
 		DeviceTrialMark mark = records.lockMark(trialMarkId).orElseThrow();
 		int count = photos.size();
 		if (!quota.covers(count) || !mark.covers(count)) {
-			return new Reservation.NotCovered();
+			return new Reservation.NotCovered(quota.coversOnceReleased(count) && mark.coversOnceReleased(count));
 		}
 		if (mark.needsDeviceCheck()) {
 			return new Reservation.StartRequired();
@@ -254,6 +266,17 @@ public class TrialUsage {
 	}
 
 	/**
+	 * Called by {@link #recordStart(UUID, UUID, int, String, StartGuard)} right before Apple records the trial start,
+	 * for checks that must hold before the start is written, such as the first trial assertion (B6-2).
+	 */
+	@FunctionalInterface
+	public interface StartGuard {
+
+		void beforeStart();
+
+	}
+
+	/**
 	 * What {@link #reserve} did. Only {@link Reserved} starts analysis.
 	 */
 	public sealed interface Reservation {
@@ -263,8 +286,10 @@ public class TrialUsage {
 
 		/**
 		 * The trial cannot cover the photos: nothing is reserved and the subscription guidance is due (FR-B-01).
+		 * @param retryable whether the photos would fit once the reservations still pending are released, on both the
+		 * principal and the device; {@code false} when consumed photos or an exhausted device leave too little
 		 */
-		record NotCovered() implements Reservation {
+		record NotCovered(boolean retryable) implements Reservation {
 		}
 
 		/**
