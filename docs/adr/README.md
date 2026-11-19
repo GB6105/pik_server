@@ -27,12 +27,12 @@
 | [0013](0013-branch-protection-pr-required.md) | 원격 브랜치 보호: PR·CI 필수 | 채택 | 2026-10-25 |
 | [0014](0014-application-architecture-and-stack.md) | 서버 애플리케이션 아키텍처와 기술 스택 | 채택 (`analysis_job` 큐 잠금 = `FOR NO KEY UPDATE SKIP LOCKED`: ADR-0034 #37) | 2026-10-25 |
 | [0015](0015-aws-infrastructure-and-deployment.md) | AWS 인프라와 배포·비밀 값 주입 | 채택 (NAT 제거·공인 IP 출구: ADR-0032 #1) | 2026-10-25 |
-| [0016](0016-external-ai-and-analysis-pipeline.md) | 외부 AI 연동, 사진 분석 파이프라인, 외부 전송 동의 범위 | 채택 (파이프라인 확정·접수 단계 대체: ADR-0021, 웹 탐색 모델·장소 제공자: ADR-0024, 결과 불명 처리 대체·업로드 형식 JPEG 한정·체험 첫 실행 Messages: ADR-0031) | 2026-10-25 |
+| [0016](0016-external-ai-and-analysis-pipeline.md) | 외부 AI 연동, 사진 분석 파이프라인, 외부 전송 동의 범위 | 채택 (파이프라인 확정·접수 단계 대체: ADR-0021, 웹 탐색 모델·장소 제공자: ADR-0024, 결과 불명 처리 대체·업로드 형식 JPEG 한정·체험 첫 실행 Messages: ADR-0031, 단말 OCR 본문 미전송: ADR-0033 #6) | 2026-10-25 |
 | [0017](0017-search-interpret-on-server-execute-on-device.md) | 검색 구조: 자연어 해석은 서버, 실행은 단말 | 채택 (호출 제한: ADR-0024, 로컬 인덱스의 분석 출처: ADR-0031 #20, 무료 범위 P02: ADR-0033 #11) | 2026-10-25 |
 | [0018](0018-subscription-via-revenuecat.md) | 구독 검증은 RevenueCat으로 연동한다 | 채택 (제안 확정·일부 대체: ADR-0024) | 2026-10-25 |
 | [0019](0019-server-centric-notification-delivery.md) | 알림은 서버 중심으로 전달한다 | 채택 (제안 일부 확정·발송 대상: ADR-0024) | 2026-10-25 |
 | [0020](0020-account-and-anonymous-subject-policy.md) | 계정·비로그인 주체 정책 (P07·P08 일부) | 채택 | 2026-10-26 |
-| [0021](0021-data-model-foundation-decisions.md) | 데이터 모델 기반 결정 (사진 식별·묶음·이용량·동의·원본 삭제) | 채택 (#1 기기 간 식별 일부 대체: ADR-0022, 미정 항목 일부 확정: ADR-0024, #4 접수 응답 업로드 URL 대체: ADR-0031) | 2026-10-26 |
+| [0021](0021-data-model-foundation-decisions.md) | 데이터 모델 기반 결정 (사진 식별·묶음·이용량·동의·원본 삭제) | 채택 (#1 기기 간 식별 일부 대체: ADR-0022, 미정 항목 일부 확정: ADR-0024, #4 접수 응답 업로드 URL 대체: ADR-0031, D-09 단말 OCR 확정: ADR-0033 #6) | 2026-10-26 |
 | [0022](0022-schema-rules-analysis-request-and-photo-identity.md) | 스키마 공통 규칙·분석 접수 단위·기기 간 사진 식별 범위 | 채택 (D-19·벡터 보관 확정, 재접수 유니크 변경: ADR-0024) | 2026-10-26 |
 | [0023](0023-stage2-foundation-details.md) | 단계 2 공통 기반 세부 결정 (API·오류·멱등·인증·로그) | 채택 (429 확정: ADR-0024, 잠금 방식: ADR-0026) | 2026-10-26 |
 | [0024](0024-pre-implementation-decisions.md) | 구현 전 미결 결정 일괄 확정 (서버 우선 원칙, 체험·분석·이벤트·구독·알림·검색·장소) | 채택 (근거 #1 비용 상한 문구 정정: ADR-0030) | 2026-10-27 |
@@ -44,5 +44,5 @@
 | [0030](0030-design-review-r1-corrections.md) | 설계 검토 1차 반영 (동의 철회 판정·멱등 입력 경계·키 교체 절차·SSOT 차이 목록) | 채택 (#1·#2·#3 단계 5 보완: ADR-0031, #5 키 2개 이상 활성 버전 필수: ADR-0032) | 2026-11-01 |
 | [0031](0031-stage5-analysis-pipeline.md) | 단계 5 분석 파이프라인 설계 (접수·실행·정산·생성) | 채택 (5-1 구현 보완: 규칙 버전 표·최소 manifest·벡터 버전·claim 잠금 등급: ADR-0034) | 2026-11-01 |
 | [0032](0032-operations-infrastructure-security.md) | 운영·인프라·보안 설계 (네트워크·RDS·SLO·actuator·CI·기기 증명·복구·키) | 채택 (출구·assertion·DeviceCheck 장애·보안 원장 = 사용자 결정 2026-11-01) | 2026-11-01 |
-| [0033](0033-later-stage-policy-proposals.md) | 이후 단계 정책 제안 (구독 처리량·분석 측정·OCR·검색·사진 수렴·보관·알림) | 일부 채택 (#1 RevenueCat, 사용자 결정 #2·#3 임시 기준·#4·#10·#11. #5~#9 제안) | 2026-11-01 |
+| [0033](0033-later-stage-policy-proposals.md) | 이후 단계 정책 제안 (구독 처리량·분석 측정·OCR·검색·사진 수렴·보관·알림) | 일부 채택 (#1 RevenueCat, 사용자 결정 #2·#3 임시 기준·#4·#6·#10·#11. #5·#7~#9 제안) | 2026-11-01 |
 | [0034](0034-stage5-1-intake-implementation.md) | 분석 접수·묶음 구현 방식 (단계 5-1: 실행기 단계 API·표 구성·스냅샷·벡터 버전·응답 범위·작업 잠금 규칙) | 채택 (#1~#19 사용자 결정, #20~#38 구현 관례) | 2026-11-10 |
