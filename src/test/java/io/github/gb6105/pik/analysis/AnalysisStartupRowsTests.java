@@ -89,7 +89,9 @@ class AnalysisStartupRowsTests {
 		AnalysisProperties changed = new AnalysisProperties(properties.intakeEnabled(), properties.intake(),
 				new AnalysisProperties.Grouping(defaults.enabled(), defaults.window().plusSeconds(1),
 						defaults.maxGroupSize(), defaults.zeroNormEpsilon(), defaults.models()),
-				properties.manifest());
+				properties.manifest(), properties.upload(), properties.worker(), properties.claude(),
+				properties.sendRate(), properties.budget(), properties.input(), properties.inputRate(),
+				properties.circuit(), properties.cleanup(), properties.poll());
 		GroupingRules rules = new GroupingRules(changed, jdbc);
 
 		rules.afterSingletonsInstantiated();

@@ -4,3 +4,10 @@ services:
     env_file: .env.local
     ports:
       - '5432'
+  # Input bucket of application-local.yml. S3Mock does not check signatures or credentials.
+  s3mock:
+    image: 'adobe/s3mock:5.1.0'
+    environment:
+      COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: pik-analysis-local
+    ports:
+      - '127.0.0.1:9090:9090'

@@ -96,6 +96,71 @@ pik:
       content-type: image/jpeg
       max-bytes: 2097152
       max-long-edge-px: 1568
+    # Values marked "development default" are conservative placeholders. Their production values are an owner
+    # decision, made before intake is enabled.
+    upload:
+      # An attempt's URL expires at min(issue + url-ttl, upload deadline) (design 2.2, 2.3).
+      url-ttl: PT15M
+      confirm-grace: PT15M
+      max-attempts: 5
+      # Uploads started before the URL expired may end this much later; deletes before that are not final (R2-06).
+      in-flight-margin: PT30M
+      # Required. Credentials come from the AWS SDK default chain (the ECS task role when deployed).
+      bucket: ${PIK_ANALYSIS_BUCKET:}
+      region: ${AWS_REGION:}
+      # endpoint: S3Mock only, set by the local and test profiles.
+    worker:
+      # Only the worker service turns it on (plan 5.1).
+      enabled: false
+      poll-interval: PT1S
+      # Development default.
+      global-slots: 2
+      principal-slots: 4
+      claim-oversample: 4
+      claim-rounds: 3
+      # lease > send-margin > claude.request-timeout (design 2.2).
+      lease: PT120S
+      send-margin: PT70S
+    claude:
+      request-timeout: PT60S
+      # Not a secret: operators change it when they replace the API key or release the configuration circuit.
+      key-version: "1"
+    send-rate:
+      # Development defaults. Each instance sends at most global-per-second / max-instances (design 2.7).
+      global-per-second: 1
+      max-instances: 2
+    budget:
+      # Development default: 1 USD per KST day.
+      daily-cost-limit-micros: 1000000
+      principal-daily-sends: 300
+      photo-lifetime-sends: 3
+      # Trial devices send at most trial limit × multiplier.
+      device-send-multiplier: 2
+    input:
+      invalid-threshold: 3
+      block-duration: PT24H
+    input-rate:
+      # Development defaults, to be measured (design 2.7).
+      principal-items-per-hour: 300
+      principal-bytes-per-hour: 600MB
+      trial-items-per-hour: 100
+      trial-bytes-per-hour: 200MB
+    circuit:
+      # Development defaults for the configuration (400 share) and transient circuits (design 2.5).
+      bad-request-ratio: 0.2
+      window: PT10M
+      min-samples: 20
+      transient-threshold: 5
+      transient-base-backoff: PT30S
+      transient-max-backoff: PT10M
+      probe-exclusion: PT10M
+      half-open-alarm: PT30M
+    cleanup:
+      delete-interval: PT1M
+      overdue-alarm: PT6H
+    poll:
+      after-running: PT3S
+      jitter: 0.2
 
 # Field allow list from ADR-0023 #9; anything else (thread, MDC extras, request data) is dropped.
 logging:
