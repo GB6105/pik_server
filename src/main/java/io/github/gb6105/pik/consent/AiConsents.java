@@ -50,6 +50,19 @@ public class AiConsents {
 		return state.granted() ? Optional.of(new ConsentBasis(state.version())) : Optional.empty();
 	}
 
+	/**
+	 * Holds the principal's consent against decisions until the caller's transaction ends, and tells whether work
+	 * recorded on {@code basisVersion} may still send data or store a response: the consent is granted now and no
+	 * refusal came after the basis. A grant given again after the basis keeps it; a withdrawal followed by a new grant
+	 * does not, since a response to data sent before the withdrawal must not be stored (ADR-0030 #1).
+	 * @param basisVersion the version of the {@link ConsentBasis} the work was recorded on
+	 */
+	@Transactional(propagation = Propagation.MANDATORY)
+	public boolean basisHolds(UUID principalId, long basisVersion) {
+		locks.lockShared(principalId);
+		return state(principalId).granted() && !records.refusedAfter(principalId, PURPOSE, basisVersion);
+	}
+
 	@Transactional(readOnly = true)
 	ConsentState state(UUID principalId) {
 		return new ConsentState(PURPOSE, records.findLatest(principalId, PURPOSE).orElse(null),

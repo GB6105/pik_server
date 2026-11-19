@@ -3,6 +3,8 @@ package io.github.gb6105.pik.usage;
 import io.github.gb6105.pik.shared.error.ErrorCode;
 import io.github.gb6105.pik.shared.error.PikException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,8 +30,9 @@ import org.springframework.util.StringUtils;
  * <p>
  * One transaction may change the usage of one principal on one device only: each call locks the principal's quota and
  * then the device's mark, and two transactions spanning several of them could take the locks in opposite orders
- * (ADR-0029 #16). For the same reason a transaction nested with {@code REQUIRES_NEW} in one that changed usage may not
- * change it again.
+ * (ADR-0029 #16). The device's AI sends lock the mark only, so they come after any change of the principal's usage in
+ * the transaction (plan 3.3). For the same reason a transaction nested with {@code REQUIRES_NEW} in one that changed
+ * usage or sends may not change them again.
  */
 @Service
 @RequiredArgsConstructor
@@ -151,7 +154,7 @@ public class TrialUsage {
 	 */
 	@Transactional(propagation = Propagation.MANDATORY)
 	public int consume(UUID principalId, UUID jobId) {
-		return settle(principalId, jobId, true);
+		return settleAll(principalId, jobId, true);
 	}
 
 	/**
@@ -160,11 +163,115 @@ public class TrialUsage {
 	 */
 	@Transactional(propagation = Propagation.MANDATORY)
 	public int release(UUID principalId, UUID jobId) {
-		return settle(principalId, jobId, false);
+		return settleAll(principalId, jobId, false);
+	}
+
+	/**
+	 * Settles the job's reservations photo by photo, when its result is stored: the photos given a result are consumed
+	 * and the members whose metadata was deleted are released, under one lock of the quota and the device (design 2.4
+	 * step 6). The two sets split the photos of the job's reservations. A repeated call that asks for the state each
+	 * reservation already has changes nothing.
+	 * @param consumePhotoIds the photos to consume
+	 * @param releasePhotoIds the photos to release
+	 * @throws IllegalArgumentException when the sets overlap or do not cover exactly the photos of the job's
+	 * reservations
+	 * @throws IllegalStateException when a reservation already has the other final state
+	 */
+	@Transactional(propagation = Propagation.MANDATORY)
+	public SettleResult settle(UUID principalId, UUID jobId, Set<UUID> consumePhotoIds, Set<UUID> releasePhotoIds) {
+		Assert.isTrue(Collections.disjoint(consumePhotoIds, releasePhotoIds),
+				"The photos to consume and to release must not overlap");
+		claimScope(principalId, null);
+		UsageQuota quota = records.lockTrialQuota(principalId).orElse(null);
+		List<UsageReservation> reservations = (quota != null) ? records.findOfJob(principalId, jobId) : List.of();
+		Set<UUID> photoIds = reservations.stream().map(UsageReservation::getPhotoId).collect(Collectors.toSet());
+		Assert.isTrue(photoIds.size() == consumePhotoIds.size() + releasePhotoIds.size()
+				&& photoIds.containsAll(consumePhotoIds) && photoIds.containsAll(releasePhotoIds),
+				"The photos to consume and to release must be the photos of the job's reservations");
+		List<UsageReservation> toConsume = new ArrayList<>();
+		List<UsageReservation> toRelease = new ArrayList<>();
+		for (UsageReservation reservation : reservations) {
+			boolean consume = consumePhotoIds.contains(reservation.getPhotoId());
+			ReservationStatus target = consume ? ReservationStatus.CONSUMED : ReservationStatus.RELEASED;
+			if (reservation.getStatus() == ReservationStatus.RESERVED) {
+				(consume ? toConsume : toRelease).add(reservation);
+			}
+			else {
+				Assert.state(reservation.getStatus() == target,
+						() -> "A " + reservation.getStatus() + " reservation cannot become " + target);
+			}
+		}
+		if (toConsume.isEmpty() && toRelease.isEmpty()) {
+			return new SettleResult(0, 0);
+		}
+		UUID markId = markOf(reservations);
+		claimScope(principalId, markId);
+		DeviceTrialMark mark = records.lockMark(markId).orElseThrow();
+		Instant now = Instant.now();
+		if (!toConsume.isEmpty()) {
+			toConsume.forEach((reservation) -> reservation.consume(now));
+			quota.consume(toConsume.size(), now);
+			mark.consume(toConsume.size(), now);
+		}
+		if (!toRelease.isEmpty()) {
+			toRelease.forEach((reservation) -> reservation.release(now));
+			quota.release(toRelease.size(), now);
+			mark.release(toRelease.size(), now);
+		}
+		return new SettleResult(toConsume.size(), toRelease.size());
+	}
+
+	/**
+	 * Locks the device's mark for the AI send budget of a trial job (design 2.7).
+	 * @param multiplier sends allowed per photo of the device's trial limit, an analysis setting
+	 */
+	@Transactional(propagation = Propagation.MANDATORY)
+	public DeviceSendCheck lockDeviceSend(UUID trialMarkId, int multiplier) {
+		claimScope(null, trialMarkId);
+		return sendCheck(records.lockMark(trialMarkId).orElseThrow(), multiplier);
+	}
+
+	/**
+	 * Counts one AI send on the device, after {@link #lockDeviceSend} found one left.
+	 */
+	@Transactional(propagation = Propagation.MANDATORY)
+	public void reserveDeviceSend(UUID trialMarkId) {
+		claimScope(null, trialMarkId);
+		records.lockMark(trialMarkId).orElseThrow().reserveSend(Instant.now());
+	}
+
+	/**
+	 * Returns a reserved AI send that was not spent. The count never goes below 0.
+	 */
+	@Transactional(propagation = Propagation.MANDATORY)
+	public void releaseDeviceSend(UUID trialMarkId) {
+		claimScope(null, trialMarkId);
+		records.lockMark(trialMarkId).orElseThrow().releaseSend(Instant.now());
+	}
+
+	/**
+	 * Whether the device has no AI send left, read without a lock for a quick check before a job is accepted; the
+	 * send itself checks again under {@link #lockDeviceSend}.
+	 * @param multiplier as {@link #lockDeviceSend}
+	 */
+	@Transactional(readOnly = true)
+	public boolean deviceSendExhausted(UUID trialMarkId, int multiplier) {
+		return sendCheck(records.findMark(trialMarkId).orElseThrow(), multiplier).remaining() == 0;
+	}
+
+	private static DeviceSendCheck sendCheck(DeviceTrialMark mark, int multiplier) {
+		Assert.isTrue(multiplier >= 1, "multiplier must be at least 1");
+		return new DeviceSendCheck(mark.getSendCount(), Math.multiplyExact(mark.getLimitCount(), multiplier));
+	}
+
+	private static UUID markOf(List<UsageReservation> reservations) {
+		Set<UUID> markIds = reservations.stream().map(UsageReservation::getTrialMarkId).collect(Collectors.toSet());
+		Assert.state(markIds.size() == 1, "A job's reservations count on one device mark");
+		return markIds.iterator().next();
 	}
 
 	// The quota lock comes before reading the reservations, so two settlements of a job cannot both see them reserved.
-	private int settle(UUID principalId, UUID jobId, boolean consume) {
+	private int settleAll(UUID principalId, UUID jobId, boolean consume) {
 		claimScope(principalId, null);
 		UsageQuota quota = records.lockTrialQuota(principalId).orElse(null);
 		if (quota == null) {
@@ -174,9 +281,7 @@ public class TrialUsage {
 		if (reserved.isEmpty()) {
 			return 0;
 		}
-		Set<UUID> markIds = reserved.stream().map(UsageReservation::getTrialMarkId).collect(Collectors.toSet());
-		Assert.state(markIds.size() == 1, "A job's reservations count on one device mark");
-		UUID markId = markIds.iterator().next();
+		UUID markId = markOf(reserved);
 		claimScope(principalId, markId);
 		DeviceTrialMark mark = records.lockMark(markId).orElseThrow();
 		Instant now = Instant.now();
@@ -200,8 +305,8 @@ public class TrialUsage {
 	}
 
 	// A scope that is bound but not among the current synchronizations belongs to a suspended outer transaction, whose
-	// locks a nested one would wait for.
-	private static void claimScope(UUID principalId, @Nullable UUID trialMarkId) {
+	// locks a nested one would wait for. A principal of null stands for the device's sends, which lock the mark only.
+	private static void claimScope(@Nullable UUID principalId, @Nullable UUID trialMarkId) {
 		Assert.state(TransactionSynchronizationManager.isSynchronizationActive(),
 				"Trial usage needs transaction synchronization");
 		Scope scope = (Scope) TransactionSynchronizationManager.getResource(SCOPE);
@@ -225,22 +330,24 @@ public class TrialUsage {
 
 	/**
 	 * The principal and device mark a transaction has changed usage for, released before it completes so that
-	 * after-commit callbacks may change usage again in a new transaction.
+	 * after-commit callbacks may change usage again in a new transaction. A scope started by the device's sends has no
+	 * principal, and no principal's usage may change after them: that would lock the quota after the mark.
 	 */
 	private static final class Scope implements TransactionSynchronization {
 
-		private final UUID principalId;
+		private final @Nullable UUID principalId;
 
 		private @Nullable UUID trialMarkId;
 
-		private Scope(UUID principalId) {
+		private Scope(@Nullable UUID principalId) {
 			this.principalId = principalId;
 		}
 
-		private void claim(UUID principalId, @Nullable UUID trialMarkId) {
-			Assert.state(this.principalId.equals(principalId)
+		private void claim(@Nullable UUID principalId, @Nullable UUID trialMarkId) {
+			Assert.state((principalId == null || principalId.equals(this.principalId))
 					&& (trialMarkId == null || this.trialMarkId == null || this.trialMarkId.equals(trialMarkId)),
-					"One transaction may change the trial usage of one principal on one device only (ADR-0029 #16)");
+					"One transaction may change the trial usage of one principal on one device only, before the "
+							+ "device's sends (ADR-0029 #16)");
 			if (trialMarkId != null) {
 				this.trialMarkId = trialMarkId;
 			}
@@ -263,6 +370,31 @@ public class TrialUsage {
 	 * version
 	 */
 	public record Photo(UUID id, String version) {
+	}
+
+	/**
+	 * What {@link #settle(UUID, UUID, Set, Set)} changed now; both 0 when every reservation already had the requested
+	 * state.
+	 */
+	public record SettleResult(int consumed, int released) {
+
+		public boolean unchanged() {
+			return consumed == 0 && released == 0;
+		}
+
+	}
+
+	/**
+	 * The AI sends of a trial device (design 2.7).
+	 * @param sent sends reserved or spent so far
+	 * @param limit the trial limit of the device times the multiplier
+	 */
+	public record DeviceSendCheck(int sent, int limit) {
+
+		public int remaining() {
+			return Math.max(0, limit - sent);
+		}
+
 	}
 
 	/**

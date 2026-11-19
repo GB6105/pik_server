@@ -138,4 +138,16 @@ class UsageRecords {
 			.getResultList();
 	}
 
+	/**
+	 * Every reservation of the job, whatever its status.
+	 */
+	List<UsageReservation> findOfJob(UUID principalId, UUID jobId) {
+		return entityManager.createQuery("""
+				SELECT r FROM UsageReservation r WHERE r.principalId = :principalId AND r.jobId = :jobId
+				""", UsageReservation.class)
+			.setParameter("principalId", principalId)
+			.setParameter("jobId", jobId)
+			.getResultList();
+	}
+
 }

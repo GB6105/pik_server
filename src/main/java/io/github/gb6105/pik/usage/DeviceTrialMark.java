@@ -17,7 +17,8 @@ import org.jspecify.annotations.Nullable;
  * Trial use of one physical device, kept apart from accounts so that it outlives reinstalls and account deletion
  * (ADR-0020, ADR-0021 #8). An Android device is found again through the HMAC of its ID; an iOS install gets a new mark,
  * and the DeviceCheck bits tell whether the device started a trial before. The database keeps
- * {@code reserved + consumed <= limit}.
+ * {@code reserved + consumed <= limit}. The mark also counts the AI sends of the device's trial jobs, whose limit is
+ * the trial limit times an analysis setting (design 2.7).
  */
 @Entity
 @Getter
@@ -44,6 +45,9 @@ class DeviceTrialMark {
 	private int reservedCount;
 
 	private int consumedCount;
+
+	/** AI sends reserved or spent for trial jobs of the device; a spent send stays counted. */
+	private int sendCount;
 
 	/**
 	 * When the device ran out of trial: its last photo was consumed, or another install of the device had started the
@@ -156,6 +160,21 @@ class DeviceTrialMark {
 	void release(int photos, Instant now) {
 		reservedCount -= photos;
 		updatedAt = now;
+	}
+
+	void reserveSend(Instant now) {
+		sendCount++;
+		updatedAt = now;
+	}
+
+	/**
+	 * Returns a send that was not spent. A count already at 0 stays there.
+	 */
+	void releaseSend(Instant now) {
+		if (sendCount > 0) {
+			sendCount--;
+			updatedAt = now;
+		}
 	}
 
 }
