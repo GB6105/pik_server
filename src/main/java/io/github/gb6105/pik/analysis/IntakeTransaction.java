@@ -133,9 +133,9 @@ class IntakeTransaction {
 					group.modelId(), group.modelVersion(), now));
 			if (admitted.jobId() != null) {
 				jobRows.add(new JobRow(admitted.jobId(), ownerId, requestId, groupId, representative.photoId(),
-						representative.observedVersion(), Funding.TRIAL, callManifests.currentId(),
-						prepared.trigger().basePriority(), now, now.plus(deadlines.uploadDeadline()),
-						now.plus(deadlines.processingDeadline())));
+						representative.observedVersion(), representative.clientRef(), Funding.TRIAL,
+						callManifests.currentId(), prepared.trigger().basePriority(), now,
+						now.plus(deadlines.uploadDeadline()), now.plus(deadlines.processingDeadline())));
 			}
 		}
 		List<ItemRow> itemRows = new ArrayList<>();

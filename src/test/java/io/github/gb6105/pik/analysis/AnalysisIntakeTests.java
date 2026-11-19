@@ -603,7 +603,10 @@ class AnalysisIntakeTests {
 		verify(trialUsage, never()).recordStart(any(), any(), anyInt(), any(), any(TrialUsage.StartGuard.class));
 
 		UUID requestId = requestId(first);
-		jdbc.sql("UPDATE analysis_job SET status = 'READY' WHERE request_id = :id").param("id", requestId).update();
+		jdbc.sql("""
+				UPDATE analysis_job SET status = 'READY', next_attempt_at = now(), input_sha256 = sha256('input'::bytea)
+				WHERE request_id = :id
+				""").param("id", requestId).update();
 		JsonNode ready = json(fixtures.intake(device, key, body));
 		assertThat(ready.get("jobs")).allSatisfy((job) -> {
 			assertThat(job.get("status").asString()).isEqualTo("READY");
@@ -626,7 +629,11 @@ class AnalysisIntakeTests {
 				.isEqualTo(itemOfJob(json(waiting), job.get("analysisJobId").asString()).get("photoId"));
 		});
 
-		jdbc.sql("UPDATE analysis_job SET status = 'RUNNING' WHERE request_id = :id").param("id", requestId).update();
+		jdbc.sql("""
+				UPDATE analysis_job SET status = 'RUNNING', run_token = gen_random_uuid(),
+				                        locked_until = now() + interval '2 minutes'
+				WHERE request_id = :id
+				""").param("id", requestId).update();
 		JsonNode running = json(fixtures.intake(device, key, body));
 		assertThat(running.get("phase").asString()).isEqualTo("RUNNING");
 		assertThat(counts(running)).containsExactly(2, 2, 0, 0, 0, 0, 2, 0);

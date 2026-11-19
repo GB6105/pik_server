@@ -128,10 +128,11 @@ class IntakeRecords {
 			return;
 		}
 		batch.batchUpdate("""
-				INSERT INTO analysis_job (id, owner_id, request_id, group_id, photo_id, photo_version, funding,
-				                          manifest_id, status, base_priority, queued_at, upload_deadline,
-				                          processing_deadline, created_at, updated_at, version)
-				VALUES (:id, :owner, :request, :group, :photo, :photoVersion, :funding, :manifest, :status,
+				INSERT INTO analysis_job (id, owner_id, request_id, group_id, photo_id, photo_version,
+				                          representative_client_ref, funding, manifest_id, status, base_priority,
+				                          queued_at, upload_deadline, processing_deadline, created_at, updated_at,
+				                          version)
+				VALUES (:id, :owner, :request, :group, :photo, :photoVersion, :clientRef, :funding, :manifest, :status,
 				        :basePriority, :now, :uploadDeadline, :processingDeadline, :now, :now, 0)
 				""", rows.stream()
 			.map((row) -> new MapSqlParameterSource().addValue("id", row.id())
@@ -140,6 +141,7 @@ class IntakeRecords {
 				.addValue("group", row.groupId())
 				.addValue("photo", row.photoId())
 				.addValue("photoVersion", row.photoVersion())
+				.addValue("clientRef", row.representativeClientRef())
 				.addValue("funding", row.funding().name())
 				.addValue("manifest", row.manifestId())
 				.addValue("status", JobStatus.AWAITING_UPLOAD.name())
@@ -299,10 +301,11 @@ class IntakeRecords {
 	/**
 	 * @param photoId the server photo ID of the representative
 	 * @param photoVersion its version observed at intake
+	 * @param representativeClientRef its API photoId
 	 */
 	record JobRow(UUID id, UUID ownerId, UUID requestId, UUID groupId, UUID photoId, String photoVersion,
-			Funding funding, String manifestId, int basePriority, Instant queuedAt, Instant uploadDeadline,
-			Instant processingDeadline) {
+			UUID representativeClientRef, Funding funding, String manifestId, int basePriority, Instant queuedAt,
+			Instant uploadDeadline, Instant processingDeadline) {
 
 		@Override
 		public String toString() {
