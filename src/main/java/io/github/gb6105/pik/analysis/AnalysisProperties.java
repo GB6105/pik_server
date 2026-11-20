@@ -331,11 +331,23 @@ record AnalysisProperties(boolean intakeEnabled, Intake intake, Grouping groupin
 	 * @param claimRounds the candidate queries of one claim while locked rows leave slots free (plan 5.2)
 	 * @param lease how long a claimed job stays with its worker
 	 * @param sendMargin the lease that must be left for a send to be permitted
+	 * @param initialDelay the time after startup before the first claim round
+	 * @param retryBackoff the delay of a job sent back to {@code READY} without a delay of its own: storage or send
+	 * rate unavailable, a call not sent, a configuration error, an unknown outcome retried, a closed gate without a
+	 * deadline
+	 * @param retryJitter the share by which such delays and the circuit backoffs grow at random
+	 * @param completionRetries the repeats of a completion transaction that failed on a transient database error,
+	 * while the lease lasts (plan 5.6)
 	 */
 	record Worker(boolean enabled, Duration pollInterval, int globalSlots, int principalSlots, int claimOversample,
-			int claimRounds, Duration lease, Duration sendMargin) {
+			int claimRounds, Duration lease, Duration sendMargin, Duration initialDelay, Duration retryBackoff,
+			double retryJitter, int completionRetries) {
 
 		Worker {
+			Assert.isTrue(!initialDelay.isNegative(), "worker.initial-delay must not be negative");
+			Assert.isTrue(retryBackoff.isPositive(), "worker.retry-backoff must be positive");
+			Assert.isTrue(retryJitter >= 0 && retryJitter < 1, "worker.retry-jitter must be in [0, 1)");
+			Assert.isTrue(completionRetries >= 0, "worker.completion-retries must not be negative");
 			Assert.isTrue(pollInterval.isPositive(), "worker.poll-interval must be positive");
 			Assert.isTrue(globalSlots >= 1, "worker.global-slots must be at least 1");
 			Assert.isTrue(principalSlots >= 1, "worker.principal-slots must be at least 1");
@@ -403,11 +415,13 @@ record AnalysisProperties(boolean intakeEnabled, Intake intake, Grouping groupin
 	 * @param principalDailySends the most sends of one principal in one KST day
 	 * @param photoLifetimeSends the most risky sends of one photo
 	 * @param deviceSendMultiplier the sends of a trial device, as a multiple of the trial limit
+	 * @param reservedRetry how long the budget gate stays open when only reserved costs fill the day (design 2.7)
 	 */
 	record Budget(long dailyCostLimitMicros, int principalDailySends, int photoLifetimeSends,
-			int deviceSendMultiplier) {
+			int deviceSendMultiplier, Duration reservedRetry) {
 
 		Budget {
+			Assert.isTrue(reservedRetry.isPositive(), "budget.reserved-retry must be positive");
 			Assert.isTrue(dailyCostLimitMicros >= 0, "budget.daily-cost-limit-micros must not be negative");
 			Assert.isTrue(principalDailySends >= 1, "budget.principal-daily-sends must be at least 1");
 			Assert.isTrue(photoLifetimeSends >= 1, "budget.photo-lifetime-sends must be at least 1");

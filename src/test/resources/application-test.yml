@@ -10,6 +10,9 @@ pik:
     claude:
       api-key: ""
       base-url: http://127.0.0.1:1
+    # Tests that enable the worker claim and run jobs directly; scheduled claim rounds would take their jobs.
+    worker:
+      initial-delay: P3650D
     # Tests call the upload batches directly; scheduled runs would change the rows of the test that is running.
     cleanup:
       initial-delay: P3650D

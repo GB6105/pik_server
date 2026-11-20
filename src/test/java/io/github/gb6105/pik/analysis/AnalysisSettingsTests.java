@@ -46,10 +46,13 @@ class AnalysisSettingsTests {
 			"pik.analysis.worker.global-slots=2", "pik.analysis.worker.principal-slots=4",
 			"pik.analysis.worker.claim-oversample=4", "pik.analysis.worker.claim-rounds=3",
 			"pik.analysis.worker.lease=PT120S", "pik.analysis.worker.send-margin=PT70S",
+			"pik.analysis.worker.initial-delay=PT10S", "pik.analysis.worker.retry-backoff=PT30S",
+			"pik.analysis.worker.retry-jitter=0.2", "pik.analysis.worker.completion-retries=3",
 			"pik.analysis.claude.request-timeout=PT60S", "pik.analysis.claude.key-version=1",
 			"pik.analysis.send-rate.global-per-second=1", "pik.analysis.send-rate.max-instances=2",
 			"pik.analysis.budget.daily-cost-limit-micros=1000000", "pik.analysis.budget.principal-daily-sends=300",
 			"pik.analysis.budget.photo-lifetime-sends=3", "pik.analysis.budget.device-send-multiplier=2",
+			"pik.analysis.budget.reserved-retry=PT10M",
 			"pik.analysis.input.invalid-threshold=3", "pik.analysis.input.block-duration=PT24H",
 			"pik.analysis.input-rate.principal-items-per-hour=300",
 			"pik.analysis.input-rate.principal-bytes-per-hour=600MB",
@@ -82,14 +85,16 @@ class AnalysisSettingsTests {
 			Duration.ofSeconds(3), "pik-analysis-test", "us-east-1", null);
 
 	static final AnalysisProperties.Worker WORKER = new AnalysisProperties.Worker(false, Duration.ofSeconds(1), 2, 4,
-			4, 3, Duration.ofSeconds(120), Duration.ofSeconds(70));
+			4, 3, Duration.ofSeconds(120), Duration.ofSeconds(70), Duration.ofSeconds(10), Duration.ofSeconds(30), 0.2,
+			3);
 
 	static final AnalysisProperties.Claude CLAUDE = new AnalysisProperties.Claude(Duration.ofSeconds(60), "1", null,
 			null);
 
 	static final AnalysisProperties.SendRate SEND_RATE = new AnalysisProperties.SendRate(1, 2);
 
-	static final AnalysisProperties.Budget BUDGET = new AnalysisProperties.Budget(1_000_000, 300, 3, 2);
+	static final AnalysisProperties.Budget BUDGET = new AnalysisProperties.Budget(1_000_000, 300, 3, 2,
+			Duration.ofMinutes(10));
 
 	static final AnalysisProperties.Input INPUT = new AnalysisProperties.Input(3, Duration.ofHours(24));
 
@@ -352,6 +357,10 @@ class AnalysisSettingsTests {
 		assertFails("worker.principal-slots must be at least 1", "pik.analysis.worker.principal-slots=0");
 		assertFails("worker.claim-oversample must be at least 1", "pik.analysis.worker.claim-oversample=0");
 		assertFails("worker.claim-rounds must be at least 1", "pik.analysis.worker.claim-rounds=0");
+		assertFails("worker.initial-delay must not be negative", "pik.analysis.worker.initial-delay=-PT1S");
+		assertFails("worker.retry-backoff must be positive", "pik.analysis.worker.retry-backoff=PT0S");
+		assertFails("worker.retry-jitter must be in [0, 1)", "pik.analysis.worker.retry-jitter=1");
+		assertFails("worker.completion-retries must not be negative", "pik.analysis.worker.completion-retries=-1");
 		assertFails("worker.poll-interval must be positive", "pik.analysis.worker.poll-interval=PT0S");
 		assertFails("worker.lease must be longer than worker.send-margin", "pik.analysis.worker.lease=PT70S");
 		assertFails("worker.send-margin must be longer than claude.request-timeout",
@@ -371,6 +380,7 @@ class AnalysisSettingsTests {
 		assertFails("budget.photo-lifetime-sends must be at least 1", "pik.analysis.budget.photo-lifetime-sends=0");
 		assertFails("budget.device-send-multiplier must be at least 1",
 				"pik.analysis.budget.device-send-multiplier=0");
+		assertFails("budget.reserved-retry must be positive", "pik.analysis.budget.reserved-retry=PT0S");
 		assertFails("input.invalid-threshold must be at least 1", "pik.analysis.input.invalid-threshold=0");
 		assertFails("input.block-duration must be positive", "pik.analysis.input.block-duration=PT0S");
 		assertFails("input-rate.principal-items-per-hour must be at least 1",

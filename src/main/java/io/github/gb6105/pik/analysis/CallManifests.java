@@ -6,10 +6,12 @@ import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeSet;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.core.io.ClassPathResource;
@@ -49,14 +51,20 @@ class CallManifests implements SmartInitializingSingleton {
 
 	private final List<String> previousIds;
 
+	private final String keyVersion;
+
 	private volatile Map<String, CallManifest> runnable;
+
+	private volatile String configFingerprint;
 
 	CallManifests(AnalysisProperties properties, JdbcClient jdbc, JsonMapper jsonMapper) {
 		this.jdbc = jdbc;
 		this.jsonMapper = jsonMapper;
 		this.current = resolve(properties.manifest(), USER_TEXT, jsonMapper);
 		this.previousIds = properties.manifest().previousIds();
+		this.keyVersion = properties.claude().keyVersion();
 		this.runnable = Map.of(current.id(), current);
+		this.configFingerprint = fingerprint(keyVersion, runnable.keySet());
 		Assert.isTrue(!previousIds.contains(current.id()), "manifest.previous-ids must not name the current manifest");
 	}
 
@@ -77,6 +85,14 @@ class CallManifests implements SmartInitializingSingleton {
 	 */
 	Optional<CallManifest> runnable(String id) {
 		return Optional.ofNullable(runnable.get(id));
+	}
+
+	/**
+	 * The setting fingerprint calls are permitted under (plan 2.3, 5.10): {@code claude.key-version} and the runnable
+	 * manifests. The configuration circuit records it when it opens, and a new one lets the circuit try again.
+	 */
+	String configFingerprint() {
+		return configFingerprint;
 	}
 
 	@Override
@@ -104,6 +120,12 @@ class CallManifests implements SmartInitializingSingleton {
 			manifests.put(id, stored(id));
 		}
 		runnable = Map.copyOf(manifests);
+		configFingerprint = fingerprint(keyVersion, runnable.keySet());
+	}
+
+	// The SHA-256 of the key version and the sorted manifest IDs, one per line: neither holds a line break.
+	private static String fingerprint(String keyVersion, Collection<String> manifestIds) {
+		return CanonicalJson.sha256Hex(keyVersion + "\n" + String.join("\n", new TreeSet<>(manifestIds)));
 	}
 
 	/**

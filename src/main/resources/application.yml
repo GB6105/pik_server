@@ -155,6 +155,11 @@ pik:
       # lease > send-margin > claude.request-timeout (design 2.2).
       lease: PT120S
       send-margin: PT70S
+      initial-delay: PT10S
+      # Development defaults: the delay of a job sent back to READY without a delay of its own, and its random share.
+      retry-backoff: PT30S
+      retry-jitter: 0.2
+      completion-retries: 3
     claude:
       request-timeout: PT60S
       # Not a secret: operators change it when they replace the API key or release the configuration circuit.
@@ -173,6 +178,8 @@ pik:
       photo-lifetime-sends: 3
       # Trial devices send at most trial limit × multiplier.
       device-send-multiplier: 2
+      # The budget gate opens until the next KST midnight when settled costs fill the day, else for this long.
+      reserved-retry: PT10M
     input:
       invalid-threshold: 3
       block-duration: PT24H

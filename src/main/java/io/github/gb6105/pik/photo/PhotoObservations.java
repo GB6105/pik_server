@@ -125,6 +125,17 @@ public class PhotoObservations {
 	}
 
 	/**
+	 * Holds the owner's photo rows among {@code photoIds} against deletion until the transaction ends ({@code FOR
+	 * SHARE} in {@code id} order, the {@code photo} place of the lock order), for work that checks the photos still
+	 * exist before it stores something for them (design 2.4, plan K-15).
+	 * @return the IDs of the photos whose metadata exists; deleted and unknown ones are missing
+	 */
+	@Transactional(propagation = Propagation.MANDATORY)
+	public Set<UUID> holdExisting(UUID ownerId, Collection<UUID> photoIds) {
+		return photoIds.isEmpty() ? Set.of() : Set.copyOf(records.shareExisting(ownerId, photoIds));
+	}
+
+	/**
 	 * Keeps each vector as an immutable version of its photo: the same model and bytes reuse the stored version,
 	 * other bytes become a new one (SHA-256 of the raw float32 bytes).
 	 * @return photo ID to vector version ID

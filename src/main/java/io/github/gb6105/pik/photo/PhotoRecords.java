@@ -107,6 +107,18 @@ class PhotoRecords {
 	}
 
 	/**
+	 * Locks the owner's rows among {@code photoIds} {@code FOR SHARE} in {@code id} order.
+	 * @return the IDs of the rows that exist
+	 */
+	List<UUID> shareExisting(UUID ownerId, Collection<UUID> photoIds) {
+		return jdbc.sql("SELECT id FROM photo WHERE owner_id = :owner AND id IN (:ids) ORDER BY id FOR SHARE")
+			.param("owner", ownerId)
+			.param("ids", photoIds)
+			.query(UUID.class)
+			.list();
+	}
+
+	/**
 	 * Stores the vector versions that are new, in photo {@code id} order, and finds the stored version of each. The
 	 * caller holds the photo rows' locks, so the unique constraint only conflicts with committed rows.
 	 * @return photo ID to the ID of the version with the same model and the same bytes
