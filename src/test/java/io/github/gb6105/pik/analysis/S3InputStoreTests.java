@@ -14,6 +14,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Base64;
@@ -21,6 +22,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -70,6 +72,29 @@ class S3InputStoreTests {
 			assertThat(present.contentType()).isEqualTo("image/jpeg");
 			assertThat(present.lastModified()).isCloseTo(Instant.now(), within(5, ChronoUnit.MINUTES));
 		});
+	}
+
+	// A pause between reading the validity and signing, as a clock that is behind the one the SDK signs with.
+	@Test
+	void urlSignedAfterAPauseIsSignedAgainSoThatItDoesNotOutliveExpiresAt() throws Exception {
+		byte[] image = image(100);
+		Instant expiresAt = Instant.now().plus(Duration.ofMinutes(15));
+		AtomicInteger readings = new AtomicInteger();
+		InstantSource pausedOnce = () -> (readings.getAndIncrement() == 0) ? Instant.now().minusSeconds(30)
+				: Instant.now();
+
+		try (S3InputStore paused = S3InputStore.create(properties.upload(), pausedOnce)) {
+			InputStore.PresignedPut put = paused.presignPut(key(), image.length, sha256(image), expiresAt);
+
+			assertThat(put.expiresAt()).isBeforeOrEqualTo(expiresAt).isAfter(expiresAt.minusSeconds(3));
+			assertThat(readings).hasValue(2);
+			assertThat(upload(put, image).statusCode()).isEqualTo(200);
+		}
+		// Behind at every signing: no URL is given out.
+		try (S3InputStore behind = S3InputStore.create(properties.upload(), () -> Instant.now().minusSeconds(30))) {
+			assertThatIllegalStateException()
+				.isThrownBy(() -> behind.presignPut(key(), image.length, sha256(image), expiresAt));
+		}
 	}
 
 	@Test

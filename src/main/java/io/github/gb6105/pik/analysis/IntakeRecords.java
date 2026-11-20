@@ -186,10 +186,11 @@ class IntakeRecords {
 	 * response (design 1.5). Items are in {@code photoId} order with the current status of the job each points at;
 	 * {@code analyzedVersion} is the version that job analyzes the photo at, the item's own for an accepted photo and
 	 * the accepted item's of the job's request for a photo in progress. Groups are in the order of their
-	 * representatives' {@code photoId}. Jobs are those the items point at, once each: the jobs the request created and
-	 * the jobs of other requests its {@code IN_PROGRESS} photos wait for (the scope of {@code counts} and
-	 * {@code phase}), named and ordered by the {@code photoId} of their representative kept on the job (unsigned, as
-	 * {@code uuid} compares), then by job ID, with the upload policy of their manifest and their failure code.
+	 * representatives' {@code photoId}. Jobs are listed once each: the jobs the request created, also after its items
+	 * were deleted (plan 2.9, R2-08), and the jobs of other requests its {@code IN_PROGRESS} photos wait for (the scope
+	 * of {@code counts} and {@code phase}), named and ordered by the {@code photoId} of their representative kept on
+	 * the job (unsigned, as {@code uuid} compares), then by job ID, with the upload policy of their manifest and their
+	 * failure code.
 	 * @param ownerId the request's owner; {@code null} reads the request whoever owns it
 	 * @return empty when the request does not exist or is of another owner
 	 */
@@ -224,7 +225,8 @@ class IntakeRecords {
 				            ORDER BY j.representative_client_ref, j.id), '[]'::json)
 				   FROM analysis_job j
 				   JOIN analysis_call_manifest m ON m.id = j.manifest_id
-				   WHERE j.id IN (SELECT ri.analysis_job_id FROM analysis_request_item ri
+				   WHERE j.request_id = r.id
+				      OR j.id IN (SELECT ri.analysis_job_id FROM analysis_request_item ri
 				                  WHERE ri.request_id = r.id AND ri.analysis_job_id IS NOT NULL)) AS jobs
 				FROM analysis_request r
 				WHERE r.id = :request AND (CAST(:owner AS uuid) IS NULL OR r.owner_id = CAST(:owner AS uuid))

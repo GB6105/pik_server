@@ -149,6 +149,35 @@ class AnalysisStatusTests {
 		assertThat(body.get("items").get(0).get("execution").asString()).isEqualTo("CANCELLED");
 	}
 
+	// R2-08: a SUCCEEDED job kept by its result keeps its request; the items and the photo metadata are gone.
+	@Test
+	void jobOfTheRequestIsListedAfterItsItemsAndItsRepresentativeAreDeleted() {
+		Installed device = fixtures.intake().android();
+		Accepted accepted = fixtures.accepted(device, 1);
+		var stored = fixtures.job(accepted.job());
+		jdbc.sql("""
+				UPDATE analysis_job SET status = 'SUCCEEDED', input_sha256 = sha256('x'::bytea), ended_at = now()
+				WHERE id = :id
+				""").param("id", accepted.job()).update();
+		jdbc.sql("DELETE FROM analysis_request_item WHERE request_id = :request")
+			.param("request", accepted.requestId())
+			.update();
+		jdbc.sql("DELETE FROM photo_vector WHERE photo_id = :photo").param("photo", stored.get("photo_id")).update();
+		assertThat(jdbc.sql("DELETE FROM photo WHERE id = :photo").param("photo", stored.get("photo_id")).update())
+			.isEqualTo(1);
+
+		JsonNode body = json(fixtures.status(device, accepted.requestId(), null));
+
+		assertThat(body.get("items")).isEmpty();
+		assertThat(body.get("jobs")).hasSize(1);
+		JsonNode job = body.get("jobs").get(0);
+		assertThat(job.get("analysisJobId").asString()).isEqualTo(accepted.job().toString());
+		assertThat(job.get("representativePhotoId").asString())
+			.isEqualTo(stored.get("representative_client_ref").toString());
+		assertThat(job.get("status").asString()).isEqualTo("SUCCEEDED");
+		assertThat(body.get("phase").asString()).isEqualTo("DONE");
+	}
+
 	@Test
 	void requestOfAnotherPrincipalOrUnknownIsNotFound() {
 		Installed owner = fixtures.intake().android();

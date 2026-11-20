@@ -87,9 +87,6 @@ class AttemptConfirmation {
 			termination.end(job.id(), new JobEnding(ending));
 			return new Confirmation.Ended(ending);
 		}
-		if (job.funding() == Funding.TRIAL && !trialUsage.holdsReservation(job.ownerId(), job.id())) {
-			return new Confirmation.Unconfirmable(UploadRejection.RESERVATION_MISSING);
-		}
 		RejectReason mismatch = mismatch(attempt, observed);
 		if (mismatch != null) {
 			attempts.reject(attempt.id(), mismatch, now);
@@ -102,14 +99,19 @@ class AttemptConfirmation {
 
 	// The failures that end the job whatever the object is.
 	private @Nullable FailureCode ending(Locked locked, Instant now) {
+		LockedJob job = locked.job();
 		if (!locked.basisHolds()) {
 			return FailureCode.CONSENT_WITHDRAWN;
 		}
-		if (!principals.isActive(locked.job().ownerId())) {
+		if (!principals.isActive(job.ownerId())) {
 			return FailureCode.PRINCIPAL_INACTIVE;
 		}
-		if (!locked.job().processingDeadline().isAfter(now)) {
+		if (!job.processingDeadline().isAfter(now)) {
 			return FailureCode.PROCESSING_EXPIRED;
+		}
+		// No attempt of the job can be confirmed without it, so the job ends rather than wait for the recovery.
+		if (job.funding() == Funding.TRIAL && !trialUsage.holdsReservation(job.ownerId(), job.id())) {
+			return FailureCode.RESERVATION_MISSING;
 		}
 		return null;
 	}
@@ -159,10 +161,6 @@ class AttemptConfirmation {
 
 		/** The job ended through {@link JobTermination}. */
 		record Ended(FailureCode reason) implements Confirmation {
-		}
-
-		/** Nothing changed: the attempt cannot be confirmed, and no other attempt of the job can either. */
-		record Unconfirmable(UploadRejection reason) implements Confirmation {
 		}
 
 		/** Nothing changed: the observed attempt is no longer the job's current one. */

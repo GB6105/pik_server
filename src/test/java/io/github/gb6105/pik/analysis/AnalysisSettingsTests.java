@@ -206,11 +206,20 @@ class AnalysisSettingsTests {
 	}
 
 	@Test
+	void shortestUrlTtlAndFewestAttemptsStart() {
+		runner.withPropertyValues("pik.analysis.upload.url-ttl=PT1M", "pik.analysis.upload.max-attempts=1")
+			.run((context) -> assertThat(context).hasNotFailed());
+	}
+
+	@Test
 	void stage52RangesFailStartup() {
-		assertFails("upload.url-ttl must be positive and at most 7 days", "pik.analysis.upload.url-ttl=PT0S");
-		assertFails("upload.url-ttl must be positive and at most 7 days", "pik.analysis.upload.url-ttl=P7DT1S");
+		String urlTtl = "upload.url-ttl must be between 1 minute (10 s replay minimum + 50 s signing margin) and 7 days";
+		assertFails(urlTtl, "pik.analysis.upload.url-ttl=PT0S");
+		assertFails(urlTtl, "pik.analysis.upload.url-ttl=PT59S");
+		assertFails(urlTtl, "pik.analysis.upload.url-ttl=P7DT1S");
 		assertFails("upload.confirm-grace must not be negative", "pik.analysis.upload.confirm-grace=-PT1S");
-		assertFails("upload.max-attempts must be at least 1", "pik.analysis.upload.max-attempts=0");
+		assertFails("upload.max-attempts must be between 1 and 5", "pik.analysis.upload.max-attempts=0");
+		assertFails("upload.max-attempts must be between 1 and 5", "pik.analysis.upload.max-attempts=6");
 		assertFails("upload.in-flight-margin must not be negative", "pik.analysis.upload.in-flight-margin=-PT1S");
 		assertFails("upload.not-found-retry-after must be positive", "pik.analysis.upload.not-found-retry-after=PT0S");
 		assertFails("upload.storage-attempt-timeout must be positive",

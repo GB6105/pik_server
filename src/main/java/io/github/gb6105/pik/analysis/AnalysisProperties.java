@@ -52,6 +52,12 @@ record AnalysisProperties(boolean intakeEnabled, Intake intake, Grouping groupin
 	// The longest validity of an S3 presigned URL.
 	private static final Duration MAX_URL_TTL = Duration.ofDays(7);
 
+	// The validity an attempt needs at issue and replay, and 50 seconds for the commit and the signing after it.
+	private static final Duration MIN_URL_TTL = UploadSigning.MIN_URL_VALIDITY.plusSeconds(50);
+
+	// The issued_count range of analysis_job (V6).
+	private static final int MAX_UPLOAD_ATTEMPTS = 5;
+
 	AnalysisProperties {
 		// A send that starts with the margin left ends, timeout included, before the lease is over (design 2.2).
 		Assert.isTrue(worker.lease().compareTo(worker.sendMargin()) > 0,
@@ -162,7 +168,7 @@ record AnalysisProperties(boolean intakeEnabled, Intake intake, Grouping groupin
 	/**
 	 * @param urlTtl the longest validity of an upload URL; an attempt keeps min(issue + TTL, upload deadline)
 	 * @param confirmGrace time after the URL expires in which an upload can still be confirmed
-	 * @param maxAttempts the most upload attempts issued for one job
+	 * @param maxAttempts the most upload attempts issued for one job, at most 5 ({@code issued_count} of V6)
 	 * @param inFlightMargin time after the URL expires until an upload started before it surely ended, before which a
 	 * delete is not final (plan 7.4)
 	 * @param notFoundRetryAfter the {@code Retry-After} of a confirmation that finds no object yet
@@ -177,10 +183,11 @@ record AnalysisProperties(boolean intakeEnabled, Intake intake, Grouping groupin
 			String region, @Nullable URI endpoint) {
 
 		Upload {
-			Assert.isTrue(urlTtl.isPositive() && urlTtl.compareTo(MAX_URL_TTL) <= 0,
-					"upload.url-ttl must be positive and at most 7 days");
+			Assert.isTrue(urlTtl.compareTo(MIN_URL_TTL) >= 0 && urlTtl.compareTo(MAX_URL_TTL) <= 0,
+					"upload.url-ttl must be between 1 minute (10 s replay minimum + 50 s signing margin) and 7 days");
 			Assert.isTrue(!confirmGrace.isNegative(), "upload.confirm-grace must not be negative");
-			Assert.isTrue(maxAttempts >= 1, "upload.max-attempts must be at least 1");
+			Assert.isTrue(maxAttempts >= 1 && maxAttempts <= MAX_UPLOAD_ATTEMPTS,
+					"upload.max-attempts must be between 1 and 5");
 			Assert.isTrue(!inFlightMargin.isNegative(), "upload.in-flight-margin must not be negative");
 			Assert.isTrue(notFoundRetryAfter.isPositive(), "upload.not-found-retry-after must be positive");
 			Assert.isTrue(storageAttemptTimeout.isPositive(), "upload.storage-attempt-timeout must be positive");

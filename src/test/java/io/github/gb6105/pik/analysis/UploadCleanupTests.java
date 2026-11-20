@@ -129,6 +129,42 @@ class UploadCleanupTests {
 		assertThat(fixtures.attempt(replaced.oldAttemptId()).get("object_state")).isEqualTo("DELETE_SENT");
 	}
 
+	// The attempt changed while its DELETE was in flight: an acknowledgement on the version read before, final or
+	// early, keeps what the change wrote.
+	@Test
+	void deleteAcknowledgedOnAnOlderVersionKeepsTheNewSchedule() throws Exception {
+		Replaced finalDelete = replaced();
+		Replaced earlyDelete = replaced();
+		Instant now = Instant.now();
+		setDeleteTimes(finalDelete.oldAttemptId(), now.minus(IN_FLIGHT_MARGIN).minusSeconds(60), now.minusSeconds(1));
+		Instant later = now.plus(Duration.ofHours(1)).truncatedTo(ChronoUnit.MILLIS);
+		for (Replaced replaced : List.of(finalDelete, earlyDelete)) {
+			doAnswer((invocation) -> {
+				Object deleted = invocation.callRealMethod();
+				jdbc.sql("""
+						UPDATE analysis_upload_attempt SET delete_after = :later, version = version + 1
+						WHERE id = :id
+						""").param("later", timestamp(later)).param("id", replaced.oldAttemptId()).update();
+				return deleted;
+			}).when(store).delete(replaced.oldKey());
+		}
+		long finalVersion = version(fixtures.attempt(finalDelete.oldAttemptId()));
+		long earlyVersion = version(fixtures.attempt(earlyDelete.oldAttemptId()));
+
+		cleanup.deleteObjects();
+
+		verify(store).delete(finalDelete.oldKey());
+		verify(store).delete(earlyDelete.oldKey());
+		Map<String, Object> notFinal = fixtures.attempt(finalDelete.oldAttemptId());
+		assertThat(notFinal.get("object_state")).isEqualTo("PENDING");
+		assertThat(instant(notFinal, "delete_after")).isEqualTo(later);
+		assertThat(version(notFinal)).isEqualTo(finalVersion + 1);
+		Map<String, Object> notRescheduled = fixtures.attempt(earlyDelete.oldAttemptId());
+		assertThat(notRescheduled.get("object_state")).isEqualTo("PENDING");
+		assertThat(instant(notRescheduled, "delete_after")).isEqualTo(later);
+		assertThat(version(notRescheduled)).isEqualTo(earlyVersion + 1);
+	}
+
 	@Test
 	void failedDeleteStaysPending() throws Exception {
 		Replaced replaced = replaced();
@@ -193,6 +229,26 @@ class UploadCleanupTests {
 
 		assertThat(store.head(UploadRecords.objectKey(accepted.job(), attemptId)))
 			.isEqualTo(new InputStore.Head.Absent());
+	}
+
+	@Test
+	void reconciliationAbandonsTheIssuedAttemptOfAnEndedJob() {
+		Installed device = fixtures.intake().android();
+		Accepted accepted = fixtures.accepted(device, 1);
+		UUID attemptId = attemptId(fixtures.issued(device, accepted.requestId(), accepted.job(), fixtures.image(10)));
+		// An ended job whose current attempt was left issued, as no terminal path leaves it.
+		jdbc.sql("""
+				UPDATE analysis_job SET status = 'CANCELLED', failure_code = 'UPLOAD_EXPIRED', ended_at = now()
+				WHERE id = :id
+				""").param("id", accepted.job()).update();
+		Instant before = Instant.now();
+
+		cleanup.reconcile();
+
+		Map<String, Object> attempt = fixtures.attempt(attemptId);
+		assertThat(attempt.get("status")).isEqualTo("ABANDONED");
+		assertThat(attempt.get("object_state")).isEqualTo("PENDING");
+		assertThat(instant(attempt, "delete_after")).isBetween(before, Instant.now());
 	}
 
 	@Test
@@ -265,6 +321,10 @@ class UploadCleanupTests {
 	private static Instant instant(Map<String, Object> row, String column) {
 		Object value = row.get(column);
 		return (value instanceof OffsetDateTime time) ? time.toInstant() : ((Timestamp) value).toInstant();
+	}
+
+	private static long version(Map<String, Object> row) {
+		return ((Number) row.get("version")).longValue();
 	}
 
 	private static UUID attemptId(JsonNode item) {

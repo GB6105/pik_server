@@ -101,7 +101,6 @@ class UploadRecovery {
 			case Confirmation.NotCurrent notCurrent -> Outcome.CHANGED;
 			// No other attempt can be issued or confirmed in time any more.
 			case Confirmation.Rejected rejected -> endOverdue(jobs.lock(jobId).orElseThrow(), cutoff);
-			case Confirmation.Unconfirmable unconfirmable -> endOverdue(jobs.lock(jobId).orElseThrow(), cutoff);
 		};
 	}
 

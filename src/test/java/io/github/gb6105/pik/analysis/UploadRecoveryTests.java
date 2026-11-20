@@ -108,6 +108,26 @@ class UploadRecoveryTests {
 	}
 
 	@Test
+	void storedObjectOfAJobWithoutReservationEndsTheJobThroughTheSharedCondition() throws Exception {
+		Installed device = fixtures.intake().android();
+		Accepted accepted = fixtures.accepted(device, 1);
+		Image image = fixtures.image(200);
+		JsonNode item = fixtures.issued(device, accepted.requestId(), accepted.job(), image);
+		assertThat(fixtures.put(item, image.bytes())).isEqualTo(200);
+		jdbc.sql("UPDATE usage_reservation SET status = 'RELEASED' WHERE job_id = :job")
+			.param("job", accepted.job())
+			.update();
+		passUploadDeadline(accepted.job());
+
+		recovery.recover();
+
+		assertEnded(accepted.job(), "FAILED", "RESERVATION_MISSING");
+		Map<String, Object> attempt = fixtures.attempt(attemptId(item));
+		assertThat(attempt.get("status")).isEqualTo("ABANDONED");
+		assertThat(attempt.get("object_state")).isEqualTo("PENDING");
+	}
+
+	@Test
 	void missingObjectEndsTheJobAsExpiredOrWithAllAttemptsUsed() {
 		Installed device = fixtures.intake().android();
 		Accepted accepted = fixtures.accepted(device, 2);

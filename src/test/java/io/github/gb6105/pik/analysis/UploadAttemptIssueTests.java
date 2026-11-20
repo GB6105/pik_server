@@ -22,6 +22,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -147,6 +149,25 @@ class UploadAttemptIssueTests {
 		JsonNode item = fixtures.issued(device, accepted.requestId(), accepted.job(), fixtures.image(10));
 
 		assertThat(Instant.parse(item.get("expiresAt").asString())).isEqualTo(deadline);
+	}
+
+	@Test
+	void deadlineTooCloseForAUsableUrlIsExpiredWithoutCountingAnything() {
+		Installed device = fixtures.intake().android();
+		Accepted accepted = fixtures.accepted(device, 1);
+		// Ahead, but by less than the validity a URL must have left.
+		jdbc.sql("UPDATE analysis_job SET upload_deadline = now() + interval '8 seconds' WHERE id = :id")
+			.param("id", accepted.job())
+			.update();
+
+		MvcTestResult result = fixtures.issue(device, key(), accepted.requestId(),
+				items(Map.of(accepted.job(), fixtures.image(10))));
+
+		assertThat(result).hasStatusOk();
+		assertRejected(json(result).get("items").get(0), "CONFLICT", "UPLOAD_EXPIRED", false);
+		assertThat(fixtures.attemptStatuses(accepted.job())).isEmpty();
+		assertThat(fixtures.job(accepted.job()).get("issued_count")).isEqualTo(0);
+		assertThat(rateItems(device.principalId(), device.trialMarkId())).isEmpty();
 	}
 
 	@Test
@@ -450,6 +471,79 @@ class UploadAttemptIssueTests {
 		assertThat(bytes).containsEntry("PRINCIPAL", 2 * 2_097_152L).containsEntry("TRIAL_MARK", 2 * 2_097_152L);
 	}
 
+	@Test
+	void trialMarkRateAboveTheLimitRollsBackThePrincipalCountToo() {
+		Installed device = fixtures.intake().android();
+		Accepted accepted = fixtures.accepted(device, 1);
+		// The current and the next window, so that an hour boundary during the test changes nothing.
+		Instant window = Instant.now().truncatedTo(ChronoUnit.HOURS);
+		for (Instant start : List.of(window, window.plus(Duration.ofHours(1)))) {
+			insertRate("PRINCIPAL", device.principalId(), start, 5);
+			insertRate("TRIAL_MARK", device.trialMarkId(), start, 100);
+		}
+		String key = key();
+
+		MvcTestResult result = fixtures.issue(device, key, accepted.requestId(),
+				items(Map.of(accepted.job(), fixtures.image(10))));
+
+		assertThat(result).hasStatus(429);
+		assertError(json(result), key, "RATE_LIMITED", "UPLOAD_RATE_LIMITED", true);
+		assertThat(fixtures.storedStatus(device, key)).isEmpty();
+		assertThat(fixtures.attemptStatuses(accepted.job())).isEmpty();
+		assertThat(fixtures.job(accepted.job()).get("issued_count")).isEqualTo(0);
+		// The principal's window was counted before the trial mark's refused it, and is rolled back with it.
+		assertThat(rateItems(device.principalId(), device.trialMarkId())).containsExactly(Map.entry("PRINCIPAL", 10L),
+				Map.entry("TRIAL_MARK", 200L));
+	}
+
+	@Test
+	void twoPrincipalsOfOneDeviceShareTheLastTrialMarkAllowance() throws Exception {
+		String androidId = HexFormat.of().formatHex(fixtures.image(8).bytes());
+		Installed first = fixtures.intake().android(androidId);
+		Installed second = fixtures.intake().android(androidId);
+		UUID markId = first.trialMarkId();
+		assertThat(markId).isNotNull().isEqualTo(second.trialMarkId());
+		assertThat(second.principalId()).isNotEqualTo(first.principalId());
+		Accepted firstJob = fixtures.accepted(first, 1);
+		Accepted secondJob = fixtures.accepted(second, 1);
+		// Both requests must count in one window, or each would find room in its own: start clear of an hour boundary.
+		Instant now = Instant.now();
+		Duration toNextHour = Duration.between(now, now.truncatedTo(ChronoUnit.HOURS).plus(Duration.ofHours(1)));
+		if (toNextHour.compareTo(Duration.ofSeconds(30)) < 0) {
+			Thread.sleep(toNextHour.plusSeconds(1).toMillis());
+		}
+		Instant window = Instant.now().truncatedTo(ChronoUnit.HOURS);
+		for (Instant start : List.of(window, window.plus(Duration.ofHours(1)))) {
+			insertRate("TRIAL_MARK", markId, start, 99);
+		}
+		String firstBody = items(Map.of(firstJob.job(), fixtures.image(10)));
+		String secondBody = items(Map.of(secondJob.job(), fixtures.image(10)));
+		CountDownLatch start = new CountDownLatch(1);
+		Future<MvcTestResult> firstResult = pool.submit(() -> {
+			start.await();
+			return fixtures.issue(first, key(), firstJob.requestId(), firstBody);
+		});
+		Future<MvcTestResult> secondResult = pool.submit(() -> {
+			start.await();
+			return fixtures.issue(second, key(), secondJob.requestId(), secondBody);
+		});
+
+		start.countDown();
+
+		int firstStatus = firstResult.get(60, SECONDS).getResponse().getStatus();
+		int secondStatus = secondResult.get(60, SECONDS).getResponse().getStatus();
+		assertThat(List.of(firstStatus, secondStatus)).containsExactlyInAnyOrder(200, 429);
+		Installed winner = (firstStatus == 200) ? first : second;
+		Installed loser = (firstStatus == 200) ? second : first;
+		UUID winnerJob = (firstStatus == 200) ? firstJob.job() : secondJob.job();
+		UUID loserJob = (firstStatus == 200) ? secondJob.job() : firstJob.job();
+		assertThat(fixtures.attemptStatuses(winnerJob)).containsExactly("ISSUED");
+		assertThat(fixtures.attemptStatuses(loserJob)).isEmpty();
+		assertThat(rateItems(winner.principalId(), markId)).containsExactly(Map.entry("PRINCIPAL", 1L),
+				Map.entry("TRIAL_MARK", 199L));
+		assertThat(rateItems(loser.principalId(), null)).isEmpty();
+	}
+
 	// C-13: attempts for one job issued at once with different keys leave one current attempt and count each.
 	@Test
 	void concurrentAttemptsForOneJobLeaveOneCurrentAttempt() throws Exception {
@@ -478,6 +572,32 @@ class UploadAttemptIssueTests {
 			.filteredOn("SUPERSEDED"::equals)
 			.hasSize(requests - 1);
 		assertThat(fixtures.job(accepted.job()).get("issued_count")).isEqualTo(requests);
+	}
+
+	private void insertRate(String kind, UUID subjectId, Instant window, long items) {
+		jdbc.sql("""
+				INSERT INTO analysis_input_rate (subject_kind, subject_id, window_start, items, bytes)
+				VALUES (:kind, :subject, :window, :items, 0)
+				""")
+			.param("kind", kind)
+			.param("subject", subjectId)
+			.param("window", window.atOffset(java.time.ZoneOffset.UTC))
+			.param("items", items)
+			.update();
+	}
+
+	// The items counted in all windows of the principal and of the trial mark, by subject kind.
+	private Map<String, Long> rateItems(UUID principalId, @Nullable UUID trialMarkId) {
+		Map<String, Long> items = new LinkedHashMap<>();
+		jdbc.sql("""
+				SELECT subject_kind, sum(items) AS items FROM analysis_input_rate
+				WHERE (subject_kind = 'PRINCIPAL' AND subject_id = :principal)
+				   OR (subject_kind = 'TRIAL_MARK' AND subject_id = CAST(:mark AS uuid))
+				GROUP BY subject_kind ORDER BY subject_kind
+				""").param("principal", principalId).param("mark", trialMarkId, java.sql.Types.OTHER)
+			.query((rs, rowNum) -> items.put(rs.getString("subject_kind"), rs.getLong("items")))
+			.list();
+		return items;
 	}
 
 }

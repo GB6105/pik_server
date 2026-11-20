@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,16 +35,22 @@ final class S3InputStore implements InputStore, AutoCloseable {
 
 	private static final int SHA256_BYTES = 32;
 
+	// The signings of one URL before it fails: each starts from what is left at a new reading of the clock.
+	private static final int MAX_SIGNINGS = 3;
+
 	private final S3Client client;
 
 	private final S3Presigner presigner;
 
 	private final String bucket;
 
-	S3InputStore(S3Client client, S3Presigner presigner, String bucket) {
+	private final InstantSource clock;
+
+	S3InputStore(S3Client client, S3Presigner presigner, String bucket, InstantSource clock) {
 		this.client = client;
 		this.presigner = presigner;
 		this.bucket = bucket;
+		this.clock = clock;
 	}
 
 	/**
@@ -51,6 +58,13 @@ final class S3InputStore implements InputStore, AutoCloseable {
 	 * all run outside database transactions (plan 1). An endpoint is S3Mock, which serves path-style URLs only.
 	 */
 	static S3InputStore create(AnalysisProperties.Upload upload) {
+		return create(upload, InstantSource.system());
+	}
+
+	/**
+	 * @param clock the clock the URL validity is computed with
+	 */
+	static S3InputStore create(AnalysisProperties.Upload upload, InstantSource clock) {
 		Region region = Region.of(upload.region());
 		S3ClientBuilder client = S3Client.builder()
 			.region(region)
@@ -64,17 +78,13 @@ final class S3InputStore implements InputStore, AutoCloseable {
 			presigner.endpointOverride(endpoint)
 				.serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build());
 		}
-		return new S3InputStore(client.build(), presigner.build(), upload.bucket());
+		return new S3InputStore(client.build(), presigner.build(), upload.bucket(), clock);
 	}
 
 	@Override
 	public PresignedPut presignPut(String key, long contentLength, byte[] sha256, Instant expiresAt) {
 		Assert.isTrue(contentLength >= 1, "contentLength must be positive");
 		Assert.isTrue(sha256.length == SHA256_BYTES, "sha256 must have 32 bytes");
-		// The URL lives whole seconds from the signing time cut to the second. One second less than what is left keeps
-		// it from outliving expiresAt, which deletes rely on (plan 7.4).
-		Duration validity = Duration.ofSeconds(Duration.between(Instant.now(), expiresAt).toSeconds() - 1);
-		Assert.isTrue(validity.isPositive(), "expiresAt must be at least 2 seconds ahead");
 		PutObjectRequest put = PutObjectRequest.builder()
 			.bucket(bucket)
 			.key(key)
@@ -83,8 +93,23 @@ final class S3InputStore implements InputStore, AutoCloseable {
 			.checksumSHA256(Base64.getEncoder().encodeToString(sha256))
 			.ifNoneMatch("*")
 			.build();
-		PresignedPutObjectRequest presigned = presigner
-			.presignPutObject((request) -> request.signatureDuration(validity).putObjectRequest(put));
+		for (int signing = 1; signing <= MAX_SIGNINGS; signing++) {
+			// The URL lives whole seconds from the signing time cut to the second. One second less than what is left
+			// keeps it from outliving expiresAt, which deletes rely on (plan 7.4).
+			Duration validity = Duration.ofSeconds(Duration.between(clock.instant(), expiresAt).toSeconds() - 1);
+			Assert.isTrue(validity.isPositive(), "expiresAt must be at least 2 seconds ahead");
+			PresignedPutObjectRequest presigned = presigner
+				.presignPutObject((request) -> request.signatureDuration(validity).putObjectRequest(put));
+			// The SDK adds the validity to its own, later reading of the clock; after a pause between the two the URL
+			// would outlive expiresAt, so it is signed again with what is left then.
+			if (!presigned.expiration().isAfter(expiresAt)) {
+				return presignedPut(presigned);
+			}
+		}
+		throw new IllegalStateException("The URL could not be signed to expire by expiresAt");
+	}
+
+	private static PresignedPut presignedPut(PresignedPutObjectRequest presigned) {
 		// Devices cannot set Host; their HTTP client sends it from the URL.
 		Map<String, String> headers = new HashMap<>();
 		presigned.signedHeaders().forEach((name, values) -> {

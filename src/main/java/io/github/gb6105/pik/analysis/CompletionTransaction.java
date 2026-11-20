@@ -34,7 +34,7 @@ class CompletionTransaction {
 	 * @param observed the HEAD result, {@code null} when the attempt was not {@code ISSUED} when it was read
 	 * @throws PikException {@code CONFLICT} / {@code ATTEMPT_NOT_CURRENT} (stored), {@code CONFLICT} /
 	 * {@code UPLOAD_NOT_FOUND} with {@code Retry-After} and {@code TEMPORARY_FAILURE} / {@code STORAGE_UNAVAILABLE}
-	 * (not stored), {@code CONFLICT} / {@code RESERVATION_MISSING} (stored)
+	 * (not stored)
 	 */
 	@Transactional(propagation = Propagation.MANDATORY)
 	Outcome run(UUID key, UUID attemptId, InputStore.@Nullable Head observed) {
@@ -64,8 +64,6 @@ class CompletionTransaction {
 						(ended.reason().status() == JobStatus.CANCELLED) ? CommandResult.CANCELLED : CommandResult.FAILED,
 						endingCode(ended.reason()), ended.reason().name(), false, jobId, attemptId,
 						AttemptStatus.ABANDONED, ended.reason().status());
-				case Confirmation.Unconfirmable unconfirmable -> throw new PikException(unconfirmable.reason().code(),
-						unconfirmable.reason().reason(), unconfirmable.reason().retryable());
 				case Confirmation.NotCurrent notCurrent ->
 					throw new IllegalStateException("The attempt was current under the same locks");
 			};

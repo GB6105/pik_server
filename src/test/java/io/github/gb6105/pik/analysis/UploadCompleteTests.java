@@ -18,8 +18,10 @@ import io.github.gb6105.pik.analysis.AttemptConfirmation.Confirmation;
 import io.github.gb6105.pik.analysis.IntakeFixtures.Installed;
 import io.github.gb6105.pik.analysis.UploadFixtures.Accepted;
 import io.github.gb6105.pik.analysis.UploadFixtures.Image;
+import io.github.gb6105.pik.usage.TrialUsage;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -59,6 +61,9 @@ class UploadCompleteTests {
 
 	@Autowired
 	AttemptConfirmation confirmation;
+
+	@Autowired
+	TrialUsage trialUsage;
 
 	@MockitoSpyBean
 	InputStore store;
@@ -254,6 +259,52 @@ class UploadCompleteTests {
 	}
 
 	@Test
+	void missingReservationEndsTheJobThroughTheCommonTermination() throws Exception {
+		Installed device = fixtures.intake().android();
+		Accepted accepted = fixtures.accepted(device, 1);
+		Image image = fixtures.image(100);
+		JsonNode item = fixtures.issued(device, accepted.requestId(), accepted.job(), image);
+		assertThat(fixtures.put(item, image.bytes())).isEqualTo(200);
+		UUID attemptId = attemptId(item);
+		// Released while the attempt was out, which no transition of a waiting job does.
+		Integer released = transaction
+			.execute((status) -> trialUsage.release(device.principalId(), accepted.job()));
+		assertThat(released).isEqualTo(1);
+		List<Map<String, Object>> usage = usage(device);
+		String key = key();
+
+		MvcTestResult result = fixtures.complete(device, key, accepted.requestId(), attemptId);
+
+		assertThat(result).hasStatusOk();
+		JsonNode response = json(result);
+		assertThat(response.get("result").asString()).isEqualTo("FAILED");
+		assertThat(response.get("code").asString()).isEqualTo("CONFLICT");
+		assertThat(response.get("reason").asString()).isEqualTo("RESERVATION_MISSING");
+		assertThat(response.get("retryable").asBoolean()).isFalse();
+		assertThat(response.get("attemptStatus").asString()).isEqualTo("ABANDONED");
+		assertThat(response.get("status").asString()).isEqualTo("FAILED");
+		assertThat(fixtures.storedStatus(device, key)).contains(200);
+		assertEnded(accepted.job(), "FAILED", "RESERVATION_MISSING");
+		Map<String, Object> abandoned = fixtures.attempt(attemptId);
+		assertThat(abandoned.get("status")).isEqualTo("ABANDONED");
+		assertThat(abandoned.get("object_state")).isEqualTo("PENDING");
+		assertThat(abandoned.get("delete_after")).isNotNull();
+		assertThat(fixtures.reservations(accepted.job())).containsOnly("RELEASED");
+		assertThat(usage(device)).isEqualTo(usage);
+		Object jobVersion = fixtures.job(accepted.job()).get("version");
+
+		// The same key replays the stored body without a HEAD, a change or another settlement.
+		clearInvocations(store);
+		assertThat(json(fixtures.complete(device, key, accepted.requestId(), attemptId))).isEqualTo(response);
+		verify(store, never()).head(any());
+		assertThat(fixtures.job(accepted.job()).get("version")).isEqualTo(jobVersion);
+		assertThat(usage(device)).isEqualTo(usage);
+		JsonNode status = json(fixtures.status(device, accepted.requestId(), null));
+		assertThat(status.get("jobs").get(0).get("reason").asString()).isEqualTo("RESERVATION_MISSING");
+		assertThat(status.get("phase").asString()).isEqualTo("DONE");
+	}
+
+	@Test
 	void confirmationByTheBatchFirstAnswersTheApiWith200() throws Exception {
 		Installed device = fixtures.intake().android();
 		Accepted accepted = fixtures.accepted(device, 1);
@@ -343,6 +394,36 @@ class UploadCompleteTests {
 		assertThat(fixtures.attemptStatuses(accepted.job())).containsExactly("SUPERSEDED", "ISSUED");
 	}
 
+	// C-20: a HEAD that fails while a new attempt is issued is a stored 409, and so is the retry under the same key.
+	@Test
+	void failedHeadWhileANewAttemptIsIssuedIsAStoredConflict() throws Exception {
+		Installed device = fixtures.intake().android();
+		Accepted accepted = fixtures.accepted(device, 1);
+		Image image = fixtures.image(100);
+		JsonNode old = fixtures.issued(device, accepted.requestId(), accepted.job(), image);
+		assertThat(fixtures.put(old, image.bytes())).isEqualTo(200);
+		doAnswer((invocation) -> {
+			MvcTestResult issued = pool.submit(() -> fixtures.issue(device, key(), accepted.requestId(),
+					UploadFixtures.items(Map.of(accepted.job(), image)))).get(30, SECONDS);
+			assertThat(issued).hasStatusOk();
+			return new InputStore.Head.Unavailable();
+		}).doCallRealMethod().when(store).head(any());
+		String key = key();
+
+		MvcTestResult result = fixtures.complete(device, key, accepted.requestId(), attemptId(old));
+
+		assertThat(result).hasStatus(409);
+		assertError(json(result), key, "CONFLICT", "ATTEMPT_NOT_CURRENT", false);
+		assertThat(fixtures.storedStatus(device, key)).contains(409);
+		clearInvocations(store);
+		MvcTestResult retried = fixtures.complete(device, key, accepted.requestId(), attemptId(old));
+		assertThat(retried).hasStatus(409);
+		assertThat(json(retried)).isEqualTo(json(result));
+		verify(store, never()).head(any());
+		assertThat(fixtures.attemptStatuses(accepted.job())).containsExactly("SUPERSEDED", "ISSUED");
+		assertThat(fixtures.job(accepted.job()).get("status")).isEqualTo("AWAITING_UPLOAD");
+	}
+
 	private void assertRejectedFor(Installed device, Accepted accepted, UUID jobId, Image issued, Image uploaded,
 			String rejectReason) {
 		JsonNode item = fixtures.issued(device, accepted.requestId(), jobId, issued);
@@ -383,6 +464,17 @@ class UploadCompleteTests {
 		assertThat(job.get("failure_code")).isEqualTo(failureCode);
 		assertThat(job.get("ended_at")).isNotNull();
 		assertThat(job.get("run_token")).isNull();
+	}
+
+	// The trial counters of the principal and of its device mark.
+	private List<Map<String, Object>> usage(Installed device) {
+		return jdbc.sql("""
+				SELECT quota_kind || ':' || period_key AS counter, reserved_count, consumed_count, version
+				FROM usage_quota WHERE principal_id = :principal
+				UNION ALL
+				SELECT 'MARK', reserved_count, consumed_count, version FROM device_trial_mark WHERE id = :mark
+				ORDER BY counter
+				""").param("principal", device.principalId()).param("mark", device.trialMarkId()).query().listOfRows();
 	}
 
 	private static UUID attemptId(JsonNode item) {
