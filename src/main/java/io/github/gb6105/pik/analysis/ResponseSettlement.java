@@ -9,6 +9,8 @@ import java.time.Instant;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
@@ -17,7 +19,8 @@ import org.springframework.transaction.support.TransactionTemplate;
  * ends it by the row's failure code, or sends it back to {@code READY} with the call settled: after 401, 403 or 404,
  * after a 429 or 529 once {@code Retry-After} passed, and after a call that was not sent. An unknown outcome sends the
  * job back once per photo and ends it with {@code UNKNOWN_OUTCOME} the second time. A run that lost the job settles
- * only its call and the evidence for the circuits.
+ * only its call and the evidence for the circuits. An answer to a call confirmed unknown meanwhile only adjusts the
+ * call's cost (plan 5.9).
  */
 @Component
 @RequiredArgsConstructor
@@ -42,10 +45,19 @@ class ResponseSettlement {
 		return Objects.requireNonNull(transaction.execute((status) -> settleLocked(claimed, call, outcome)));
 	}
 
-	private Settled settleLocked(ClaimedJob claimed, CallRow call, CallOutcome outcome) {
+	/**
+	 * Settles the response in the caller's transaction, for the lease recovery that confirms a call unknown under the
+	 * job lock it already holds (plan 5.8).
+	 */
+	@Transactional(propagation = Propagation.MANDATORY)
+	Settled settleLocked(ClaimedJob claimed, CallRow call, CallOutcome outcome) {
 		Instant now = Instant.now();
 		LockedJob job = jobs.lock(claimed.jobId()).orElseThrow();
-		if (runs.callStatus(call.id()) != CallStatus.SENDING) {
+		CallStatus status = runs.callStatus(call.id());
+		if (status != CallStatus.SENDING) {
+			if (status == CallStatus.UNKNOWN) {
+				calls.adjustLate(call, outcome, now);
+			}
 			return Settled.SETTLED_BEFORE;
 		}
 		if (!job.wonBy(claimed.runToken(), now)) {

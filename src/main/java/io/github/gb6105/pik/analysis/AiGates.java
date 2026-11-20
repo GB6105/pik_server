@@ -442,7 +442,8 @@ class AiGates {
 	/**
 	 * An {@code ai_gate} row.
 	 *
-	 * @param blockedUntil when an open budget or transient circuit may pass or half-open again
+	 * @param blockedUntil when an open budget or transient circuit may pass or half-open again; on a half-open
+	 * circuit, when it became due to half-open, from which the half-open alarm counts
 	 * @param probeJobId the job of the probe, {@code null} without one
 	 * @param probeRunToken the run of the probe, {@code null} without one
 	 * @param configVersion the setting fingerprint the configuration circuit opened under

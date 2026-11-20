@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -163,6 +164,56 @@ class RunRecords {
 	}
 
 	/**
+	 * Records the usage of an answer that came after its call was settled {@code UNKNOWN} at the maximum cost, once
+	 * (plan 5.9): the call is locked, gets the reported tokens and the cost they give, and is {@code ADJUSTED}. Its
+	 * status, response columns and sends stay as settled, so that the answer counts neither for the circuits nor for
+	 * the monitor's share.
+	 * @return the cost the adjustment replaced; empty, with nothing changed, when the call is not {@code UNKNOWN} or
+	 * was adjusted before
+	 */
+	OptionalLong adjustUnknown(UUID callId, ModelReply.Usage usage, long costMicros) {
+		Optional<Long> settled = jdbc.sql("""
+				SELECT settled_cost_micros FROM external_call
+				WHERE id = :id AND status = 'UNKNOWN' AND cost_state = 'SETTLED'
+				FOR UPDATE
+				""").param("id", callId).query(Long.class).optional();
+		if (settled.isEmpty()) {
+			return OptionalLong.empty();
+		}
+		jdbc.sql("""
+				UPDATE external_call SET input_tokens = :input, output_tokens = :output,
+				                         cache_creation_tokens = :cacheCreation, cache_read_tokens = :cacheRead,
+				                         settled_cost_micros = :cost, cost_state = 'ADJUSTED'
+				WHERE id = :id
+				""")
+			.param("id", callId)
+			.param("input", usage.inputTokens())
+			.param("output", usage.outputTokens())
+			.param("cacheCreation", usage.cacheCreationInputTokens())
+			.param("cacheRead", usage.cacheReadInputTokens())
+			.param("cost", costMicros)
+			.update();
+		return OptionalLong.of(settled.get());
+	}
+
+	/**
+	 * The answers in the configuration circuit's window (plan 7.3, K-11): calls permitted under the fingerprint and
+	 * answered after {@code since}, and how many of them the settlement table settles as 400.
+	 */
+	AnswerShare answerShare(String configFingerprint, Instant since) {
+		return jdbc.sql("""
+				SELECT count(*) AS answers, count(*) FILTER (WHERE outcome = :rejected) AS rejected
+				FROM external_call
+				WHERE config_fingerprint = :fingerprint AND status <> 'SENDING' AND responded_at > :since
+				""")
+			.param("fingerprint", configFingerprint)
+			.param("rejected", ModelReply.Row.PROVIDER_REJECTED.name())
+			.param("since", timestamp(since))
+			.query((rs, rowNum) -> new AnswerShare(rs.getLong("answers"), rs.getLong("rejected")))
+			.single();
+	}
+
+	/**
 	 * Locks the principal's sends of the KST day.
 	 * @return the sends reserved or spent so far
 	 */
@@ -280,6 +331,17 @@ class RunRecords {
 			.single();
 	}
 
+	/**
+	 * Sets the limit of the KST day's spend, locked by {@link #lockSpendDay}, to the current setting (plan 7.3).
+	 */
+	void changeSpendLimit(LocalDate day, long limitMicros, Instant now) {
+		jdbc.sql("UPDATE ai_spend_day SET limit_micros = :limit, updated_at = :now WHERE day = :day")
+			.param("day", day)
+			.param("limit", limitMicros)
+			.param("now", timestamp(now))
+			.update();
+	}
+
 	void reserveSpend(LocalDate day, long micros, Instant now) {
 		jdbc.sql("""
 				UPDATE ai_spend_day SET reserved_micros = reserved_micros + :micros, updated_at = :now WHERE day = :day
@@ -301,6 +363,17 @@ class RunRecords {
 			.param("settled", settledMicros)
 			.param("now", timestamp(now))
 			.update();
+	}
+
+	/**
+	 * Moves the settled cost of the day of a permit by {@code deltaMicros}, for a late answer (plan 5.9). A day row
+	 * that is gone is not created again.
+	 */
+	void adjustSpend(LocalDate day, long deltaMicros, Instant now) {
+		jdbc.sql("""
+				UPDATE ai_spend_day SET settled_micros = GREATEST(0, settled_micros + :delta), updated_at = :now
+				WHERE day = :day
+				""").param("day", day).param("delta", deltaMicros).param("now", timestamp(now)).update();
 	}
 
 	/**
@@ -461,6 +534,14 @@ class RunRecords {
 		boolean spentBySettled(long maxCostMicros) {
 			return settledMicros + maxCostMicros > limitMicros;
 		}
+
+	}
+
+	/**
+	 * @param answers the calls answered in the window
+	 * @param rejected those settled as 400
+	 */
+	record AnswerShare(long answers, long rejected) {
 
 	}
 

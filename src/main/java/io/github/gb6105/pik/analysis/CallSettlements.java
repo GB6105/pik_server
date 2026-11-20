@@ -4,8 +4,11 @@ import io.github.gb6105.pik.analysis.JobTermination.Settlement;
 import io.github.gb6105.pik.analysis.RunRecords.CallRow;
 import io.github.gb6105.pik.usage.TrialUsage;
 import java.time.Instant;
+import java.util.OptionalLong;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 /**
@@ -13,7 +16,8 @@ import org.springframework.util.Assert;
  * by compare-and-set, its cost replaces the reserved maximum on the day of its permit, and its risky sends (the
  * principal's daily sends, the device's sends for a trial job and the photo's lifetime sends) stay spent or are
  * released. The response then counts as evidence for the circuits. The caller holds the call's job lock and has
- * checked that the call is still {@code SENDING}; both halves run in its transaction.
+ * checked that the call is still {@code SENDING}; both halves run in its transaction. An answer to a call that was
+ * confirmed unknown meanwhile only adjusts the call's cost, once.
  */
 @Component
 @RequiredArgsConstructor
@@ -53,6 +57,27 @@ class CallSettlements {
 			}
 
 		};
+	}
+
+	/**
+	 * Applies an answer that came after its call was confirmed unknown (plan 5.9): when it reports usage, the call's
+	 * cost becomes the cost of that usage once ({@code ADJUSTED}), also on the day of its permit, a day row that is
+	 * gone staying gone. The risky sends stay spent, and the answer stores no result, consumes no trial photo,
+	 * changes no job and counts for no circuit. Locks the call, then the daily cost.
+	 * @return whether the call was adjusted now; {@code false} without usage, or when it was adjusted before
+	 */
+	@Transactional(propagation = Propagation.MANDATORY)
+	boolean adjustLate(CallRow call, CallOutcome outcome, Instant now) {
+		ModelReply.Usage usage = outcome.usage();
+		if (usage == null) {
+			return false;
+		}
+		OptionalLong replaced = runs.adjustUnknown(call.id(), usage, outcome.costMicros());
+		if (replaced.isEmpty()) {
+			return false;
+		}
+		runs.adjustSpend(call.budgetDay(), outcome.costMicros() - replaced.getAsLong(), now);
+		return true;
 	}
 
 	/**

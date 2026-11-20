@@ -338,10 +338,12 @@ record AnalysisProperties(boolean intakeEnabled, Intake intake, Grouping groupin
 	 * @param retryJitter the share by which such delays and the circuit backoffs grow at random
 	 * @param completionRetries the repeats of a completion transaction that failed on a transient database error,
 	 * while the lease lasts (plan 5.6)
+	 * @param leaseRecoveryInterval the pause between two runs of the lease recovery batch (plan 5.8)
+	 * @param deadlineInterval the pause between two runs of the processing deadline batch (plan 7.2)
 	 */
 	record Worker(boolean enabled, Duration pollInterval, int globalSlots, int principalSlots, int claimOversample,
 			int claimRounds, Duration lease, Duration sendMargin, Duration initialDelay, Duration retryBackoff,
-			double retryJitter, int completionRetries) {
+			double retryJitter, int completionRetries, Duration leaseRecoveryInterval, Duration deadlineInterval) {
 
 		Worker {
 			Assert.isTrue(!initialDelay.isNegative(), "worker.initial-delay must not be negative");
@@ -355,6 +357,8 @@ record AnalysisProperties(boolean intakeEnabled, Intake intake, Grouping groupin
 			Assert.isTrue(claimRounds >= 1, "worker.claim-rounds must be at least 1");
 			Assert.isTrue(lease.isPositive(), "worker.lease must be positive");
 			Assert.isTrue(sendMargin.isPositive(), "worker.send-margin must be positive");
+			Assert.isTrue(leaseRecoveryInterval.isPositive(), "worker.lease-recovery-interval must be positive");
+			Assert.isTrue(deadlineInterval.isPositive(), "worker.deadline-interval must be positive");
 		}
 
 	}
@@ -475,10 +479,11 @@ record AnalysisProperties(boolean intakeEnabled, Intake intake, Grouping groupin
 	 * @param transientMaxBackoff the longest half-open delay of the transient circuit
 	 * @param probeExclusion how long a job whose probe died is not picked as a probe again
 	 * @param halfOpenAlarm how long a circuit may stay half-open before an alarm
+	 * @param monitorInterval the pause between two runs of the circuit and budget monitor batch (plan 7.3)
 	 */
 	record Circuit(double badRequestRatio, Duration window, int minSamples, int transientThreshold,
 			Duration transientBaseBackoff, Duration transientMaxBackoff, Duration probeExclusion,
-			Duration halfOpenAlarm) {
+			Duration halfOpenAlarm, Duration monitorInterval) {
 
 		Circuit {
 			Assert.isTrue(badRequestRatio > 0 && badRequestRatio <= 1, "circuit.bad-request-ratio must be in (0, 1]");
@@ -490,12 +495,14 @@ record AnalysisProperties(boolean intakeEnabled, Intake intake, Grouping groupin
 					"circuit.transient-max-backoff must not be shorter than circuit.transient-base-backoff");
 			Assert.isTrue(probeExclusion.isPositive(), "circuit.probe-exclusion must be positive");
 			Assert.isTrue(halfOpenAlarm.isPositive(), "circuit.half-open-alarm must be positive");
+			Assert.isTrue(monitorInterval.isPositive(), "circuit.monitor-interval must be positive");
 		}
 
 	}
 
 	/**
-	 * @param initialDelay the time after startup before the first run of each upload batch
+	 * @param initialDelay the time after startup before the first run of each batch: the upload batches, the lease
+	 * recovery, the processing deadline and the monitor
 	 * @param recoveryInterval the pause between two runs of the upload recovery batch (plan 7.1)
 	 * @param deleteInterval the pause between two runs of the object delete batch
 	 * @param reconcileInterval the pause between two runs of the delete reconciliation (plan 7.4)

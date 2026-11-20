@@ -236,6 +236,44 @@ class JobRecords {
 	}
 
 	/**
+	 * Running jobs whose lease ran out before {@code now} while their processing deadline is ahead, with the token of
+	 * the run that holds them, after {@code after} in {@code id} order and read without locks (plan 5.8). Jobs past
+	 * their processing deadline are left to the processing deadline batch.
+	 */
+	List<ExpiredLease> findExpiredLeases(Instant now, UUID after, int limit) {
+		return jdbc.sql("""
+				SELECT id, run_token FROM analysis_job
+				WHERE status = 'RUNNING' AND locked_until < :now AND processing_deadline > :now AND id > :after
+				ORDER BY id
+				LIMIT :limit
+				""")
+			.param("now", timestamp(now))
+			.param("after", after)
+			.param("limit", limit)
+			.query((rs, rowNum) -> new ExpiredLease(rs.getObject("id", UUID.class),
+					rs.getObject("run_token", UUID.class)))
+			.list();
+	}
+
+	/**
+	 * Jobs that have not ended and whose processing deadline passed before {@code now}, after {@code after} in
+	 * {@code id} order and read without locks (plan 7.2).
+	 */
+	List<UUID> findPastDeadline(Instant now, UUID after, int limit) {
+		return jdbc.sql("""
+				SELECT id FROM analysis_job
+				WHERE status IN ('AWAITING_UPLOAD', 'READY', 'RUNNING') AND processing_deadline < :now AND id > :after
+				ORDER BY id
+				LIMIT :limit
+				""")
+			.param("now", timestamp(now))
+			.param("after", after)
+			.param("limit", limit)
+			.query(UUID.class)
+			.list();
+	}
+
+	/**
 	 * Ends the job with its result stored, discarding its run token and lease.
 	 */
 	void succeed(UUID jobId, Instant now) {
@@ -302,6 +340,15 @@ class JobRecords {
 	 * is skipped
 	 */
 	record Candidate(UUID id, boolean locked) {
+
+	}
+
+	/**
+	 * A running job whose lease ran out, as read without locks.
+	 *
+	 * @param runToken the token of the run that held it then
+	 */
+	record ExpiredLease(UUID jobId, UUID runToken) {
 
 	}
 

@@ -31,13 +31,14 @@ import tools.jackson.databind.json.JsonMapper;
  * The completion transaction of a valid output (plan 5.6, design 2.4 steps 5 and 6). Locks in the order consent,
  * the photos of the job's own {@code ACCEPTED} items ({@code FOR SHARE}), request, job, attempts, call, usage
  * allocation, daily cost, gates, results, change counter. A call that is no longer {@code SENDING} was settled
- * before and changes nothing; a run that no longer wins the job settles only its call, so that a completion retried
- * after another committed takes this path. A winner whose representative was deleted, whose principal is inactive or
- * whose consent basis no longer holds discards the output and ends the job, the call settled at its usage. Otherwise
- * every member photo that still exists gets its result, {@code DIRECT} for the representative and {@code INHERITED}
- * for the others, the trial consumes their reservations and releases those of deleted members, the request records
- * its first result, the results get their change numbers, and {@link AnalysisCompleted} is published once per result
- * in this transaction. A photo that already has a result rolls everything back with {@link ResultConflict}.
+ * before and changes nothing but the cost of a call confirmed unknown meanwhile, adjusted once; a run that no longer
+ * wins the job settles only its call, so that a completion retried after another committed takes this path. A winner
+ * whose representative was deleted, whose principal is inactive or whose consent basis no longer holds discards the
+ * output and ends the job, the call settled at its usage. Otherwise every member photo that still exists gets its
+ * result, {@code DIRECT} for the representative and {@code INHERITED} for the others, the trial consumes their
+ * reservations and releases those of deleted members, the request records its first result, the results get their
+ * change numbers, and {@link AnalysisCompleted} is published once per result in this transaction. A photo that
+ * already has a result rolls everything back with {@link ResultConflict}.
  */
 @Component
 @RequiredArgsConstructor
@@ -93,7 +94,11 @@ class RunCompletion {
 		Instant firstResultAt = runs.lockRequest(basis.requestId());
 		LockedJob job = jobs.lock(jobId).orElseThrow();
 		Instant now = Instant.now();
-		if (runs.callStatus(call.id()) != CallStatus.SENDING) {
+		CallStatus status = runs.callStatus(call.id());
+		if (status != CallStatus.SENDING) {
+			if (status == CallStatus.UNKNOWN) {
+				calls.adjustLate(call, outcome, now);
+			}
 			return Completed.SETTLED_BEFORE;
 		}
 		if (!job.wonBy(runToken, now)) {

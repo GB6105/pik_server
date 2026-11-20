@@ -101,6 +101,16 @@ record CallOutcome(String row, CallStatus status, @Nullable Integer httpStatus, 
 	}
 
 	/**
+	 * A permitted call whose run stopped without settling it, confirmed unknown by the lease recovery or the processing
+	 * deadline (plan 5.8, 5.9, 7.2): whether it was sent is not known, so it is settled at the maximum cost reserved at
+	 * permit with its sends spent.
+	 */
+	static CallOutcome unknown(long maxCostMicros) {
+		return new CallOutcome(Row.UNKNOWN.name(), CallStatus.UNKNOWN, null, null, null, null, maxCostMicros, true, null,
+				null, Signal.TRANSIENT, null);
+	}
+
+	/**
 	 * A valid output that the completion could not store (plan 5.6, K-21): settled at its usage with its sends spent.
 	 */
 	static CallOutcome resultConflict(CallOutcome succeeded) {

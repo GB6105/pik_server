@@ -6,6 +6,8 @@ import io.github.gb6105.pik.analysis.AiGates.Passage;
 import io.github.gb6105.pik.analysis.JobClaims.ClaimedJob;
 import io.github.gb6105.pik.analysis.JobRecords.LockedJob;
 import io.github.gb6105.pik.analysis.JobTermination.JobEnding;
+import io.github.gb6105.pik.analysis.JobTermination.Recheck;
+import io.github.gb6105.pik.analysis.JobTermination.Settlement;
 import io.github.gb6105.pik.analysis.RunRecords.CallRow;
 import io.github.gb6105.pik.analysis.RunRecords.RunBasis;
 import io.github.gb6105.pik.analysis.RunRecords.SpendDay;
@@ -32,8 +34,9 @@ import org.springframework.transaction.support.TransactionTemplate;
  * its check. A call already permitted for the run is returned as it is and never sent again. Every check reads and
  * decides before anything changes: a pass then counts the send on each budget, reserves the maximum cost and inserts
  * the {@code SENDING} call; a denial that ends the job rolls the transaction back and ends the job in a transaction of
- * its own, so the usage allocation is never locked after the device mark; a denial that waits sends the job back to
- * {@code READY} in this transaction, and a daily cost that does not fit opens the budget gate.
+ * its own, so the usage allocation is never locked after the device mark, once its reason holds under that
+ * transaction's locks; a denial that waits sends the job back to {@code READY} in this transaction, and a daily cost
+ * that does not fit opens the budget gate.
  */
 @Slf4j
 @Component
@@ -76,11 +79,61 @@ class SendPermits {
 			return permit;
 		}));
 		if (decided instanceof Permit.Ended ended) {
-			boolean done = Boolean.TRUE.equals(transaction.execute((status) -> termination.end(claimed.jobId(),
-					JobEnding.ofRun(ended.reason(), claimed.runToken()))));
-			return done ? ended : new Permit.Lost();
+			return end(claimed, basis, ended);
 		}
 		return decided;
+	}
+
+	/**
+	 * Ends the job for a denial that the rolled-back permit decided on its snapshot, in a transaction of its own that
+	 * checks the reason again under its own locks: consent and photo before the job, the device's sends and the
+	 * photo's sends after the usage release (plan 3.3). A reason that is gone sends the job back to {@code READY}
+	 * instead; the next permit decides again.
+	 */
+	private Permit end(ClaimedJob claimed, RunBasis basis, Permit.Ended ended) {
+		try {
+			return Objects.requireNonNull(transaction.execute((status) -> endLocked(claimed, basis, ended)));
+		}
+		catch (JobTermination.ReasonLifted ex) {
+			return Objects.requireNonNull(transaction.execute((status) -> {
+				Instant now = Instant.now();
+				return defer(claimed, deferrals.retryAt(null, now), now);
+			}));
+		}
+	}
+
+	private Permit endLocked(ClaimedJob claimed, RunBasis basis, Permit.Ended ended) {
+		UUID ownerId = basis.ownerId();
+		boolean consentHolds = consents.basisHolds(ownerId, basis.consentVersion());
+		Set<UUID> existing = photos.holdExisting(ownerId, List.of(basis.photoId()));
+		FailureCode reason = ended.reason();
+		boolean holds = switch (reason) {
+			case REPRESENTATIVE_DELETED -> !existing.contains(basis.photoId());
+			case PRINCIPAL_INACTIVE -> !principals.isActive(ownerId);
+			case CONSENT_WITHDRAWN -> !consentHolds;
+			default -> true;
+		};
+		Instant now = Instant.now();
+		if (!holds) {
+			return defer(claimed, deferrals.retryAt(null, now), now);
+		}
+		JobEnding ending = new JobEnding(reason, claimed.runToken(), false, Settlement.NONE,
+				recheck(basis, reason, now));
+		return termination.end(claimed.jobId(), ending) ? ended : new Permit.Lost();
+	}
+
+	// The budget denials, under the locks the ending takes after the usage release.
+	private Recheck recheck(RunBasis basis, FailureCode reason, Instant now) {
+		AnalysisProperties.Budget budget = properties.budget();
+		return switch (reason) {
+			case DEVICE_BUDGET_EXHAUSTED -> () -> trialUsage
+				.lockDeviceSend(Objects.requireNonNull(basis.trialMarkId(), "A trial job counts on a device mark"),
+						budget.deviceSendMultiplier())
+				.remaining() <= 0;
+			case ATTEMPTS_EXHAUSTED -> () -> runs.lockPhotoBudget(basis.photoId(), basis.ownerId(), now)
+				.riskSends() >= budget.photoLifetimeSends();
+			default -> Recheck.NONE;
+		};
 	}
 
 	private Permit decide(ClaimedJob claimed, RunBasis basis, CallManifest manifest) {

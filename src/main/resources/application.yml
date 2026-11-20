@@ -160,6 +160,9 @@ pik:
       retry-backoff: PT30S
       retry-jitter: 0.2
       completion-retries: 3
+      # Batches on every instance, one at a time through ShedLock (plan 5.8, 7.2).
+      lease-recovery-interval: PT1M
+      deadline-interval: PT5M
     claude:
       request-timeout: PT60S
       # Not a secret: operators change it when they replace the API key or release the configuration circuit.
@@ -199,8 +202,11 @@ pik:
       transient-max-backoff: PT10M
       probe-exclusion: PT10M
       half-open-alarm: PT30M
+      # The 400 share, the configuration fingerprint and the daily cost limit are checked this often (plan 7.3).
+      monitor-interval: PT1M
     cleanup:
-      # The upload batches run on every instance; ShedLock lets one instance run each at a time (plan 7).
+      # The batches run on every instance; ShedLock lets one instance run each at a time (plan 7). initial-delay
+      # applies to the upload batches, the lease recovery, the processing deadline and the monitor.
       initial-delay: PT1M
       recovery-interval: PT5M
       delete-interval: PT1M

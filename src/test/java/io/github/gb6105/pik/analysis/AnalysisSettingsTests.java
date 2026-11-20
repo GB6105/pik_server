@@ -48,6 +48,7 @@ class AnalysisSettingsTests {
 			"pik.analysis.worker.lease=PT120S", "pik.analysis.worker.send-margin=PT70S",
 			"pik.analysis.worker.initial-delay=PT10S", "pik.analysis.worker.retry-backoff=PT30S",
 			"pik.analysis.worker.retry-jitter=0.2", "pik.analysis.worker.completion-retries=3",
+			"pik.analysis.worker.lease-recovery-interval=PT1M", "pik.analysis.worker.deadline-interval=PT5M",
 			"pik.analysis.claude.request-timeout=PT60S", "pik.analysis.claude.key-version=1",
 			"pik.analysis.send-rate.global-per-second=1", "pik.analysis.send-rate.max-instances=2",
 			"pik.analysis.budget.daily-cost-limit-micros=1000000", "pik.analysis.budget.principal-daily-sends=300",
@@ -61,6 +62,7 @@ class AnalysisSettingsTests {
 			"pik.analysis.circuit.min-samples=20", "pik.analysis.circuit.transient-threshold=5",
 			"pik.analysis.circuit.transient-base-backoff=PT30S", "pik.analysis.circuit.transient-max-backoff=PT10M",
 			"pik.analysis.circuit.probe-exclusion=PT10M", "pik.analysis.circuit.half-open-alarm=PT30M",
+			"pik.analysis.circuit.monitor-interval=PT1M",
 			"pik.analysis.cleanup.initial-delay=PT1M", "pik.analysis.cleanup.recovery-interval=PT5M",
 			"pik.analysis.cleanup.delete-interval=PT1M", "pik.analysis.cleanup.reconcile-interval=PT6H",
 			"pik.analysis.cleanup.overdue-alarm=PT6H", "pik.analysis.cleanup.rate-window-interval=PT1H",
@@ -86,7 +88,7 @@ class AnalysisSettingsTests {
 
 	static final AnalysisProperties.Worker WORKER = new AnalysisProperties.Worker(false, Duration.ofSeconds(1), 2, 4,
 			4, 3, Duration.ofSeconds(120), Duration.ofSeconds(70), Duration.ofSeconds(10), Duration.ofSeconds(30), 0.2,
-			3);
+			3, Duration.ofMinutes(1), Duration.ofMinutes(5));
 
 	static final AnalysisProperties.Claude CLAUDE = new AnalysisProperties.Claude(Duration.ofSeconds(60), "1", null,
 			null);
@@ -102,7 +104,8 @@ class AnalysisSettingsTests {
 			DataSize.ofMegabytes(600), 100, DataSize.ofMegabytes(200));
 
 	static final AnalysisProperties.Circuit CIRCUIT = new AnalysisProperties.Circuit(0.2, Duration.ofMinutes(10), 20,
-			5, Duration.ofSeconds(30), Duration.ofMinutes(10), Duration.ofMinutes(10), Duration.ofMinutes(30));
+			5, Duration.ofSeconds(30), Duration.ofMinutes(10), Duration.ofMinutes(10), Duration.ofMinutes(30),
+			Duration.ofMinutes(1));
 
 	static final AnalysisProperties.Cleanup CLEANUP = new AnalysisProperties.Cleanup(Duration.ofMinutes(1),
 			Duration.ofMinutes(5), Duration.ofMinutes(1), Duration.ofHours(6), Duration.ofHours(6), Duration.ofHours(1),
