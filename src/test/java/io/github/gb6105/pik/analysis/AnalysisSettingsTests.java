@@ -47,7 +47,10 @@ class AnalysisSettingsTests {
 			"pik.analysis.circuit.min-samples=20", "pik.analysis.circuit.transient-threshold=5",
 			"pik.analysis.circuit.transient-base-backoff=PT30S", "pik.analysis.circuit.transient-max-backoff=PT10M",
 			"pik.analysis.circuit.probe-exclusion=PT10M", "pik.analysis.circuit.half-open-alarm=PT30M",
-			"pik.analysis.cleanup.delete-interval=PT1M", "pik.analysis.cleanup.overdue-alarm=PT6H",
+			"pik.analysis.cleanup.initial-delay=PT1M", "pik.analysis.cleanup.recovery-interval=PT5M",
+			"pik.analysis.cleanup.delete-interval=PT1M", "pik.analysis.cleanup.reconcile-interval=PT6H",
+			"pik.analysis.cleanup.overdue-alarm=PT6H", "pik.analysis.cleanup.rate-window-interval=PT1H",
+			"pik.analysis.cleanup.batch-size=500",
 			"pik.analysis.poll.after-running=PT3S", "pik.analysis.poll.jitter=0.2" };
 
 	static final String MODEL_MESSAGE = "grouping.models[].model must have 1 to 64 visible ASCII characters"
@@ -85,7 +88,8 @@ class AnalysisSettingsTests {
 			5, Duration.ofSeconds(30), Duration.ofMinutes(10), Duration.ofMinutes(10), Duration.ofMinutes(30));
 
 	static final AnalysisProperties.Cleanup CLEANUP = new AnalysisProperties.Cleanup(Duration.ofMinutes(1),
-			Duration.ofHours(6));
+			Duration.ofMinutes(5), Duration.ofMinutes(1), Duration.ofHours(6), Duration.ofHours(6), Duration.ofHours(1),
+			500);
 
 	static final AnalysisProperties.Poll POLL = new AnalysisProperties.Poll(Duration.ofSeconds(3), 0.2);
 
@@ -259,8 +263,14 @@ class AnalysisSettingsTests {
 				"pik.analysis.circuit.transient-max-backoff=PT29S");
 		assertFails("circuit.probe-exclusion must be positive", "pik.analysis.circuit.probe-exclusion=PT0S");
 		assertFails("circuit.half-open-alarm must be positive", "pik.analysis.circuit.half-open-alarm=PT0S");
+		assertFails("cleanup.initial-delay must not be negative", "pik.analysis.cleanup.initial-delay=-PT1S");
+		assertFails("cleanup.recovery-interval must be positive", "pik.analysis.cleanup.recovery-interval=PT0S");
 		assertFails("cleanup.delete-interval must be positive", "pik.analysis.cleanup.delete-interval=PT0S");
+		assertFails("cleanup.reconcile-interval must be positive", "pik.analysis.cleanup.reconcile-interval=PT0S");
 		assertFails("cleanup.overdue-alarm must be positive", "pik.analysis.cleanup.overdue-alarm=PT0S");
+		assertFails("cleanup.rate-window-interval must be positive",
+				"pik.analysis.cleanup.rate-window-interval=PT0S");
+		assertFails("cleanup.batch-size must be at least 1", "pik.analysis.cleanup.batch-size=0");
 		assertFails("poll.after-running must be positive", "pik.analysis.poll.after-running=PT0S");
 		assertFails("poll.jitter must be in [0, 1)", "pik.analysis.poll.jitter=1");
 		assertFails("poll.jitter must be in [0, 1)", "pik.analysis.poll.jitter=-0.1");

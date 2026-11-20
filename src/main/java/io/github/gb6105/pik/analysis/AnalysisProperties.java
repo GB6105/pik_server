@@ -27,7 +27,7 @@ import org.springframework.util.unit.DataSize;
  * @param input blocking photos whose input keeps failing (design 2.7)
  * @param inputRate upload rate limits (design 2.7)
  * @param circuit the provider circuits of {@code ai_gate} (design 2.5, plan 5.10)
- * @param cleanup deleting input objects (design 2.2)
+ * @param cleanup the upload batches: recovery, object deletes and their reconciliation, input rate windows (plan 7)
  * @param poll the polling hints of the status responses (design 2.3)
  */
 @ConfigurationProperties("pik.analysis")
@@ -339,14 +339,25 @@ record AnalysisProperties(boolean intakeEnabled, Intake intake, Grouping groupin
 	}
 
 	/**
+	 * @param initialDelay the time after startup before the first run of each upload batch
+	 * @param recoveryInterval the pause between two runs of the upload recovery batch (plan 7.1)
 	 * @param deleteInterval the pause between two runs of the object delete batch
+	 * @param reconcileInterval the pause between two runs of the delete reconciliation (plan 7.4)
 	 * @param overdueAlarm how long a delete may stay pending before an alarm
+	 * @param rateWindowInterval the pause between two runs of the input rate window cleanup (plan 7.5)
+	 * @param batchSize the most rows a batch reads or deletes at once
 	 */
-	record Cleanup(Duration deleteInterval, Duration overdueAlarm) {
+	record Cleanup(Duration initialDelay, Duration recoveryInterval, Duration deleteInterval,
+			Duration reconcileInterval, Duration overdueAlarm, Duration rateWindowInterval, int batchSize) {
 
 		Cleanup {
+			Assert.isTrue(!initialDelay.isNegative(), "cleanup.initial-delay must not be negative");
+			Assert.isTrue(recoveryInterval.isPositive(), "cleanup.recovery-interval must be positive");
 			Assert.isTrue(deleteInterval.isPositive(), "cleanup.delete-interval must be positive");
+			Assert.isTrue(reconcileInterval.isPositive(), "cleanup.reconcile-interval must be positive");
 			Assert.isTrue(overdueAlarm.isPositive(), "cleanup.overdue-alarm must be positive");
+			Assert.isTrue(rateWindowInterval.isPositive(), "cleanup.rate-window-interval must be positive");
+			Assert.isTrue(batchSize >= 1, "cleanup.batch-size must be at least 1");
 		}
 
 	}

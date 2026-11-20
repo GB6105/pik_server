@@ -6,3 +6,6 @@ pik:
       bucket: pik-analysis-test
       region: us-east-1
       endpoint: http://127.0.0.1:1
+    # Tests call the upload batches directly; scheduled runs would change the rows of the test that is running.
+    cleanup:
+      initial-delay: P3650D

@@ -162,8 +162,14 @@ pik:
       probe-exclusion: PT10M
       half-open-alarm: PT30M
     cleanup:
+      # The upload batches run on every instance; ShedLock lets one instance run each at a time (plan 7).
+      initial-delay: PT1M
+      recovery-interval: PT5M
       delete-interval: PT1M
+      reconcile-interval: PT6H
       overdue-alarm: PT6H
+      rate-window-interval: PT1H
+      batch-size: 500
     poll:
       after-running: PT3S
       jitter: 0.2

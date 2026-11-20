@@ -23,7 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Plain SQL for upload attempts and the input rate windows. Attempts change only under their job's lock, taken
- * before the attempt rows (plan 3.3). The rows carry object keys, which must not reach logs.
+ * before the attempt rows (plan 3.3), except the delete acknowledgements: one row each, conditional on the version it
+ * was read with (plan 7.4, K-13). The rows carry object keys, which must not reach logs.
  */
 @Repository
 @RequiredArgsConstructor
@@ -32,6 +33,14 @@ class UploadRecords {
 	private static final String ATTEMPT = """
 			SELECT a.id, a.owner_id, a.job_id, a.status, a.object_key, a.content_length, a.sha256, a.url_expires_at
 			FROM analysis_upload_attempt a
+			""";
+
+	// Plan 7.1: the job waits for an upload and its window closed before :cutoff (now - confirm-grace): the upload
+	// deadline passed, or every attempt was issued and the URL of the last one expired. Neither comes back, since no
+	// attempt is issued past the deadline or the limit.
+	private static final String UPLOAD_OVERDUE = """
+			j.status = 'AWAITING_UPLOAD' AND (j.upload_deadline < :cutoff OR (j.issued_count >= :max
+			    AND (SELECT max(l.url_expires_at) FROM analysis_upload_attempt l WHERE l.job_id = j.id) < :cutoff))
 			""";
 
 	private final JdbcClient jdbc;
@@ -215,9 +224,10 @@ class UploadRecords {
 	 * Gives up every attempt of an ended job: the {@code ISSUED} one becomes {@code ABANDONED}, and every object still
 	 * kept, the confirmed one included, is deleted from now on. Objects already waiting for their delete keep their
 	 * schedule.
+	 * @return the attempts changed
 	 */
-	void abandonAll(UUID jobId, Instant now) {
-		jdbc.sql("""
+	int abandonAll(UUID jobId, Instant now) {
+		return jdbc.sql("""
 				UPDATE analysis_upload_attempt
 				SET status = CASE WHEN status = 'ISSUED' THEN 'ABANDONED' ELSE status END,
 				    delete_after = CASE WHEN object_state = 'RETAINED' THEN :now ELSE delete_after END,
@@ -246,6 +256,133 @@ class UploadRecords {
 			.param("bytes", bytes)
 			.query((rs, rowNum) -> new RateWindow(rs.getLong("items"), rs.getLong("bytes")))
 			.single();
+	}
+
+	/**
+	 * The jobs whose upload window is over (plan 7.1) after {@code after} in {@code id} order, read without locks,
+	 * each with its current {@code ISSUED} attempt if it has one.
+	 * @param cutoff now minus {@code upload.confirm-grace}
+	 */
+	List<OverdueUpload> findOverdue(Instant cutoff, int maxAttempts, UUID after, int limit) {
+		return jdbc.sql("""
+				SELECT j.id AS job_id, a.id AS attempt_id, a.object_key
+				FROM analysis_job j
+				LEFT JOIN analysis_upload_attempt a ON a.job_id = j.id AND a.status = 'ISSUED'
+				WHERE j.id > :after AND %s
+				ORDER BY j.id
+				LIMIT :limit
+				""".formatted(UPLOAD_OVERDUE))
+			.param("cutoff", timestamp(cutoff))
+			.param("max", maxAttempts)
+			.param("after", after)
+			.param("limit", limit)
+			.query((rs, rowNum) -> new OverdueUpload(rs.getObject("job_id", UUID.class),
+					rs.getObject("attempt_id", UUID.class), rs.getString("object_key")))
+			.list();
+	}
+
+	/**
+	 * Whether the job's upload window is over (plan 7.1), read under the job's lock.
+	 * @param cutoff now minus {@code upload.confirm-grace}
+	 */
+	@Transactional(propagation = Propagation.MANDATORY)
+	boolean uploadOverdue(UUID jobId, Instant cutoff, int maxAttempts) {
+		return jdbc.sql("""
+				SELECT EXISTS (SELECT 1 FROM analysis_job j WHERE j.id = :id AND %s)
+				""".formatted(UPLOAD_OVERDUE))
+			.param("id", jobId)
+			.param("cutoff", timestamp(cutoff))
+			.param("max", maxAttempts)
+			.query(Boolean.class)
+			.single();
+	}
+
+	/**
+	 * The attempts whose object is to be deleted by {@code now} after {@code after} in {@code id} order, read without
+	 * locks (plan 7.4).
+	 */
+	List<DueDelete> findDueDeletes(Instant now, UUID after, int limit) {
+		return jdbc.sql("""
+				SELECT id, object_key, url_expires_at, version FROM analysis_upload_attempt
+				WHERE object_state = 'PENDING' AND delete_after <= :now AND id > :after
+				ORDER BY id
+				LIMIT :limit
+				""")
+			.param("now", timestamp(now))
+			.param("after", after)
+			.param("limit", limit)
+			.query((rs, rowNum) -> new DueDelete(rs.getObject("id", UUID.class), rs.getString("object_key"),
+					rs.getObject("url_expires_at", OffsetDateTime.class).toInstant(), rs.getLong("version")))
+			.list();
+	}
+
+	/**
+	 * Records that a delete started after the URL and its in-flight margin expired succeeded, if the attempt is still
+	 * at the version it was read with. One row in its own statement, so it waits for no lock while holding one and
+	 * needs no job lock first.
+	 * @return whether the attempt changed
+	 */
+	boolean markDeleteSent(UUID attemptId, long version, Instant now) {
+		return jdbc.sql("""
+				UPDATE analysis_upload_attempt
+				SET object_state = 'DELETE_SENT', delete_after = NULL, updated_at = :now, version = version + 1
+				WHERE id = :id AND version = :version AND object_state = 'PENDING'
+				""").param("id", attemptId).param("version", version).param("now", timestamp(now)).update() == 1;
+	}
+
+	/**
+	 * Moves the delete of an object deleted too early to {@code deleteAfter}, if the attempt is still at the version
+	 * it was read with; same statement shape as {@link #markDeleteSent}.
+	 * @return whether the attempt changed
+	 */
+	boolean rescheduleDelete(UUID attemptId, long version, Instant deleteAfter, Instant now) {
+		return jdbc.sql("""
+				UPDATE analysis_upload_attempt
+				SET delete_after = :deleteAfter, updated_at = :now, version = version + 1
+				WHERE id = :id AND version = :version AND object_state = 'PENDING'
+				""")
+			.param("id", attemptId)
+			.param("version", version)
+			.param("deleteAfter", timestamp(deleteAfter))
+			.param("now", timestamp(now))
+			.update() == 1;
+	}
+
+	/**
+	 * Ended jobs after {@code after} in {@code id} order with an attempt whose object is neither pending delete nor
+	 * deleted, read without locks (plan 7.4 reconciliation).
+	 */
+	List<UUID> findEndedWithKeptObjects(UUID after, int limit) {
+		return jdbc.sql("""
+				SELECT DISTINCT a.job_id FROM analysis_upload_attempt a
+				JOIN analysis_job j ON j.id = a.job_id
+				WHERE a.object_state = 'RETAINED' AND a.job_id > :after
+				  AND j.status IN ('SUCCEEDED', 'FAILED', 'CANCELLED', 'INELIGIBLE')
+				ORDER BY a.job_id
+				LIMIT :limit
+				""").param("after", after).param("limit", limit).query(UUID.class).list();
+	}
+
+	/**
+	 * Counts the deletes still pending although they were due before {@code dueBefore}.
+	 */
+	long countOverdueDeletes(Instant dueBefore) {
+		return jdbc.sql("""
+				SELECT count(*) FROM analysis_upload_attempt WHERE object_state = 'PENDING' AND delete_after < :before
+				""").param("before", timestamp(dueBefore)).query(Long.class).single();
+	}
+
+	/**
+	 * Deletes up to {@code limit} input rate windows that started before {@code before} (plan 7.5).
+	 * @return the windows deleted
+	 */
+	int deleteRateWindows(Instant before, int limit) {
+		return jdbc.sql("""
+				DELETE FROM analysis_input_rate
+				WHERE (subject_kind, subject_id, window_start) IN (
+				    SELECT subject_kind, subject_id, window_start FROM analysis_input_rate
+				    WHERE window_start < :before LIMIT :limit)
+				""").param("before", timestamp(before)).param("limit", limit).update();
 	}
 
 	private static AttemptRow attempt(ResultSet rs, int rowNum) throws SQLException {
@@ -280,6 +417,35 @@ class UploadRecords {
 		@Override
 		public String toString() {
 			return "AttemptRow[id=" + id + ", jobId=" + jobId + ", status=" + status + "]";
+		}
+
+	}
+
+	/**
+	 * A job whose upload window is over.
+	 *
+	 * @param attemptId its current {@code ISSUED} attempt, {@code null} without one
+	 * @param objectKey the object key of that attempt, {@code null} without one
+	 */
+	record OverdueUpload(UUID jobId, @Nullable UUID attemptId, @Nullable String objectKey) {
+
+		@Override
+		public String toString() {
+			return "OverdueUpload[jobId=" + jobId + ", attemptId=" + attemptId + "]";
+		}
+
+	}
+
+	/**
+	 * An attempt whose object is to be deleted.
+	 *
+	 * @param version the attempt's version when it was read, which its acknowledgement requires
+	 */
+	record DueDelete(UUID id, String objectKey, Instant urlExpiresAt, long version) {
+
+		@Override
+		public String toString() {
+			return "DueDelete[id=" + id + ", version=" + version + "]";
 		}
 
 	}
