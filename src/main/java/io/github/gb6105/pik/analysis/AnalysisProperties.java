@@ -4,6 +4,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
@@ -145,14 +146,48 @@ record AnalysisProperties(boolean intakeEnabled, Intake intake, Grouping groupin
 	}
 
 	/**
-	 * Call manifest of stage 5-1: the model and the upload policy only; stage 5-2 adds prompt, schema and prices.
+	 * Settings of the call manifest fixed on new jobs (design 2.5, plan 6.1). {@link CallManifests} adds the hashes of
+	 * the prompt and schema resources these settings name; the values are settled with the D-07 measurements.
 	 *
 	 * @param model the Claude model, visible ASCII (no space)
 	 * @param contentType the image type devices upload, visible ASCII (no space)
 	 * @param maxBytes the largest upload
 	 * @param maxLongEdgePx the longest image edge devices upload
+	 * @param maxPixels the most pixels of an input image, checked in its header before it is decoded
+	 * @param prompt the prompt resource directory {@code analysis/prompt/<prompt>/}, such as {@code v1}
+	 * @param schemaVersion the result schema version, resource {@code analysis/schema/v<schemaVersion>.json}
+	 * @param thinking {@code adaptive}, or {@code disabled} (only with effort {@code low}, {@code medium} or
+	 * {@code high})
+	 * @param effort the {@code output_config.effort} of the request
+	 * @param maxTokens the {@code max_tokens} of the request; thinking tokens count toward it
+	 * @param imageTokenCap the most input tokens of the image
+	 * @param promptTokenCap the most input tokens of the rest of the request: system prompt, the tokens the output
+	 * schema adds and the instruction text
+	 * @param cache prompt caching of the system prompt
+	 * @param outputLocale the BCP 47 language tag of the labels the model writes
+	 * @param price the prices the maximum cost of a call is computed with
+	 * @param previousIds IDs of earlier manifests that jobs fixed before a change still run with; not part of the
+	 * content. Their resources stay in place until those jobs have ended
 	 */
-	record Manifest(String model, String contentType, int maxBytes, int maxLongEdgePx) {
+	record Manifest(String model, String contentType, int maxBytes, int maxLongEdgePx, long maxPixels, String prompt,
+			int schemaVersion, String thinking, String effort, int maxTokens, int imageTokenCap, int promptTokenCap,
+			Cache cache, String outputLocale, Price price, @DefaultValue List<String> previousIds) {
+
+		/** {@code thinking} values of the request. */
+		static final Set<String> THINKING = Set.of("adaptive", "disabled");
+
+		/** {@code output_config.effort} values of the request. */
+		static final Set<String> EFFORTS = Set.of("low", "medium", "high", "xhigh", "max");
+
+		// The effort values thinking may be disabled with (Claude Haiku 5.5 rejects disabled at xhigh and max).
+		private static final Set<String> EFFORTS_WITHOUT_THINKING = Set.of("low", "medium", "high");
+
+		// The largest max_tokens of the current Claude models (128K output).
+		private static final int MAX_TOKENS = 128_000;
+
+		private static final Pattern PROMPT = Pattern.compile("v[1-9][0-9]{0,8}");
+
+		private static final Pattern SHA256_HEX = Pattern.compile("[0-9a-f]{64}");
 
 		Manifest {
 			Assert.isTrue(visibleAscii(model),
@@ -161,6 +196,89 @@ record AnalysisProperties(boolean intakeEnabled, Intake intake, Grouping groupin
 					"manifest.content-type must have 1 or more visible ASCII characters (0x21 to 0x7E)");
 			Assert.isTrue(maxBytes >= 1, "manifest.max-bytes must be positive");
 			Assert.isTrue(maxLongEdgePx >= 1, "manifest.max-long-edge-px must be positive");
+			Assert.isTrue(maxPixels >= 1 && maxPixels <= (long) maxLongEdgePx * maxLongEdgePx,
+					"manifest.max-pixels must be between 1 and max-long-edge-px squared");
+			Assert.isTrue(prompt != null && PROMPT.matcher(prompt).matches(),
+					"manifest.prompt must name a prompt resource directory: v followed by a version number");
+			Assert.isTrue(schemaVersion >= 1, "manifest.schema-version must be at least 1");
+			Assert.isTrue(THINKING.contains(thinking), "manifest.thinking must be adaptive or disabled");
+			Assert.isTrue(EFFORTS.contains(effort), "manifest.effort must be low, medium, high, xhigh or max");
+			Assert.isTrue(!"disabled".equals(thinking) || EFFORTS_WITHOUT_THINKING.contains(effort),
+					"manifest.thinking disabled needs manifest.effort low, medium or high");
+			Assert.isTrue(maxTokens >= 1 && maxTokens <= MAX_TOKENS,
+					"manifest.max-tokens must be between 1 and " + MAX_TOKENS);
+			Assert.isTrue(imageTokenCap >= 1, "manifest.image-token-cap must be positive");
+			Assert.isTrue(promptTokenCap >= 1, "manifest.prompt-token-cap must be positive");
+			Assert.isTrue(visibleAscii(outputLocale)
+					&& Locale.forLanguageTag(outputLocale).toLanguageTag().equals(outputLocale),
+					"manifest.output-locale must be a well-formed BCP 47 language tag, such as ko-KR");
+			previousIds = List.copyOf(previousIds);
+			Assert.isTrue(previousIds.stream().allMatch((id) -> SHA256_HEX.matcher(id).matches()),
+					"manifest.previous-ids must be manifest IDs: 64 lowercase hexadecimal characters");
+			Assert.isTrue(Set.copyOf(previousIds).size() == previousIds.size(),
+					"manifest.previous-ids must not name a manifest more than once");
+			try {
+				maxCostMicros(promptTokenCap, imageTokenCap, maxTokens, price);
+			}
+			catch (ArithmeticException ex) {
+				// The message says all; like the other checks, it is the root cause of the startup failure.
+				throw new IllegalArgumentException("manifest token caps and prices give a maximum cost beyond 2^63");
+			}
+		}
+
+		/**
+		 * The most a call can cost, in micro dollars, rounded up: prompt tokens at the cache write price, image tokens
+		 * at the input price, {@code max_tokens} at the output price (plan 6.1). Thinking tokens are output tokens
+		 * inside {@code max_tokens}.
+		 */
+		long maxCostMicros() {
+			return maxCostMicros(promptTokenCap, imageTokenCap, maxTokens, price);
+		}
+
+		private static long maxCostMicros(int promptTokenCap, int imageTokenCap, int maxTokens, Price price) {
+			long microsPerMillion = Math.addExact(
+					Math.addExact(Math.multiplyExact((long) promptTokenCap, price.cacheWriteMicrosPerMtok()),
+							Math.multiplyExact((long) imageTokenCap, price.inputMicrosPerMtok())),
+					Math.multiplyExact((long) maxTokens, price.outputMicrosPerMtok()));
+			return Math.ceilDiv(microsPerMillion, 1_000_000L);
+		}
+
+	}
+
+	/**
+	 * @param enabled whether the system prompt carries {@code cache_control}; the cached prefix is the system prompt
+	 * only (plan 6.3)
+	 * @param ttl the cache lifetime: 5 minutes or 1 hour, the two the API offers. The cache write price must be the
+	 * one of this lifetime
+	 */
+	record Cache(boolean enabled, Duration ttl) {
+
+		Cache {
+			Assert.isTrue(Duration.ofMinutes(5).equals(ttl) || Duration.ofHours(1).equals(ttl),
+					"manifest.cache.ttl must be PT5M or PT1H");
+		}
+
+	}
+
+	/**
+	 * Prices in micro dollars per million tokens.
+	 *
+	 * @param version a label of the price table, visible ASCII (no space)
+	 * @param inputMicrosPerMtok input tokens
+	 * @param cacheWriteMicrosPerMtok input tokens written to the prompt cache
+	 * @param cacheReadMicrosPerMtok input tokens read from the prompt cache
+	 * @param outputMicrosPerMtok output tokens, thinking included
+	 */
+	record Price(String version, long inputMicrosPerMtok, long cacheWriteMicrosPerMtok, long cacheReadMicrosPerMtok,
+			long outputMicrosPerMtok) {
+
+		Price {
+			Assert.isTrue(visibleAscii(version),
+					"manifest.price.version must have 1 or more visible ASCII characters (0x21 to 0x7E)");
+			Assert.isTrue(inputMicrosPerMtok >= 1, "manifest.price.input-micros-per-mtok must be positive");
+			Assert.isTrue(cacheWriteMicrosPerMtok >= 1, "manifest.price.cache-write-micros-per-mtok must be positive");
+			Assert.isTrue(cacheReadMicrosPerMtok >= 1, "manifest.price.cache-read-micros-per-mtok must be positive");
+			Assert.isTrue(outputMicrosPerMtok >= 1, "manifest.price.output-micros-per-mtok must be positive");
 		}
 
 	}
@@ -233,13 +351,30 @@ record AnalysisProperties(boolean intakeEnabled, Intake intake, Grouping groupin
 	 * @param requestTimeout the limit of one whole Claude request, without retries
 	 * @param keyVersion a label, not a secret, that operators change when they replace the API key or release the
 	 * configuration circuit; visible ASCII (no space)
+	 * @param apiKey the Anthropic API key ({@code ANTHROPIC_API_KEY}); blank when not set. Required when the worker is
+	 * enabled
+	 * @param baseUrl the fake server URL of the local and test profiles; {@code null} uses the Anthropic API
 	 */
-	record Claude(Duration requestTimeout, String keyVersion) {
+	record Claude(Duration requestTimeout, String keyVersion, @Nullable String apiKey, @Nullable URI baseUrl) {
 
 		Claude {
 			Assert.isTrue(requestTimeout.isPositive(), "claude.request-timeout must be positive");
 			Assert.isTrue(visibleAscii(keyVersion),
 					"claude.key-version must have 1 or more visible ASCII characters (0x21 to 0x7E)");
+			Assert.isTrue(baseUrl == null || (("http".equals(baseUrl.getScheme())
+					|| "https".equals(baseUrl.getScheme())) && baseUrl.getHost() != null),
+					"claude.base-url must be an http or https URL");
+		}
+
+		boolean hasApiKey() {
+			return apiKey != null && !apiKey.isBlank();
+		}
+
+		// The API key must not reach logs or assertion messages.
+		@Override
+		public String toString() {
+			return "Claude[requestTimeout=" + requestTimeout + ", keyVersion=" + keyVersion + ", apiKey="
+					+ (hasApiKey() ? "(set)" : "(not set)") + ", baseUrl=" + baseUrl + "]";
 		}
 
 	}

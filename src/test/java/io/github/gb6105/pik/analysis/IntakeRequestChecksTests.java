@@ -42,7 +42,7 @@ class IntakeRequestChecksTests {
 	static final AnalysisProperties PROPERTIES = AnalysisSettingsTests.withStage52Defaults(true,
 			new AnalysisProperties.Intake(Duration.ofHours(24), Duration.ofHours(48), DataSize.ofBytes(1024)),
 			new AnalysisProperties.Grouping(false, Duration.ofSeconds(120), 20, 1e-6, List.of()),
-			new AnalysisProperties.Manifest("claude-haiku-5-5", "image/jpeg", 2_097_152, 1568));
+			AnalysisManifestsTests.DEFAULT_MANIFEST);
 
 	final IntakeBodyReader reader = new IntakeBodyReader(PROPERTIES, JsonMapper.builder().build(),
 			VALIDATION.getValidator());

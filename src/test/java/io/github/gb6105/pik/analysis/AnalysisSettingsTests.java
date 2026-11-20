@@ -11,6 +11,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.util.unit.DataSize;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Startup checks of {@code pik.analysis.*} (plan 7, design 1.4): wrong values fail the start. The runner binds only
@@ -26,6 +27,16 @@ class AnalysisSettingsTests {
 			"pik.analysis.grouping.max-group-size=20", "pik.analysis.grouping.zero-norm-epsilon=1e-6",
 			"pik.analysis.manifest.model=claude-haiku-5-5", "pik.analysis.manifest.content-type=image/jpeg",
 			"pik.analysis.manifest.max-bytes=2097152", "pik.analysis.manifest.max-long-edge-px=1568",
+			"pik.analysis.manifest.max-pixels=2458624", "pik.analysis.manifest.prompt=v1",
+			"pik.analysis.manifest.schema-version=1", "pik.analysis.manifest.thinking=adaptive",
+			"pik.analysis.manifest.effort=low", "pik.analysis.manifest.max-tokens=4096",
+			"pik.analysis.manifest.image-token-cap=4784", "pik.analysis.manifest.prompt-token-cap=8000",
+			"pik.analysis.manifest.cache.enabled=true", "pik.analysis.manifest.cache.ttl=PT5M",
+			"pik.analysis.manifest.output-locale=ko-KR", "pik.analysis.manifest.price.version=claude-haiku-5-5-2026-11",
+			"pik.analysis.manifest.price.input-micros-per-mtok=100000",
+			"pik.analysis.manifest.price.cache-write-micros-per-mtok=125000",
+			"pik.analysis.manifest.price.cache-read-micros-per-mtok=10000",
+			"pik.analysis.manifest.price.output-micros-per-mtok=500000",
 			"pik.analysis.upload.url-ttl=PT15M", "pik.analysis.upload.confirm-grace=PT15M",
 			"pik.analysis.upload.max-attempts=5", "pik.analysis.upload.in-flight-margin=PT30M",
 			"pik.analysis.upload.not-found-retry-after=PT5S", "pik.analysis.upload.storage-call-timeout=PT10S",
@@ -73,7 +84,8 @@ class AnalysisSettingsTests {
 	static final AnalysisProperties.Worker WORKER = new AnalysisProperties.Worker(false, Duration.ofSeconds(1), 2, 4,
 			4, 3, Duration.ofSeconds(120), Duration.ofSeconds(70));
 
-	static final AnalysisProperties.Claude CLAUDE = new AnalysisProperties.Claude(Duration.ofSeconds(60), "1");
+	static final AnalysisProperties.Claude CLAUDE = new AnalysisProperties.Claude(Duration.ofSeconds(60), "1", null,
+			null);
 
 	static final AnalysisProperties.SendRate SEND_RATE = new AnalysisProperties.SendRate(1, 2);
 
@@ -102,7 +114,8 @@ class AnalysisSettingsTests {
 			assertThat(context).hasNotFailed()
 				.hasSingleBean(VectorValidator.class)
 				.hasSingleBean(InputStore.class)
-				.hasSingleBean(SendRateLimiter.class);
+				.hasSingleBean(SendRateLimiter.class)
+				.doesNotHaveBean(AnalysisModel.class);
 			AnalysisProperties properties = context.getBean(AnalysisProperties.class);
 			assertThat(properties.intakeEnabled()).isFalse();
 			assertThat(properties.intake())
@@ -110,8 +123,7 @@ class AnalysisSettingsTests {
 						DataSize.ofBytes(2_097_152)));
 			assertThat(properties.grouping())
 				.isEqualTo(new AnalysisProperties.Grouping(false, Duration.ofSeconds(120), 20, 1e-6, List.of()));
-			assertThat(properties.manifest())
-				.isEqualTo(new AnalysisProperties.Manifest("claude-haiku-5-5", "image/jpeg", 2_097_152, 1568));
+			assertThat(properties.manifest()).isEqualTo(AnalysisManifestsTests.DEFAULT_MANIFEST);
 			assertThat(properties).isEqualTo(withStage52Defaults(false, properties.intake(), properties.grouping(),
 					properties.manifest()));
 		});
@@ -203,6 +215,115 @@ class AnalysisSettingsTests {
 				"pik.analysis.manifest.content-type= ");
 		assertFails("manifest.max-bytes must be positive", "pik.analysis.manifest.max-bytes=0");
 		assertFails("manifest.max-long-edge-px must be positive", "pik.analysis.manifest.max-long-edge-px=0");
+	}
+
+	@Test
+	void callManifestRangesFailStartup() {
+		String maxPixels = "manifest.max-pixels must be between 1 and max-long-edge-px squared";
+		assertFails(maxPixels, "pik.analysis.manifest.max-pixels=0");
+		assertFails(maxPixels, "pik.analysis.manifest.max-pixels=2458625");
+		assertFails(maxPixels, "pik.analysis.manifest.max-long-edge-px=1567");
+		String prompt = "manifest.prompt must name a prompt resource directory: v followed by a version number";
+		for (String value : List.of("", "1", "v0", "v01", "V1", "v1/../v2", "v1a")) {
+			assertFails(prompt, "pik.analysis.manifest.prompt=" + value);
+		}
+		assertFails("manifest.schema-version must be at least 1", "pik.analysis.manifest.schema-version=0");
+		assertFails("manifest.thinking must be adaptive or disabled", "pik.analysis.manifest.thinking=enabled");
+		assertFails("manifest.effort must be low, medium, high, xhigh or max", "pik.analysis.manifest.effort=LOW");
+		assertFails("manifest.thinking disabled needs manifest.effort low, medium or high",
+				"pik.analysis.manifest.thinking=disabled", "pik.analysis.manifest.effort=xhigh");
+		assertFails("manifest.max-tokens must be between 1 and 128000", "pik.analysis.manifest.max-tokens=0");
+		assertFails("manifest.max-tokens must be between 1 and 128000", "pik.analysis.manifest.max-tokens=128001");
+		assertFails("manifest.image-token-cap must be positive", "pik.analysis.manifest.image-token-cap=0");
+		assertFails("manifest.prompt-token-cap must be positive", "pik.analysis.manifest.prompt-token-cap=0");
+		assertFails("manifest.cache.ttl must be PT5M or PT1H", "pik.analysis.manifest.cache.ttl=PT10M");
+		String locale = "manifest.output-locale must be a well-formed BCP 47 language tag, such as ko-KR";
+		for (String value : List.of("ko_KR", "ko--KR", "ko-kr", "\ud55c\uad6d\uc5b4")) {
+			assertFails(locale, "pik.analysis.manifest.output-locale=" + value);
+		}
+		assertFails("manifest.price.version must have 1 or more visible ASCII characters (0x21 to 0x7E)",
+				"pik.analysis.manifest.price.version=price 1");
+		assertFails("manifest.price.input-micros-per-mtok must be positive",
+				"pik.analysis.manifest.price.input-micros-per-mtok=0");
+		assertFails("manifest.price.cache-write-micros-per-mtok must be positive",
+				"pik.analysis.manifest.price.cache-write-micros-per-mtok=0");
+		assertFails("manifest.price.cache-read-micros-per-mtok must be positive",
+				"pik.analysis.manifest.price.cache-read-micros-per-mtok=0");
+		assertFails("manifest.price.output-micros-per-mtok must be positive",
+				"pik.analysis.manifest.price.output-micros-per-mtok=0");
+		assertFails("manifest token caps and prices give a maximum cost beyond 2^63",
+				"pik.analysis.manifest.price.output-micros-per-mtok=" + Long.MAX_VALUE);
+		assertFails("manifest.previous-ids must be manifest IDs: 64 lowercase hexadecimal characters",
+				"pik.analysis.manifest.previous-ids=" + "A".repeat(64));
+		assertFails("manifest.previous-ids must not name a manifest more than once",
+				"pik.analysis.manifest.previous-ids=" + "a".repeat(64) + "," + "a".repeat(64));
+	}
+
+	@Test
+	void callManifestLimitsStart() {
+		runner
+			.withPropertyValues("pik.analysis.manifest.max-pixels=1", "pik.analysis.manifest.max-tokens=128000",
+					"pik.analysis.manifest.thinking=disabled", "pik.analysis.manifest.effort=high",
+					"pik.analysis.manifest.cache.ttl=PT1H", "pik.analysis.manifest.output-locale=en",
+					"pik.analysis.manifest.previous-ids=" + "a".repeat(64) + "," + "b".repeat(64))
+			.run((context) -> {
+				assertThat(context).hasNotFailed();
+				AnalysisProperties.Manifest manifest = context.getBean(AnalysisProperties.class).manifest();
+				assertThat(manifest.cache().ttl()).isEqualTo(Duration.ofHours(1));
+				assertThat(manifest.previousIds()).containsExactly("a".repeat(64), "b".repeat(64));
+			});
+	}
+
+	// Tests and bootRun run without a key: only the worker calls Claude.
+	@Test
+	void workerEnabledWithAnApiKeyRegistersTheClaudeAdapter() {
+		runner.withBean(JsonMapper.class, () -> JsonMapper.builder().build())
+			.withPropertyValues("pik.analysis.worker.enabled=true", "pik.analysis.claude.api-key=test-key")
+			.run((context) -> assertThat(context).hasNotFailed().hasSingleBean(AnalysisModel.class));
+	}
+
+	@Test
+	void workerEnabledWithoutAnApiKeyFailsStartup() {
+		// Empty is what application.yml binds when ANTHROPIC_API_KEY is not set; the last one binds no key at all.
+		for (String key : List.of("pik.analysis.claude.api-key=", "pik.analysis.claude.api-key= ",
+				"pik.analysis.claude.key-version=1")) {
+			runner.withBean(JsonMapper.class, () -> JsonMapper.builder().build())
+				.withPropertyValues("pik.analysis.worker.enabled=true", key)
+				.run((context) -> {
+					assertThat(context).hasFailed();
+					assertThat(context.getStartupFailure()).rootCause()
+						.isInstanceOf(IllegalStateException.class)
+						.hasMessage("pik.analysis.claude.api-key (ANTHROPIC_API_KEY) must be set when the worker is"
+								+ " enabled");
+				});
+		}
+	}
+
+	@Test
+	void baseUrlOutsideTheLocalAndTestProfilesFailsStartup() {
+		runner.withBean(JsonMapper.class, () -> JsonMapper.builder().build())
+			.withInitializer((context) -> context.getEnvironment().setActiveProfiles("prod"))
+			.withPropertyValues("pik.analysis.worker.enabled=true", "pik.analysis.claude.api-key=test-key",
+					"pik.analysis.claude.base-url=http://127.0.0.1:1")
+			.run((context) -> {
+				assertThat(context).hasFailed();
+				assertThat(context.getStartupFailure()).rootCause()
+					.isInstanceOf(IllegalStateException.class)
+					.hasMessage("pik.analysis.claude.base-url is for a fake server; only the local and test profiles"
+							+ " may set it");
+			});
+		assertFails("claude.base-url must be an http or https URL", "pik.analysis.claude.base-url=ftp://localhost");
+	}
+
+	@Test
+	void apiKeyIsLeftOutOfTheSettingsText() {
+		runner.withPropertyValues("pik.analysis.claude.api-key=test-key").run((context) -> {
+			AnalysisProperties.Claude claude = context.getBean(AnalysisProperties.class).claude();
+			assertThat(claude.apiKey()).isEqualTo("test-key");
+			assertThat(claude).hasToString(
+					"Claude[requestTimeout=PT1M, keyVersion=1, apiKey=(set), baseUrl=null]");
+			assertThat(context.getBean(AnalysisProperties.class).toString()).doesNotContain("test-key");
+		});
 	}
 
 	@Test
@@ -311,7 +432,7 @@ class AnalysisSettingsTests {
 
 	private void assertFails(String message, String... properties) {
 		runner.withPropertyValues(properties).run((context) -> {
-			assertThat(context).hasFailed();
+			assertThat(context).as(String.join(", ", properties)).hasFailed();
 			assertThat(context.getStartupFailure()).rootCause()
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessage(message);

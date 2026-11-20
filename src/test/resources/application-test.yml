@@ -6,6 +6,10 @@ pik:
       bucket: pik-analysis-test
       region: us-east-1
       endpoint: http://127.0.0.1:1
+    # No test reaches the Anthropic API: the key is blank, and tests that enable the worker set a MockWebServer URL.
+    claude:
+      api-key: ""
+      base-url: http://127.0.0.1:1
     # Tests call the upload batches directly; scheduled runs would change the rows of the test that is running.
     cleanup:
       initial-delay: P3650D

@@ -90,12 +90,40 @@ pik:
       # and threshold θ in (0, 1), each (model, model-version) once. Must not be empty when grouping is enabled.
       models: []
     manifest:
-      # Call manifest fixed on new jobs (design 2.5). Stage 5-1 holds the model and the upload policy only; the
-      # upload values are settled with the D-07 measurements.
+      # Call manifest fixed on new jobs (design 2.5, plan 6.1). Any change of a value, or of the prompt or schema
+      # resource it names, gives a new manifest ID. The values are settled with the D-07 measurements.
       model: claude-haiku-5-5
       content-type: image/jpeg
       max-bytes: 2097152
       max-long-edge-px: 1568
+      # Every image within max-long-edge-px: 1568 x 1568.
+      max-pixels: 2458624
+      # classpath:analysis/prompt/v1/system.md and classpath:analysis/schema/v1.json.
+      prompt: v1
+      schema-version: 1
+      # Thinking tokens count toward max-tokens; 1,024 could cut the JSON (K-16). D-07 compares thinking disabled
+      # with max-tokens 2048.
+      thinking: adaptive
+      effort: low
+      max-tokens: 4096
+      # Development defaults, to be measured (D-07). Image: the most visual tokens of one image on current models.
+      # Prompt: system prompt, the tokens the output schema adds and the instruction text, with a wide margin.
+      image-token-cap: 4784
+      prompt-token-cap: 8000
+      cache:
+        enabled: true
+        ttl: PT5M
+      output-locale: ko-KR
+      # Claude Haiku 5.5 up to 100K prompt tokens: input $0.10, output $0.50 per million tokens; 5-minute cache
+      # writes 1.25 x input, cache reads 0.1 x input. Maximum cost of a call with these values: 3,527 micro dollars.
+      price:
+        version: claude-haiku-5-5-2026-11
+        input-micros-per-mtok: 100000
+        cache-write-micros-per-mtok: 125000
+        cache-read-micros-per-mtok: 10000
+        output-micros-per-mtok: 500000
+      # IDs of earlier manifests that jobs fixed before a change still run with (their resources must stay).
+      previous-ids: []
     # Values marked "development default" are conservative placeholders. Their production values are an owner
     # decision, made before intake is enabled.
     upload:
@@ -131,6 +159,9 @@ pik:
       request-timeout: PT60S
       # Not a secret: operators change it when they replace the API key or release the configuration circuit.
       key-version: "1"
+      # Required when the worker is enabled. Deployed: ECS task secrets from SSM Parameter Store.
+      api-key: ${ANTHROPIC_API_KEY:}
+      # base-url: a fake server only, set by the test profile.
     send-rate:
       # Development defaults. Each instance sends at most global-per-second / max-instances (design 2.7).
       global-per-second: 1

@@ -1,0 +1,653 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "context",
+    "schedules",
+    "phones",
+    "accounts",
+    "copyTexts",
+    "places",
+    "undatedIntents",
+    "search"
+  ],
+  "properties": {
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "summary",
+        "primaryLanguage",
+        "suggestedCountry"
+      ],
+      "properties": {
+        "summary": {
+          "type": "string"
+        },
+        "primaryLanguage": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "suggestedCountry": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "schedules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "date",
+          "startTime",
+          "endTime",
+          "allDay",
+          "timezone",
+          "place",
+          "relativeDateText"
+        ],
+        "properties": {
+          "title": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "value",
+              "extraction"
+            ],
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "extraction": {
+                "type": "string",
+                "enum": [
+                  "READ",
+                  "ESTIMATED",
+                  "ABSENT"
+                ]
+              }
+            }
+          },
+          "date": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "value",
+              "extraction"
+            ],
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "extraction": {
+                "type": "string",
+                "enum": [
+                  "READ",
+                  "ESTIMATED",
+                  "ABSENT"
+                ]
+              }
+            }
+          },
+          "startTime": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "value",
+              "extraction"
+            ],
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "extraction": {
+                "type": "string",
+                "enum": [
+                  "READ",
+                  "ESTIMATED",
+                  "ABSENT"
+                ]
+              }
+            }
+          },
+          "endTime": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "value",
+              "extraction"
+            ],
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "extraction": {
+                "type": "string",
+                "enum": [
+                  "READ",
+                  "ESTIMATED",
+                  "ABSENT"
+                ]
+              }
+            }
+          },
+          "allDay": {
+            "type": "boolean"
+          },
+          "timezone": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "value",
+              "evidence"
+            ],
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "evidence": {
+                "type": "string",
+                "enum": [
+                  "EXPLICIT_OFFSET",
+                  "PLACE_LINKED",
+                  "NONE"
+                ]
+              }
+            }
+          },
+          "place": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "address",
+                  "countryCode",
+                  "extraction"
+                ],
+                "properties": {
+                  "name": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "address": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "countryCode": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "extraction": {
+                    "type": "string",
+                    "enum": [
+                      "READ",
+                      "ESTIMATED",
+                      "ABSENT"
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "relativeDateText": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "phones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "raw",
+          "label",
+          "countryCode",
+          "countryEvidence",
+          "extraction"
+        ],
+        "properties": {
+          "raw": {
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "countryCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "countryEvidence": {
+            "type": "string",
+            "enum": [
+              "EXPLICIT_CODE",
+              "LINKED_ADDRESS",
+              "NONE"
+            ]
+          },
+          "extraction": {
+            "type": "string",
+            "enum": [
+              "READ",
+              "ESTIMATED",
+              "ABSENT"
+            ]
+          }
+        }
+      }
+    },
+    "accounts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "bank",
+          "number",
+          "holder",
+          "extraction"
+        ],
+        "properties": {
+          "bank": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "number": {
+            "type": "string"
+          },
+          "holder": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "extraction": {
+            "type": "string",
+            "enum": [
+              "READ",
+              "ESTIMATED",
+              "ABSENT"
+            ]
+          }
+        }
+      }
+    },
+    "copyTexts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "text",
+          "kind",
+          "extraction"
+        ],
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "URL",
+              "COUPON",
+              "ADDRESS",
+              "OTHER"
+            ]
+          },
+          "extraction": {
+            "type": "string",
+            "enum": [
+              "READ",
+              "ESTIMATED",
+              "ABSENT"
+            ]
+          }
+        }
+      }
+    },
+    "places": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "address",
+          "countryCode",
+          "extraction"
+        ],
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "countryCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "extraction": {
+            "type": "string",
+            "enum": [
+              "READ",
+              "ESTIMATED",
+              "ABSENT"
+            ]
+          }
+        }
+      }
+    },
+    "undatedIntents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "targetName",
+          "kind"
+        ],
+        "properties": {
+          "targetName": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "VISIT",
+              "BUY",
+              "WATCH",
+              "OTHER"
+            ]
+          }
+        }
+      }
+    },
+    "search": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entities",
+        "backgroundColors",
+        "scenes",
+        "activities",
+        "moods",
+        "peopleCount",
+        "contentType",
+        "saveIntent",
+        "observedKeywords"
+      ],
+      "properties": {
+        "entities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "colors"
+            ],
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "colors": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "RED",
+                    "ORANGE",
+                    "YELLOW",
+                    "GREEN",
+                    "BLUE",
+                    "PURPLE",
+                    "PINK",
+                    "BROWN",
+                    "BLACK",
+                    "WHITE",
+                    "GRAY",
+                    "BEIGE"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "backgroundColors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "RED",
+              "ORANGE",
+              "YELLOW",
+              "GREEN",
+              "BLUE",
+              "PURPLE",
+              "PINK",
+              "BROWN",
+              "BLACK",
+              "WHITE",
+              "GRAY",
+              "BEIGE"
+            ]
+          }
+        },
+        "scenes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "activities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "moods": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "CHEERFUL",
+              "CALM",
+              "ROMANTIC",
+              "FESTIVE",
+              "GLOOMY",
+              "TENSE",
+              "NOSTALGIC",
+              "NEUTRAL"
+            ]
+          }
+        },
+        "peopleCount": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "NONE",
+                "ONE",
+                "FEW",
+                "MANY"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "contentType": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "PHOTO",
+                "DOCUMENT",
+                "RECEIPT",
+                "POSTER",
+                "TICKET",
+                "MENU",
+                "BUSINESS_CARD",
+                "OTHER"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "saveIntent": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "REFERENCE",
+                "TODO",
+                "SHOPPING",
+                "MEMORY",
+                "OTHER"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observedKeywords": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

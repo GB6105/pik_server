@@ -12,6 +12,6 @@ interface AnalysisModel {
 	 * @param jpeg the confirmed input image
 	 * @return what the call observed
 	 */
-	ModelReply call(AnalysisProperties.Manifest manifest, byte[] jpeg);
+	ModelReply call(CallManifest manifest, byte[] jpeg);
 
 }
