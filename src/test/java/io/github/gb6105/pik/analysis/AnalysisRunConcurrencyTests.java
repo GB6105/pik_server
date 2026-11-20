@@ -189,7 +189,7 @@ class AnalysisRunConcurrencyTests {
 		awaitLatch(claimed);
 		ItemRow waiting = new ItemRow(later, fixtures.photoOf(jobId), device.principalId(), UUID.randomUUID(), "v1", 0,
 				null, TextStatus.UNKNOWN, null, AdmissionResult.IN_PROGRESS, null, null, false, null, null, jobId, null,
-				null, Instant.now());
+				null, null, null, null, Instant.now());
 
 		pool.submit(() -> transaction.executeWithoutResult((status) -> intakeRecords.insertItems(List.of(waiting))))
 			.get(10, SECONDS);

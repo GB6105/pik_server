@@ -2,9 +2,11 @@ package io.github.gb6105.pik.analysis;
 
 import io.github.gb6105.pik.analysis.IntakePreparation.Prepared;
 import io.github.gb6105.pik.analysis.IntakePreparation.PreparedPhoto;
+import io.github.gb6105.pik.analysis.IntakeRecords.ExistingResult;
 import io.github.gb6105.pik.analysis.IntakeRecords.GroupRow;
 import io.github.gb6105.pik.analysis.IntakeRecords.ItemRow;
 import io.github.gb6105.pik.analysis.IntakeRecords.JobRow;
+import io.github.gb6105.pik.analysis.IntakeRecords.PhotoLimits;
 import io.github.gb6105.pik.analysis.IntakeRecords.RequestRow;
 import io.github.gb6105.pik.consent.AiConsents;
 import io.github.gb6105.pik.consent.ConsentBasis;
@@ -44,7 +46,8 @@ import org.springframework.util.Assert;
  * It takes its locks in the order of design 0.3: consent (shared), the principal's intake lock, photos in {@code id}
  * order, the live jobs it points at ({@code FOR SHARE}, {@code id} order), the usage allocation and device mark
  * (inside {@link TrialUsage#reserve}), and the change counter last. Its own rows are inserted after the reservation,
- * which the intake lock allows (V5 lock order note).
+ * which the intake lock allows (V5 lock order note). The photos' results (before the jobs) and lifetime budgets (after
+ * them) are read without locks, and the device's sends were read before the transaction (plan 8), so 5c adds no lock.
  * <p>
  * One exception: the jobs that hold photos of an {@link Reservation.AlreadyReserved} answer are not locked before
  * the usage allocation. The items that point at them take the FK {@code KEY SHARE} lock on those jobs after the usage
@@ -98,12 +101,17 @@ class IntakeTransaction {
 		Map<UUID, ObservedPhoto> observed = new HashMap<>();
 		batch.photos().forEach((photo) -> observed.put(photo.clientRef(), photo));
 
-		// 5c, 5c'
-		Map<UUID, UUID> inProgress = inProgress(ownerId, prepared, observed);
+		// 5c, 5c': a stored result first, then the live jobs, then the photo and device budgets (plan 8).
+		Instant now = Instant.now();
+		Map<UUID, ExistingResult> existing = existingResults(ownerId, observed);
+		Map<UUID, UUID> inProgress = inProgress(ownerId, prepared, observed, existing.keySet());
+		Map<UUID, Refusal> refused = refusals(ownerId, prepared, observed, existing.keySet(), inProgress.keySet(), now);
 		Map<UUID, GroupingCandidate> candidates = new LinkedHashMap<>();
 		for (PreparedPhoto photo : prepared.photos()) {
-			if (!inProgress.containsKey(photo.clientRef())) {
-				candidates.put(photo.clientRef(), photo.candidate());
+			UUID clientRef = photo.clientRef();
+			if (!existing.containsKey(clientRef) && !inProgress.containsKey(clientRef)
+					&& !refused.containsKey(clientRef)) {
+				candidates.put(clientRef, photo.candidate());
 			}
 		}
 		GroupingRuleV1 rule = groupingRules.current();
@@ -116,7 +124,6 @@ class IntakeTransaction {
 
 		// 5e
 		Map<UUID, UUID> vectorIds = photoObservations.keepVectors(ownerId, vectorsToKeep(candidates, observed));
-		Instant now = Instant.now();
 		UUID requestId = UuidV7.generate();
 		Map<UUID, UUID> groupIds = new HashMap<>();
 		List<GroupRow> groupRows = new ArrayList<>();
@@ -140,8 +147,10 @@ class IntakeTransaction {
 		}
 		List<ItemRow> itemRows = new ArrayList<>();
 		for (PreparedPhoto photo : prepared.photos()) {
-			itemRows.add(item(requestId, ownerId, photo, observed.get(photo.clientRef()),
-					inProgress.get(photo.clientRef()), groupByPhoto.get(photo.clientRef()), groupIds, vectorIds, now));
+			UUID clientRef = photo.clientRef();
+			itemRows.add(item(requestId, ownerId, photo, observed.get(clientRef), existing.get(clientRef),
+					inProgress.get(clientRef), refused.get(clientRef), groupByPhoto.get(clientRef), groupIds,
+					vectorIds, now));
 		}
 		records.insertRequest(new RequestRow(requestId, ownerId, prepared.trigger(), prepared.deviceId(),
 				prepared.trialMarkId(), basis.version(), groupingRules.currentId(), prepared.photos().size(),
@@ -190,6 +199,8 @@ class IntakeTransaction {
 				case Reservation.NotCovered notCovered -> admitted
 					.add(new AdmittedGroup(group, null, "SUBSCRIPTION_REQUIRED", notCovered.retryable()));
 				case Reservation.AlreadyReserved already -> {
+					// A defensive branch: 5c finds the jobs whose reservations hold the photos. A holder that is over
+					// still answers the photo IN_PROGRESS, and the response counts that job as done.
 					List<GroupingCandidate> rest = new ArrayList<>();
 					for (UUID clientRef : group.photoIds()) {
 						UUID holder = already.jobsByPhoto().get(observed.get(clientRef).photoId());
@@ -232,13 +243,41 @@ class IntakeTransaction {
 	}
 
 	/**
-	 * Finds the live jobs that analyze the photos (5c), then locks them in {@code id} order and checks them again
-	 * (5c'): a job that ended in between gives its photos back as candidates.
+	 * Finds the stored results of the photos (5c {@code EXISTING_RESULT}): the representative's and the members' of a
+	 * job that succeeded, whatever version the request observes, since a photo is not analyzed again (ADR-0024 #4-1,
+	 * #6-1). Such photos are neither in progress nor reserved, so the jobs that made their results, which
+	 * {@code uk_analysis_job_photo_active} still counts, are not looked at.
+	 * @return client photo ID to the result it reuses
+	 */
+	private Map<UUID, ExistingResult> existingResults(UUID ownerId, Map<UUID, ObservedPhoto> observed) {
+		Map<UUID, ExistingResult> stored = records.findResults(ownerId,
+				observed.values().stream().map(ObservedPhoto::photoId).toList());
+		Map<UUID, ExistingResult> existing = new HashMap<>();
+		observed.forEach((clientRef, photo) -> {
+			ExistingResult result = stored.get(photo.photoId());
+			if (result != null) {
+				existing.put(clientRef, result);
+			}
+		});
+		return existing;
+	}
+
+	/**
+	 * Finds the live jobs that analyze the photos without a result (5c), then locks them in {@code id} order and
+	 * checks them again (5c'): a job that ended in between gives its photos back as candidates. A job that succeeded
+	 * stored a result for each photo it kept, so it counts here only for a photo it left without one, which the
+	 * completion does not do; such a photo stays on that job as in 5-1 rather than meet
+	 * {@code uk_analysis_job_photo_active}.
+	 * @param reused client photo IDs of the photos with a result
 	 * @return client photo ID to the live job analyzing it
 	 */
-	private Map<UUID, UUID> inProgress(UUID ownerId, Prepared prepared, Map<UUID, ObservedPhoto> observed) {
-		Map<UUID, List<UUID>> found = records.findLiveJobs(ownerId,
-				observed.values().stream().map(ObservedPhoto::photoId).toList());
+	private Map<UUID, UUID> inProgress(UUID ownerId, Prepared prepared, Map<UUID, ObservedPhoto> observed,
+			Set<UUID> reused) {
+		Map<UUID, List<UUID>> found = records.findLiveJobs(ownerId, observed.entrySet()
+			.stream()
+			.filter((entry) -> !reused.contains(entry.getKey()))
+			.map((entry) -> entry.getValue().photoId())
+			.toList());
 		Map<UUID, UUID> inProgress = new HashMap<>();
 		if (found.isEmpty()) {
 			return inProgress;
@@ -254,6 +293,54 @@ class IntakeTransaction {
 				.ifPresent((jobId) -> inProgress.put(photo.clientRef(), jobId));
 		}
 		return inProgress;
+	}
+
+	/**
+	 * Refuses the photos that are not decided yet by their lifetime budgets and the device's sends (5c), read without
+	 * locks after 5c'. The permit decides the sends again under their locks.
+	 * @param reused client photo IDs of the photos with a result
+	 * @param inProgress client photo IDs of the photos in progress
+	 * @return client photo ID to its refusal
+	 */
+	private Map<UUID, Refusal> refusals(UUID ownerId, Prepared prepared, Map<UUID, ObservedPhoto> observed,
+			Set<UUID> reused, Set<UUID> inProgress, Instant now) {
+		Map<UUID, UUID> open = new LinkedHashMap<>();
+		for (PreparedPhoto photo : prepared.photos()) {
+			if (!reused.contains(photo.clientRef()) && !inProgress.contains(photo.clientRef())) {
+				open.put(photo.clientRef(), observed.get(photo.clientRef()).photoId());
+			}
+		}
+		Map<UUID, PhotoLimits> budgets = records.findBudgets(ownerId, open.values());
+		int photoLifetimeSends = properties.budget().photoLifetimeSends();
+		Map<UUID, Refusal> refused = new HashMap<>();
+		open.forEach((clientRef, photoId) -> {
+			Refusal refusal = refusal(budgets.get(photoId), photoLifetimeSends, prepared.deviceSendExhausted(), now);
+			if (refusal != null) {
+				refused.put(clientRef, refusal);
+			}
+		});
+		return refused;
+	}
+
+	/**
+	 * The refusal of 5c for a photo without a result or a live job, in the order of plan 8: invalid inputs block it for
+	 * a while, its risky sends are used up, the trial device has no send left.
+	 * @param limits the photo's budget, {@code null} when it has none
+	 * @param deviceSendExhausted whether the requesting device's trial has no send left (TRIAL jobs only)
+	 * @return {@code null} when the photo may be reserved
+	 */
+	static @Nullable Refusal refusal(@Nullable PhotoLimits limits, int photoLifetimeSends,
+			boolean deviceSendExhausted, Instant now) {
+		if (limits != null && limits.inputBlockedUntil() != null && limits.inputBlockedUntil().isAfter(now)) {
+			return new Refusal(ErrorCode.RATE_LIMITED, "INPUT_RETRY_LATER", true, limits.inputBlockedUntil());
+		}
+		if (limits != null && limits.riskSends() >= photoLifetimeSends) {
+			return new Refusal(ErrorCode.FORBIDDEN, "ATTEMPTS_EXHAUSTED", false, null);
+		}
+		if (deviceSendExhausted) {
+			return new Refusal(ErrorCode.FORBIDDEN, "ANALYSIS_UNAVAILABLE", false, null);
+		}
+		return null;
 	}
 
 	/**
@@ -273,8 +360,8 @@ class IntakeTransaction {
 	}
 
 	private static ItemRow item(UUID requestId, UUID ownerId, PreparedPhoto photo, ObservedPhoto observed,
-			@Nullable UUID inProgressJob, @Nullable AdmittedGroup admitted, Map<UUID, UUID> groupIds,
-			Map<UUID, UUID> vectorIds, Instant now) {
+			@Nullable ExistingResult existing, @Nullable UUID inProgressJob, @Nullable Refusal refusal,
+			@Nullable AdmittedGroup admitted, Map<UUID, UUID> groupIds, Map<UUID, UUID> vectorIds, Instant now) {
 		AdmissionResult result;
 		String code = null;
 		String reason = null;
@@ -282,9 +369,20 @@ class IntakeTransaction {
 		UUID groupId = null;
 		GroupRole role = null;
 		UUID jobId = null;
-		if (inProgressJob != null) {
+		Instant retryAt = null;
+		if (existing != null) {
+			result = AdmissionResult.EXISTING_RESULT;
+		}
+		else if (inProgressJob != null) {
 			result = AdmissionResult.IN_PROGRESS;
 			jobId = inProgressJob;
+		}
+		else if (refusal != null) {
+			result = AdmissionResult.NOT_ACCEPTED;
+			code = refusal.code().name();
+			reason = refusal.reason();
+			retryable = refusal.retryable();
+			retryAt = refusal.retryAt();
 		}
 		else {
 			Assert.state(admitted != null, "Every candidate photo must be in a group");
@@ -306,7 +404,20 @@ class IntakeTransaction {
 		return new ItemRow(requestId, observed.photoId(), ownerId, photo.clientRef(), observed.observedVersion(),
 				observed.sourceChangeSeq(), candidate.takenAt(), candidate.textStatus(), photo.ocrVersion(), result,
 				code, reason, retryable, groupId, role, jobId, vectorIds.get(observed.photoId()),
-				photo.vectorIgnored(), now);
+				photo.vectorIgnored(), (existing != null) ? existing.resultId() : null,
+				(existing != null) ? existing.photoVersion() : null, retryAt, now);
+	}
+
+	/**
+	 * A photo refused before grouping (5c).
+	 *
+	 * @param code the error class
+	 * @param reason the detailed reason
+	 * @param retryable whether the photo may be sent again
+	 * @param retryAt when it may be sent again, for {@code INPUT_RETRY_LATER} only
+	 */
+	record Refusal(ErrorCode code, String reason, boolean retryable, @Nullable Instant retryAt) {
+
 	}
 
 	/**

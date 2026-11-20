@@ -432,6 +432,37 @@ class RunRecords {
 	}
 
 	/**
+	 * Locks the owner's result of the photo ({@code FOR NO KEY UPDATE}, the result row's place in the lock order) for
+	 * a change of its epoch.
+	 * @return empty when the photo has no result or is of another owner
+	 */
+	@Transactional(propagation = Propagation.MANDATORY)
+	Optional<LockedResult> lockResult(UUID ownerId, UUID photoId) {
+		return jdbc.sql("""
+				SELECT id, epoch FROM analysis_result WHERE owner_id = :owner AND photo_id = :photo FOR NO KEY UPDATE
+				""")
+			.param("owner", ownerId)
+			.param("photo", photoId)
+			.query((rs, rowNum) -> new LockedResult(rs.getObject("id", UUID.class), rs.getInt("epoch")))
+			.optional();
+	}
+
+	/**
+	 * Sets the epoch of a result locked by {@link #lockResult} with the change number of the change.
+	 */
+	void changeEpoch(UUID resultId, int epoch, long changeSeq, Instant now) {
+		jdbc.sql("""
+				UPDATE analysis_result SET epoch = :epoch, change_seq = :seq, updated_at = :now, version = version + 1
+				WHERE id = :id
+				""")
+			.param("id", resultId)
+			.param("epoch", epoch)
+			.param("seq", changeSeq)
+			.param("now", timestamp(now))
+			.update();
+	}
+
+	/**
 	 * The owner's result of the photo with its current epoch.
 	 */
 	Optional<StoredResult> findResult(UUID ownerId, UUID photoId) {
@@ -570,6 +601,10 @@ class RunRecords {
 		public String toString() {
 			return "StoredResult[id=" + id + ", epoch=" + epoch + "]";
 		}
+
+	}
+
+	record LockedResult(UUID id, int epoch) {
 
 	}
 

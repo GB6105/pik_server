@@ -77,6 +77,57 @@ class IntakeRecords {
 		return statuses;
 	}
 
+	/**
+	 * The owner's stored results of the photos (5c {@code EXISTING_RESULT}), read without locks. The caller holds the
+	 * photo rows {@code FOR UPDATE}, and a result is stored only under a share lock on its photo (the completion
+	 * transaction), so none appears for them before the caller ends; a regeneration changes only the epoch.
+	 * @return server photo ID to its result; photos without one are missing
+	 */
+	Map<UUID, ExistingResult> findResults(UUID ownerId, Collection<UUID> photoIds) {
+		Map<UUID, ExistingResult> results = new HashMap<>();
+		if (photoIds.isEmpty()) {
+			return results;
+		}
+		jdbc.sql("""
+				SELECT photo_id, id, photo_version FROM analysis_result
+				WHERE owner_id = :owner AND photo_id IN (:photos)
+				""")
+			.param("owner", ownerId)
+			.param("photos", photoIds)
+			.query((rs, rowNum) -> Map.entry(rs.getObject("photo_id", UUID.class),
+					new ExistingResult(rs.getObject("id", UUID.class), rs.getString("photo_version"))))
+			.list()
+			.forEach((row) -> results.put(row.getKey(), row.getValue()));
+		return results;
+	}
+
+	/**
+	 * The lifetime budgets of the owner's photos (5c {@code INPUT_RETRY_LATER} and {@code ATTEMPTS_EXHAUSTED}), read
+	 * without locks for a quick refusal: the permit checks the sends again under the budget lock. Read after the live
+	 * jobs are locked (5c'), so a block that the ending of such a job records is seen once that ending commits.
+	 * @return server photo ID to its budget; photos without a budget row are missing
+	 */
+	Map<UUID, PhotoLimits> findBudgets(UUID ownerId, Collection<UUID> photoIds) {
+		Map<UUID, PhotoLimits> budgets = new HashMap<>();
+		if (photoIds.isEmpty()) {
+			return budgets;
+		}
+		jdbc.sql("""
+				SELECT photo_id, risk_sends, input_blocked_until FROM photo_ai_budget
+				WHERE owner_id = :owner AND photo_id IN (:photos)
+				""")
+			.param("owner", ownerId)
+			.param("photos", photoIds)
+			.query((rs, rowNum) -> {
+				OffsetDateTime blockedUntil = rs.getObject("input_blocked_until", OffsetDateTime.class);
+				return Map.entry(rs.getObject("photo_id", UUID.class), new PhotoLimits(rs.getInt("risk_sends"),
+						(blockedUntil != null) ? blockedUntil.toInstant() : null));
+			})
+			.list()
+			.forEach((row) -> budgets.put(row.getKey(), row.getValue()));
+		return budgets;
+	}
+
 	void insertRequest(RequestRow row) {
 		jdbc.sql("""
 				INSERT INTO analysis_request (id, owner_id, origin, trigger, device_id, trial_mark_id, consent_version,
@@ -152,10 +203,11 @@ class IntakeRecords {
 				INSERT INTO analysis_request_item (request_id, photo_id, owner_id, client_ref, photo_version,
 				                                   basis_change_seq, taken_at, text_status, ocr_version,
 				                                   admission_result, code, reason, retryable, group_id, group_role,
-				                                   analysis_job_id, vector_id, vector_ignored_reason, created_at)
+				                                   analysis_job_id, vector_id, vector_ignored_reason, reused_result_id,
+				                                   reused_photo_version, retry_at, created_at)
 				VALUES (:request, :photo, :owner, :clientRef, :photoVersion, :basisChangeSeq, :takenAt, :textStatus,
 				        :ocrVersion, :admissionResult, :code, :reason, :retryable, :group, :groupRole, :job, :vector,
-				        :vectorIgnoredReason, :now)
+				        :vectorIgnoredReason, :reusedResult, :reusedPhotoVersion, :retryAt, :now)
 				""", rows.stream()
 			.map((row) -> new MapSqlParameterSource().addValue("request", row.requestId())
 				.addValue("photo", row.photoId())
@@ -176,6 +228,9 @@ class IntakeRecords {
 				.addValue("vector", row.vectorId(), Types.OTHER)
 				.addValue("vectorIgnoredReason",
 						(row.vectorIgnoredReason() != null) ? row.vectorIgnoredReason().name() : null, Types.VARCHAR)
+				.addValue("reusedResult", row.reusedResultId(), Types.OTHER)
+				.addValue("reusedPhotoVersion", row.reusedPhotoVersion(), Types.VARCHAR)
+				.addValue("retryAt", timestampOrNull(row.retryAt()), Types.TIMESTAMP_WITH_TIMEZONE)
 				.addValue("now", timestamp(row.createdAt())))
 			.toArray(MapSqlParameterSource[]::new));
 	}
@@ -185,7 +240,9 @@ class IntakeRecords {
 	 * COMMITTED (plan 4.3, ADR-0034): JSON arrays of the items, the groups and the jobs, each in the order of the
 	 * response (design 1.5). Items are in {@code photoId} order with the current status of the job each points at;
 	 * {@code analyzedVersion} is the version that job analyzes the photo at, the item's own for an accepted photo and
-	 * the accepted item's of the job's request for a photo in progress. Groups are in the order of their
+	 * the accepted item's of the job's request for a photo in progress, and the reused result's for an existing result.
+	 * {@code retryAfter} is the wait a refused item was given, in whole seconds from the intake rounded up, the same in
+	 * every replay and status read, so that the status {@code ETag} holds. Groups are in the order of their
 	 * representatives' {@code photoId}. Jobs are listed once each: the jobs the request created, also after its items
 	 * were deleted (plan 2.9, R2-08), and the jobs of other requests its {@code IN_PROGRESS} photos wait for (the scope
 	 * of {@code counts} and {@code phase}), named and ordered by the {@code photoId} of their representative kept on
@@ -201,7 +258,9 @@ class IntakeRecords {
 				            'photoId', i.client_ref, 'admissionResult', i.admission_result, 'code', i.code,
 				            'reason', i.reason, 'retryable', i.retryable, 'analysisJobId', i.analysis_job_id,
 				            'groupId', i.group_id, 'role', i.group_role, 'execution', j.status,
-				            'observedVersion', i.photo_version, 'analyzedVersion', a.photo_version,
+				            'retryAfter', CAST(CEIL(EXTRACT(EPOCH FROM i.retry_at - i.created_at)) AS bigint),
+				            'observedVersion', i.photo_version,
+				            'analyzedVersion', COALESCE(i.reused_photo_version, a.photo_version),
 				            'vectorIgnored', i.vector_ignored_reason) ORDER BY i.client_ref), '[]'::json)
 				   FROM analysis_request_item i
 				   LEFT JOIN analysis_job j ON j.id = i.analysis_job_id
@@ -284,16 +343,46 @@ class IntakeRecords {
 
 	}
 
+	/**
+	 * @param reusedResultId the result an {@code EXISTING_RESULT} photo reuses
+	 * @param reusedPhotoVersion the photo version of that result
+	 * @param retryAt when a photo refused with {@code INPUT_RETRY_LATER} may be sent again
+	 */
 	record ItemRow(UUID requestId, UUID photoId, UUID ownerId, UUID clientRef, String photoVersion,
 			long basisChangeSeq, @Nullable Instant takenAt, TextStatus textStatus, @Nullable String ocrVersion,
 			AdmissionResult admissionResult, @Nullable String code, @Nullable String reason, boolean retryable,
 			@Nullable UUID groupId, @Nullable GroupRole groupRole, @Nullable UUID analysisJobId,
-			@Nullable UUID vectorId, @Nullable VectorIgnoredReason vectorIgnoredReason, Instant createdAt) {
+			@Nullable UUID vectorId, @Nullable VectorIgnoredReason vectorIgnoredReason, @Nullable UUID reusedResultId,
+			@Nullable String reusedPhotoVersion, @Nullable Instant retryAt, Instant createdAt) {
 
 		@Override
 		public String toString() {
 			return "ItemRow[requestId=" + requestId + ", admissionResult=" + admissionResult + "]";
 		}
+
+	}
+
+	/**
+	 * A stored result of a photo, reused by intake.
+	 *
+	 * @param photoVersion the photo version the result is for
+	 */
+	record ExistingResult(UUID resultId, String photoVersion) {
+
+		@Override
+		public String toString() {
+			return "ExistingResult[resultId=" + resultId + "]";
+		}
+
+	}
+
+	/**
+	 * What intake reads of a photo's lifetime budget.
+	 *
+	 * @param riskSends the risky sends counted for the photo
+	 * @param inputBlockedUntil until when the photo is held back after invalid inputs, {@code null} when it is not
+	 */
+	record PhotoLimits(int riskSends, @Nullable Instant inputBlockedUntil) {
 
 	}
 
