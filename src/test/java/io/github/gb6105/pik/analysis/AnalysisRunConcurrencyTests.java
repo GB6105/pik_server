@@ -1,6 +1,7 @@
 package io.github.gb6105.pik.analysis;
 
 import static io.github.gb6105.pik.analysis.RunFixtures.output;
+import static io.github.gb6105.pik.analysis.RunFixtures.utc;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
@@ -45,7 +47,8 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * The run's races with latches and barriers (plan 11.3 C-9, C-10, C-12, C-15, C-16, C-21).
+ * The run's races with latches and barriers (plan 11.3 C-9, C-10, C-12, C-15, C-16, C-21), and the winner checks that
+ * take their time under the job lock (plan 1).
  */
 @AnalysisRunTest
 class AnalysisRunConcurrencyTests {
@@ -84,6 +87,9 @@ class AnalysisRunConcurrencyTests {
 
 	@Autowired
 	RunCompletion completion;
+
+	@Autowired
+	ProcessingDeadlines deadlines;
 
 	@Autowired
 	AnalysisRun run;
@@ -169,6 +175,38 @@ class AnalysisRunConcurrencyTests {
 		holder.get(WAIT.toSeconds(), SECONDS);
 		assertThat(claimed).extracting(ClaimedJob::jobId).containsExactly(next);
 		assertThat(fixtures.job(front).get("status")).isEqualTo("READY");
+	}
+
+	// C-9: the owner's slots cut its candidates before the window, so a short list does not end the claim. With 2
+	// principal slots each round sees 2 of the owner's 6 jobs; the third round (claim-rounds 3) reaches the 2 free ones.
+	@Test
+	void lockedFrontJobsOfAnOwnerDoNotHideItsLaterJobs() throws Exception {
+		Installed device = fixtures.intake().android();
+		fixtures.ready(device, 6);
+		List<UUID> order = jdbc.sql("""
+				SELECT id FROM analysis_job WHERE owner_id = :owner AND status = 'READY'
+				ORDER BY base_priority, queued_at, id
+				""").param("owner", device.principalId()).query(UUID.class).list();
+		assertThat(order).hasSize(6);
+		CountDownLatch locked = new CountDownLatch(1);
+		CountDownLatch release = new CountDownLatch(1);
+		Future<?> holder = pool.submit(() -> transaction.executeWithoutResult((status) -> {
+			jdbc.sql("SELECT id FROM analysis_job WHERE id IN (:ids) FOR NO KEY UPDATE")
+				.param("ids", order.subList(0, 4))
+				.query()
+				.listOfRows();
+			locked.countDown();
+			awaitLatch(release);
+		}));
+		awaitLatch(locked);
+
+		List<ClaimedJob> claimed = pool.submit(() -> claims.claim(2)).get(WAIT.toSeconds(), SECONDS);
+
+		release.countDown();
+		holder.get(WAIT.toSeconds(), SECONDS);
+		assertThat(claimed).extracting(ClaimedJob::jobId).containsExactlyInAnyOrderElementsOf(order.subList(4, 6));
+		assertThat(order.subList(0, 4))
+			.allSatisfy((jobId) -> assertThat(fixtures.job(jobId).get("status")).isEqualTo("READY"));
 	}
 
 	// C-10: while a claim holds its candidate, the FK insert of an intake item that waits for the job does not wait.
@@ -275,6 +313,63 @@ class AnalysisRunConcurrencyTests {
 		assertThat(fixtures.photoBudget(fixtures.photoOf(jobId)).get("risk_sends")).isEqualTo(1);
 		assertThat(fixtures.dailySends(device.principalId())).isEqualTo(1);
 		assertThat(fixtures.gate(GateCause.TRANSIENT_CIRCUIT).get("failure_streak")).isEqualTo(1);
+	}
+
+	// Plan 1: the winner check takes its time under the job lock. A response that got the lock after the processing
+	// deadline lost the job: it settles only its call, the photo keeps its unknown retry, and the deadline batch ends
+	// the job with PROCESSING_EXPIRED.
+	@Test
+	void responseThatGetsTheJobLockPastTheDeadlineSettlesOnlyItsCall() throws Exception {
+		Installed device = fixtures.intake().android();
+		UUID jobId = fixtures.ready(device, 1).job();
+		UUID photoId = fixtures.photoOf(jobId);
+		Permitted permitted = permitted(claimOne());
+		AnalysisProperties.Manifest settings = permitted.manifest().settings();
+		CallOutcome unknown = CallOutcome.of(new ModelReply.Answered(500, "req_500", null, null, null, null), false,
+				settings.price(), settings.maxCostMicros(), Instant.now(), Instant.now());
+
+		assertThat(pastTheDeadlineUnderTheJobLock(jobId,
+				() -> responses.settle(permitted.claimed(), permitted.call(), unknown)))
+			.isEqualTo(ResponseSettlement.Settled.LOST);
+
+		Map<String, Object> job = fixtures.job(jobId);
+		assertThat(job.get("status")).isEqualTo("RUNNING");
+		assertThat(job.get("run_token")).isEqualTo(permitted.claimed().runToken());
+		Map<String, Object> call = fixtures.call(jobId);
+		assertThat(call.get("status")).isEqualTo("UNKNOWN");
+		assertThat(call.get("settled_cost_micros")).isEqualTo(settings.maxCostMicros());
+		assertThat(fixtures.photoBudget(photoId)).containsEntry("risk_sends", 1)
+			.containsEntry("unknown_retry_used", false);
+		assertThat(fixtures.reservations(jobId)).containsOnly("RESERVED");
+
+		assertThat(deadlines.expire(jobId)).isEqualTo(ProcessingDeadlines.Outcome.EXPIRED);
+
+		job = fixtures.job(jobId);
+		assertThat(job.get("status")).isEqualTo("CANCELLED");
+		assertThat(job.get("failure_code")).isEqualTo("PROCESSING_EXPIRED");
+		assertThat(fixtures.call(jobId).get("status")).isEqualTo("UNKNOWN");
+		assertThat(fixtures.photoBudget(photoId)).containsEntry("unknown_retry_used", false);
+		assertThat(fixtures.reservations(jobId)).containsOnly("RELEASED");
+	}
+
+	// Plan 1, 5.4: the permit takes its time under the job lock too. A permit that got the lock after the processing
+	// deadline counts no send and ends the job with PROCESSING_EXPIRED.
+	@Test
+	void permitThatGetsTheJobLockPastTheDeadlineEndsTheJob() throws Exception {
+		Installed device = fixtures.intake().android();
+		UUID jobId = fixtures.ready(device, 1).job();
+		ClaimedJob claimed = claimOne();
+		RunBasis basis = runs.findBasis(jobId).orElseThrow();
+		CallManifest manifest = manifests.runnable(basis.manifestId()).orElseThrow();
+
+		assertThat(pastTheDeadlineUnderTheJobLock(jobId, () -> permits.permit(claimed, basis, manifest)))
+			.isEqualTo(new Permit.Ended(FailureCode.PROCESSING_EXPIRED));
+
+		Map<String, Object> job = fixtures.job(jobId);
+		assertThat(job.get("status")).isEqualTo("CANCELLED");
+		assertThat(job.get("failure_code")).isEqualTo("PROCESSING_EXPIRED");
+		assertThat(fixtures.calls(jobId)).isEmpty();
+		assertThat(fixtures.dailySends(device.principalId())).isZero();
 	}
 
 	// C-16: a completion that failed on a transient database error is retried and stores once.
@@ -408,6 +503,37 @@ class AnalysisRunConcurrencyTests {
 			.param("principal", principalId)
 			.query(Integer.class)
 			.single();
+	}
+
+	/**
+	 * Runs the action while another transaction holds the job lock, and lets the job's processing deadline pass
+	 * behind the action's back: the deadline is set to a time after the action started to wait for the lock, and has
+	 * passed when the lock is released.
+	 */
+	private <T> T pastTheDeadlineUnderTheJobLock(UUID jobId, Callable<T> action) throws Exception {
+		CountDownLatch locked = new CountDownLatch(1);
+		CountDownLatch waiting = new CountDownLatch(1);
+		AtomicInteger holding = new AtomicInteger();
+		Future<?> holder = pool.submit(() -> transaction.executeWithoutResult((status) -> {
+			jdbc.sql("SELECT id FROM analysis_job WHERE id = :id FOR NO KEY UPDATE").param("id", jobId).query().listOfRows();
+			holding.set(backendPid());
+			locked.countDown();
+			awaitLatch(waiting);
+			Instant deadline = Instant.now();
+			jdbc.sql("UPDATE analysis_job SET processing_deadline = :deadline WHERE id = :id")
+				.param("deadline", utc(deadline))
+				.param("id", jobId)
+				.update();
+			await().atMost(WAIT)
+				.pollInterval(Duration.ofMillis(1))
+				.until(() -> Instant.now().isAfter(deadline.plusMillis(1)));
+		}));
+		awaitLatch(locked);
+		Future<T> result = pool.submit(action);
+		awaitBlockedBy(holding.get(), "FOR NO KEY UPDATE OF j");
+		waiting.countDown();
+		holder.get(WAIT.toSeconds(), SECONDS);
+		return result.get(WAIT.toSeconds(), SECONDS);
 	}
 
 	// In the caller's transaction, if any: the backend that runs it.

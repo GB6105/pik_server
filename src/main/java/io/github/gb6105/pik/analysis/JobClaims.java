@@ -20,9 +20,10 @@ import org.springframework.util.Assert;
  * back nothing is claimed. Otherwise the global claim lock is the transaction's first lock, the free global slots are
  * counted under it, and candidates are locked {@code FOR NO KEY UPDATE SKIP LOCKED} in claim order, up to
  * {@code worker.claim-rounds} queries that leave out every candidate already seen and count the jobs claimed in
- * earlier rounds against their owner. While a circuit is half-open, or due to half-open, one job is claimed as the
- * probe: the gate rows are locked after it, in cause order, and must still be in the generation read before. Each
- * claimed job is {@code RUNNING} with one more attempt, a new run token and a lease.
+ * earlier rounds against their owner, while slots remain and the previous query found a candidate. While a circuit is
+ * half-open, or due to half-open, one job is claimed as the probe: the gate rows are locked after it, in cause order,
+ * and must still be in the generation read before. Each claimed job is {@code RUNNING} with one more attempt, a new
+ * run token and a lease.
  */
 @Component
 @RequiredArgsConstructor
@@ -84,8 +85,9 @@ class JobClaims {
 				claimed.add(new ClaimedJob(job.id(), job.ownerId(), runToken, job.lockedUntil(),
 						job.processingDeadline(), probe != null));
 			}
-			// Fewer candidates than the window: every due job was seen.
-			if (candidates.size() < window) {
+			// The owner cut ranks candidates before the window, so a short list does not mean every due job was seen;
+			// only an empty one does.
+			if (candidates.isEmpty()) {
 				break;
 			}
 		}

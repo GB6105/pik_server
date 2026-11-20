@@ -16,7 +16,7 @@
 | 계획 | Claude가 구현 계획 작성 (`.omc/plans/stage5-2-analysis-run.md`). Codex 검토 R1 24건 → R2 9건 → R3 4건 → R4 "구현 착수 가능, 미해결 0건". 모든 발견을 Claude가 판정 (계획 §17~§20) | 수용. R1-21·R1-17 잔여 = 방법 변경, R3-04 = 방법 선택, R1-23 = 일부 수용 |
 | 착수 | Claude 추천 = 구현 시작 (PR 1개, 검토점 A = 순서 1~4 뒤, 검토점 B = 순서 8 뒤, 접수 꺼짐 유지, D-07 측정 제외), 사용자 선택 = 구현 시작 | 사용자 결정 |
 | 검토점 A | Codex 코드 검토 `b5fdf52..fd3f851`: blocker 0, major 3, minor 2. 5건 모두 수용·수정 (`2c4c066`). 확인 재검토 = 모두 해결, 새 결함 없음, "순서 5 진행" | 기록 `.omc/codex/stage5-2-code-review-a.md` |
-| 검토점 B | 순서 8 (이 문서 갱신) 뒤 전체 검토 | 대기 |
+| 검토점 B | Codex 코드 검토 `2c4c066..06b8b11`: blocker 0, major 3, minor 3. 6건 모두 수용·수정 | 기록 `.omc/codex/stage5-2-code-review-b.md` |
 
 | 검토점 A | 발견 | 수정 (`2c4c066`) |
 |---|---|---|
@@ -25,6 +25,15 @@
 | A-03 (major) | presign 유효 시간을 한 시각으로 계산, SDK는 더 늦은 시각에 더함 → URL이 `url_expires_at`보다 오래 삶 | 서명 만료 ≤ `url_expires_at` 검사, 새 시각으로 최대 3회 재서명, 실패 = 503 `STORAGE_UNAVAILABLE` |
 | A-04 (minor) | `upload.max-attempts` 상한 없음 (V6 CHECK는 5까지) | 기동 검사 1..5 |
 | A-05 (minor) | `upload.url-ttl` 하한 없음 (`PT1S`면 발급이 카운터만 쓰고 서명 실패) | 1분 (재생 최소 10초 + 서명 여유 50초) ~ 7일 |
+
+| 검토점 B | 발견 | 수정 |
+|---|---|---|
+| B-01 (major) | `maxRetries(0)`에도 OkHttp 4.12가 503 + `Retry-After: 0` 뒤 재송신, 307·308은 POST 본문째 다시 보냄 → 허가 1개에 송신 2번 | SDK 인터셉터 (`Interceptor.syncOnly`) = `RequestOptions.followRedirects(false)` + 반복 불가 본문 (OkHttp `isOneShot`). 연결 실패·408 재시도는 SDK가 이미 끔 (`retryOnConnectionFailure(false)`). 3xx = `UNKNOWN`, 503 `Retry-After` 유지 |
+| B-02 (major) | 주체별 순번이 창보다 먼저 자르므로 "후보 < 창"이 전부 본 것이 아님 → 앞 후보가 잠기면 뒤 작업을 못 잡음 | 슬롯이 남고 직전 회차에 후보가 있으면 `claim-rounds`까지 계속 (본 ID 제외·주체 남은 상한 재계산 유지) |
+| B-03 (major) | 응답 정산이 작업 잠금 전에 `now`를 읽음 → 잠금 대기 중 처리 기한이 지나도 승자 | 작업 잠금 뒤 `now` (완료 TX와 같음). 같은 문제인 허가 TX (처리 기한·송신 여유 판정)도 고침 |
+| B-04 (minor) | 늦은 응답 조정이 행의 정산 비용 (불명 = 최대, 429 = 0)을 씀 | 사용량 × 호출 manifest 단가 (입력·캐시 생성·캐시 읽기·출력, 마이크로달러 올림) = `CallOutcome.usageCostMicros` |
+| B-05 (minor) | 2xx 본문이 끊기면 빈 `NoAnswer` → HTTP 상태·`request-id` 유실 | `NoAnswer`가 상태·`request-id`를 지녀 호출 행에 기록 (`responded_at` 포함) |
+| B-06 (minor) | STATUS·이 문서가 ERD 반영을 미완료로 적음 | `49ecbe7` 완료로 고침 |
 
 ### ADR-0034 5-2 조건 충족
 | 조건 | 방법 |
@@ -59,7 +68,7 @@
 | 19 | Claude 어댑터 빈 | `worker.enabled=true`일 때만 생성, 그때 빈 `ANTHROPIC_API_KEY` = 기동 실패. `claude.base-url` = `local`·`test`만. 키 = Spring 속성 `pik.analysis.claude.api-key` (`.env.local`이 Spring 속성으로 읽힘) |
 | 20 | manifest 내용 | 계획 6.1 + `prompt` (자원 디렉터리)·`userText`. `maxPixels` = 최상위, `uploadPolicy` = 5-1 모양. OCR 키 없음 (D-09) |
 | 21 | 최대 비용 | 캐시 꺼짐에도 프롬프트 상한에 캐시 생성 단가 (두 경우 모두 상한). 기본값 `maxCostMicros` 3,527, `imageTokenCap` 4,784, `promptTokenCap` 8,000 (D-07 개발값). 시스템 프롬프트 추정 1,300~1,600 토큰 (캐시 최소 512 이상) |
-| 22 | 전송 실패 분류 | `NoRouteToHostException`도 송신 전 실패 (`NOT_SENT`). 2xx 본문을 읽다 끊김 = 불명 |
+| 22 | 전송 실패 분류 | `NoRouteToHostException`도 송신 전 실패 (`NOT_SENT`). 2xx 본문을 읽다 끊김 = 불명 (상태·`request-id` 유지, B-05) |
 | 23 | 검증기 | 목록을 먼저 자르고 남은 항목을 검사 (잘린 항목은 "전부 INVALID"에 세지 않음, 항목 없는 출력 = 사용 가능). 모르는 키 제거. 실행 값은 자르지 않음. 날짜 범위 = UTC 날짜, 양 끝 포함. `search` 타입 오류 = 검색 블록 전체 버림 |
 | 24 | 사진 존재 확인 | 새 photo API `PhotoObservations.holdExisting` (id 순 `FOR SHARE`) |
 | 25 | 오래된 관문 증거 | `CLOSED` 회로는 `reset_at` 전에 허가한 호출의 응답을 무시 |
@@ -67,7 +76,7 @@
 | 27 | 이미 있는 허가 | 같은 (작업, 토큰)의 허가가 있으면 보내지 않음, 임대 회수가 불명으로 정산 |
 | 28 | probe 제외 | 증거 없이 `READY`로 돌아간 probe 실행 = `probe_excluded_until` 설정 |
 | 29 | 402 | 400처럼 정산 (위험 송신 소진), 회로에는 설정 오류 (K-7) |
-| 30 | 늦은 응답 조정 | 비용만 (`ADJUSTED`). `responded_at`·`http_status` 유지 → 400 비율 창에 들어가지 않음 |
+| 30 | 늦은 응답 조정 | 비용만 (`ADJUSTED`) = 사용량 × 호출 manifest 단가 (B-04). `responded_at`·`http_status` 유지 → 400 비율 창에 들어가지 않음 |
 | 31 | 이벤트 발행 | `AnalysisCompleted` = 완료 TX 안 `ApplicationEventPublisher` (`PhotoSourceChanged`와 같은 방식) |
 | 32 | 5c 코드 | `INPUT_RETRY_LATER` = `RATE_LIMITED` (재시도 가능), `ATTEMPTS_EXHAUSTED`·`ANALYSIS_UNAVAILABLE` = `FORBIDDEN` (불가) |
 | 33 | `retryAfter` | 접수 때 `ceil(retry_at − created_at)`로 고정 → 재생·상태 조회 같은 값 (줄어들지 않음) |
@@ -108,9 +117,9 @@
 | 프롬프트 캐시 끔 (K-19, R1-23) | 접수 1회에 최대 100장이 5분 안에 같은 prefix로 이어짐. 손익분기 (적중률 약 21.7%)는 D-07에서 판정 |
 
 ## 결과
-- V6 마이그레이션 (`analysis_job` 실행 열, `analysis_upload_attempt`, `external_call`, `analysis_result`, `photo_ai_budget`, `ai_spend_day`, `ai_send_daily`, `ai_gate`, `analysis_input_rate`, 항목 `reused_*`·`retry_at`, `device_trial_mark.send_count`, manifest 상한 열). 요약 = 설계 문서 4.3. ERD 반영은 별도 도구 (erd-editor)로 따로 한다.
+- V6 마이그레이션 (`analysis_job` 실행 열, `analysis_upload_attempt`, `external_call`, `analysis_result`, `photo_ai_budget`, `ai_spend_day`, `ai_send_daily`, `ai_gate`, `analysis_input_rate`, 항목 `reused_*`·`retry_at`, `device_trial_mark.send_count`, manifest 상한 열). 요약 = 설계 문서 4.3. ERD 반영 완료 (`49ecbe7`, erd-editor).
 - 코드: `analysis` (업로드 API 3개, worker·claim·준비·허가·송신·완료·응답 정산·불명·관문, 배치 7개, Claude 어댑터, manifest v1·프롬프트·스키마 자원, 공통 검증기, 5c 판정, 수동 재처리), `usage` (`settle`·`holdsReservation`·기기 송신), `consent` (`basisHolds`), `account` (`Principals.isActive`), `photo` (`holdExisting`). `.env.example` = `PIK_ANALYSIS_BUCKET`·`AWS_REGION`·`ANTHROPIC_API_KEY` (값 없음)
-- 시험: 마지막 전체 빌드 833개, 실패 0 (동시성 C-9~C-21 포함). 접수 꺼짐이 기본이라 운영 작업·이벤트 발행은 생기지 않는다.
+- 시험: 마지막 전체 빌드 846개, 실패 0 (동시성 C-9~C-21 포함). 접수 꺼짐이 기본이라 운영 작업·이벤트 발행은 생기지 않는다.
 - 문서: 설계 문서 0.3·1.2·2.1~2.9·4.3, `operations-infrastructure.md` B11, `.claude/docs` (`api-contract`·`consistency-rules`·`domain-boundaries`·`data-retention`)
 - 설계와 다른 점 (코드 기준으로 설계 문서를 고침): `max_tokens` 1,024 → 4,096 (K-16), 입력 속도 저장소 신규, claim 관문 판정 (최대 `blocked_until` → 원인별 상태·probe), 완료 TX 잠금 순서 (0.3 개정), `external_call.request_key` → (`job_id`, `run_token`), 최대 비용 식 (프롬프트 상한 × 캐시 생성 단가), manifest에 OCR 키 없음 (D-09)
 - 계획과 다른 점: `RESERVATION_MISSING` (A-01), 늦은 업로드 = 시도만 거절 (#11), 확정 API 기기 확인, `DUPLICATE_ANALYSIS_JOB`, `holdsReservation`·`holdExisting`·`multiplier` 인자 (#24·#38), 상태 조회 `jobs[]` 합집합 (A-02)
@@ -120,5 +129,5 @@
   - 실제 S3 계약 시험 (운영 배포 전, `operations-infrastructure.md` B11.5)
   - D-28: 5-2는 O2 구성원 기준만 구현, 영속 묶음은 단계 9
   - 보관 단계: 정리 배치 (5-2는 삭제 순서가 가능하도록 스키마만 맞춤)
-  - 검토점 B (전체 Codex 검토), PR (사용자 승인 후)
-- 출처: 착수는 사용자 선택이다. #1~#39는 Claude가 계획·구현 중 정한 관례이고, Codex가 계획 (R1~R4)과 코드 (검토점 A)에서 검토했다.
+  - PR (사용자 승인 후)
+- 출처: 착수는 사용자 선택이다. #1~#39는 Claude가 계획·구현 중 정한 관례이고, Codex가 계획 (R1~R4)과 코드 (검토점 A·B)에서 검토했다.

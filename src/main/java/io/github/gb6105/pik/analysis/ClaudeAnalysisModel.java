@@ -4,7 +4,13 @@ import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.okhttp.AnthropicOkHttpClient;
 import com.anthropic.core.JsonValue;
 import com.anthropic.core.LogLevel;
+import com.anthropic.core.RequestOptions;
+import com.anthropic.core.http.HttpClient;
+import com.anthropic.core.http.HttpRequest;
+import com.anthropic.core.http.HttpRequestBody;
+import com.anthropic.core.http.HttpResponse;
 import com.anthropic.core.http.HttpResponseFor;
+import com.anthropic.core.http.Interceptor;
 import com.anthropic.errors.AnthropicIoException;
 import com.anthropic.errors.AnthropicServiceException;
 import com.anthropic.models.messages.Base64ImageSource;
@@ -19,6 +25,7 @@ import com.anthropic.models.messages.TextBlockParam;
 import com.anthropic.models.messages.ThinkingConfigAdaptive;
 import com.anthropic.models.messages.ThinkingConfigDisabled;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
@@ -42,12 +49,13 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * {@link AnalysisModel} on the Anthropic Java SDK (plan 6.2, 6.4). One request per call: SDK retries are off, OkHttp
- * does not retry on connection failures, and the whole request has one time limit. The raw response keeps the HTTP
- * status, {@code request-id} and {@code Retry-After}; a 2xx body is read as a JSON tree, blocks by their
- * {@code type}, without the SDK's strict parsing. The request holds the model settings, the system prompt, the image
- * and the instruction text of the manifest, and nothing else: no metadata, sampling parameters or prefill. SDK logs
- * and tracing are off, so neither the image nor the answer leaves this class; its own log lines carry statuses, stop
- * reasons, token counts and exception types only.
+ * neither retries on connection failures nor follows a response up with another request ({@code sendOnce}), and the
+ * whole request has one time limit. A redirect comes back as an answer of its own status. The raw response keeps the
+ * HTTP status, {@code request-id} and {@code Retry-After}, also when the body breaks off; a 2xx body is read as a JSON
+ * tree, blocks by their {@code type}, without the SDK's strict parsing. The request holds the model settings, the
+ * system prompt, the image and the instruction text of the manifest, and nothing else: no metadata, sampling
+ * parameters or prefill. SDK logs and tracing are off, so neither the image nor the answer leaves this class; its own
+ * log lines carry statuses, stop reasons, token counts and exception types only.
  */
 @Slf4j
 final class ClaudeAnalysisModel implements AnalysisModel, AutoCloseable {
@@ -85,11 +93,25 @@ final class ClaudeAnalysisModel implements AnalysisModel, AutoCloseable {
 			.maxRetries(0)
 			.timeout(claude.requestTimeout())
 			.logLevel(LogLevel.OFF)
-			.openTelemetry(false);
+			.openTelemetry(false)
+			.addInterceptor(Interceptor.syncOnly(ClaudeAnalysisModel::sendOnce));
 		if (claude.baseUrl() != null) {
 			builder.baseUrl(claude.baseUrl().toString());
 		}
 		return new ClaudeAnalysisModel(builder.build(), jsonMapper, clock);
+	}
+
+	/**
+	 * Keeps a call to one HTTP request on the wire (plan 1, 6.2). The SDK's OkHttp client retries no connection
+	 * failure and no 408 ({@code retryOnConnectionFailure(false)}), but OkHttp 4.12 still follows redirects, a 307 or
+	 * 308 with the same body, and sends the request again after a 503 with {@code Retry-After: 0}. Here redirects are
+	 * not followed, and the body is not repeatable, so OkHttp hands back every response it would follow up instead of
+	 * a second request; a 503 keeps its {@code Retry-After}.
+	 */
+	private static HttpResponse sendOnce(HttpClient next, HttpRequest request, RequestOptions options) {
+		HttpRequest.Builder once = request.toBuilder();
+		request.body().ifPresent((body) -> once.body(new OneShotBody(body)));
+		return next.execute(once.build(), options.toBuilder().followRedirects(false).build());
 	}
 
 	@Override
@@ -104,7 +126,7 @@ final class ClaudeAnalysisModel implements AnalysisModel, AutoCloseable {
 			}
 			catch (IOException ex) {
 				log.warn("Claude call answered HTTP {}, its body broke off: {}", status, ex.getClass().getSimpleName());
-				return new ModelReply.NoAnswer();
+				return new ModelReply.NoAnswer(status, requestId);
 			}
 			return message(status, requestId, body);
 		}
@@ -307,6 +329,38 @@ final class ClaudeAnalysisModel implements AnalysisModel, AutoCloseable {
 				return null;
 			}
 		}
+	}
+
+	/**
+	 * The request body, written once: OkHttp sends no follow-up request with a body that is not repeatable.
+	 */
+	private record OneShotBody(HttpRequestBody body) implements HttpRequestBody {
+
+		@Override
+		public void writeTo(OutputStream out) {
+			body.writeTo(out);
+		}
+
+		@Override
+		public String contentType() {
+			return body.contentType();
+		}
+
+		@Override
+		public long contentLength() {
+			return body.contentLength();
+		}
+
+		@Override
+		public boolean repeatable() {
+			return false;
+		}
+
+		@Override
+		public void close() {
+			body.close();
+		}
+
 	}
 
 }

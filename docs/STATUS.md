@@ -4,7 +4,7 @@
 > 결정 근거는 `adr/`, 날짜별 진행 기록은 `devlog/`에 둔다.
 
 - 최종 갱신: 2026-11-20
-- 현재 단계: **5-2 분석 업로드·실행·결과·정산 구현 완료, 미병합** (브랜치 `feature/FR-I-03-analysis-run`, [ADR-0035](adr/0035-stage5-2-analysis-run-implementation.md)). 다음 = 검토점 B (Codex 전체 검토) → PR (사용자 승인 후) → 5-3 액션·이벤트. 접수 꺼짐 유지 (`intake-enabled=false`)
+- 현재 단계: **5-2 분석 업로드·실행·결과·정산 구현 완료, 미병합** (브랜치 `feature/FR-I-03-analysis-run`, [ADR-0035](adr/0035-stage5-2-analysis-run-implementation.md)). 다음 = PR (사용자 승인 후) → 5-3 액션·이벤트. 접수 꺼짐 유지 (`intake-enabled=false`)
 
 ## 기록 체계
 | 문서 | 경로 | 용도 | 갱신 시점 |
@@ -70,7 +70,7 @@
 - 단계 5-1 분석 접수·묶음 (FR-I-01·02): V5 마이그레이션 (`photo`·`photo_vector`·`analysis_grouping_rule`·`analysis_call_manifest`·`analysis_request`·`analysis_group`·`analysis_job`·`analysis_request_item`), `photo` 모듈 (원본 버전 관측·불변 벡터 버전·변경 번호 발급), `analysis` 모듈 (`POST /analysis-jobs`, 묶음 규칙 v1·벡터 검사·규칙·호출 manifest, 재분류·체험 예약·`StartRequired` 재시도, 투영 재생), 실행기 단계 API·비저장 오류·장기 작업 오류 `jobId = null`, 동의 advisory 잠금·기준 버전, `NotCovered` 재시도 여부·`StartGuard`, 요청 기기 확인·첫 체험 assertion 포트 (대역). 사용자 결정 Q1~Q16·`jobs[]` 범위·문자열 규칙, `analysis_job` 잠금 = `FOR NO KEY UPDATE` 규칙 (C-8). 시험 472개 통과 ([ADR-0034](adr/0034-stage5-1-intake-implementation.md))
 - 이후 단계 정책 사용자 결정 ([ADR-0033](adr/0033-later-stage-policy-proposals.md) #2·#3·#4·#10·#11): Pro 임시 기준 월 $8·일 100장·초기 3,000장 (정가 미정, P03), 탈퇴 뒤 같은 구매의 초기량 재지급 감수 (D-27 해소), 보관 기간 제안값 (P08·P11), 무료·만료 기초 검색 = 체험 대상 범위 (P02, SSOT 기준), 정리 독려 14일 뒤 반복·권한 요청 3회·Pik 선발송 알림 기기당 하루 1개 (P09), 메모·태그·검색 페이지 상한 (P10). SSOT 보고 FR-G-01↔FR-E-01 완료 (특별 규정으로 해석 유지, ADR-0030 #8)
 - 단계 5-1 병합 (PR #13, `b3b243e`). D-09 해소 (사용자 결정 2026-11-19, [ADR-0033](adr/0033-later-stage-policy-proposals.md) #6): 첫 출시 = 단말이 `text.status`만 보내고 글자는 Claude가 이미지에서 읽는다. OCR 본문 동봉은 D-07 측정에서 이득이 입증되면 추가. 축소 해상도는 D-07로 이관
-- 단계 5-2 분석 업로드·실행·결과·정산 (FR-I-03, FR-I-01·02 후속, 브랜치 `feature/FR-I-03-analysis-run`, 미병합): V6 마이그레이션 (`analysis_upload_attempt`·`external_call`·`analysis_result`·`photo_ai_budget`·`ai_spend_day`·`ai_send_daily`·`ai_gate`·`analysis_input_rate`, `analysis_job` 실행 열), 업로드 API 3개 (시도 발급·확정·상태 조회 ETag), worker (claim·허가·Claude 호출·완료·응답 정산·불명·관문·예산), 배치 7개 (회수·처리 기한·임대 회수·객체 삭제·청소 대조·입력 속도 정리·감시), Claude 어댑터·manifest v1·프롬프트·스키마·검증기, 5c 판정 (`EXISTING_RESULT` 등), 수동 재처리 API, `AnalysisCompleted`. 잠금 순서 개정·전이별 잠금 표, 객체 최종 삭제 규칙 (`DELETE_SENT` + 수명 주기 3일). 착수 = 사용자 선택 "구현 시작", Codex 계획 검토 R1~R4·코드 검토점 A (5건 수용·수정). 시험 833개 통과 ([ADR-0035](adr/0035-stage5-2-analysis-run-implementation.md))
+- 단계 5-2 분석 업로드·실행·결과·정산 (FR-I-03, FR-I-01·02 후속, 브랜치 `feature/FR-I-03-analysis-run`, 미병합): V6 마이그레이션 (`analysis_upload_attempt`·`external_call`·`analysis_result`·`photo_ai_budget`·`ai_spend_day`·`ai_send_daily`·`ai_gate`·`analysis_input_rate`, `analysis_job` 실행 열), 업로드 API 3개 (시도 발급·확정·상태 조회 ETag), worker (claim·허가·Claude 호출·완료·응답 정산·불명·관문·예산), 배치 7개 (회수·처리 기한·임대 회수·객체 삭제·청소 대조·입력 속도 정리·감시), Claude 어댑터·manifest v1·프롬프트·스키마·검증기, 5c 판정 (`EXISTING_RESULT` 등), 수동 재처리 API, `AnalysisCompleted`. 잠금 순서 개정·전이별 잠금 표, 객체 최종 삭제 규칙 (`DELETE_SENT` + 수명 주기 3일). 착수 = 사용자 선택 "구현 시작", Codex 계획 검토 R1~R4·코드 검토점 A (5건)·B (6건) 수용·수정. 시험 846개 통과 ([ADR-0035](adr/0035-stage5-2-analysis-run-implementation.md))
 
 ## 다음 할 일
 - [x] 단계 4 PR 병합 (PR #11, `3d1df32`)
@@ -79,7 +79,8 @@
 - [x] 단계 5-1 구현 (`photo` + 접수·묶음, ADR-0034)
 - [x] 단계 5-1 PR 병합 (PR #13, `b3b243e`)
 - [x] 단계 5-2 구현 (업로드·실행·결과·정산, ADR-0035). ADR-0034의 5-2 조건 4개 충족 (투영 SQL 1개, claim `FOR NO KEY UPDATE SKIP LOCKED` + C-10, `AlreadyReserved` 종료 작업 해석, 구성원 = 원접수 `ACCEPTED`)
-- [ ] 단계 5-2 검토점 B (Codex 전체 검토) → PR (사용자 승인 후). ERD 반영 (V6)은 erd-editor로 별도
+- [x] 단계 5-2 검토점 B (Codex 전체 검토): 6건 모두 수용·수정 (ADR-0035). ERD 반영 (V6) 완료 (`49ecbe7`)
+- [ ] 단계 5-2 PR (사용자 승인 후)
 - [ ] 단계 5-3 (액션·이벤트 생성, `AnalysisCompleted` 리스너, 수동 재처리 HTTP 진입점). 병합 뒤 접수 활성화는 D-29·D-07 결정 후
 - [ ] 실제 S3 계약 시험 (서명 헤더·`If-None-Match`·URL/자격 만료 뒤 PUT·삭제 뒤 재PUT·느린 PUT·`ChecksumMode` HEAD·`ListBucket`·수명 주기 3일), 분석 버킷·IAM·worker 서비스 구성 (운영 배포 전, `docs/design/operations-infrastructure.md` B11)
 - [ ] 단계 10 탈퇴 TX = 동의 배타 잠금 + 비동의 결정 기록 → 주체 비활성 (5-2 계약, `consistency-rules.md`, ADR-0035 #6)

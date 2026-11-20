@@ -249,6 +249,29 @@ class ClaudeAnalysisModelTests {
 		assertThat(server.getRequestCount()).isEqualTo(1);
 	}
 
+	// Plan 1, 6.2: one request on the wire per call. OkHttp 4.12 sends the request again after a 503 (or a 408) with
+	// Retry-After 0 and follows redirects, 307 and 308 with the same body; the success queued behind shows it did not.
+	@ParameterizedTest
+	@CsvSource(delimiter = '|', value = { "503 | 0", "408 | 0", "301 |", "302 |", "303 |", "307 |", "308 |" })
+	void responsesOkHttpWouldFollowUpAreAnswersAfterOneRequest(int status, String retryAfter) {
+		MockResponse response = error(status).setHeader("request-id", "req_" + status);
+		if (retryAfter != null) {
+			response.setHeader("Retry-After", retryAfter);
+		}
+		else {
+			response.setHeader("Location", "/v1/messages");
+		}
+		server.enqueue(response);
+		server.enqueue(message("end_turn", text(OUTPUT)));
+
+		ModelReply reply = model.call(MANIFEST, JPEG);
+
+		assertThat(reply).isEqualTo(new ModelReply.Answered(status, "req_" + status, null, null, null,
+				(retryAfter != null) ? Duration.ZERO : null));
+		assertThat(reply.row()).isEqualTo(ModelReply.Row.UNKNOWN);
+		assertThat(server.getRequestCount()).isEqualTo(1);
+	}
+
 	@Test
 	void retryAfterIsKeptInSecondsOrAsAnHttpDate() {
 		server.enqueue(error(429).setHeader("retry-after", "17"));
@@ -291,9 +314,8 @@ class ClaudeAnalysisModelTests {
 	void timeoutAndDisconnectsAfterTheRequestAreUnknown() throws Exception {
 		server.enqueue(new MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE));
 		server.enqueue(new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST));
-		server.enqueue(message("end_turn", text(OUTPUT)).setSocketPolicy(SocketPolicy.DISCONNECT_DURING_RESPONSE_BODY));
 		try (ClaudeAnalysisModel shortTimeout = model(baseUrl(), Duration.ofSeconds(1))) {
-			for (int i = 1; i <= 3; i++) {
+			for (int i = 1; i <= 2; i++) {
 				ModelReply reply = shortTimeout.call(MANIFEST, JPEG);
 
 				assertThat(reply).isEqualTo(new ModelReply.NoAnswer());
@@ -301,6 +323,19 @@ class ClaudeAnalysisModelTests {
 				assertThat(server.getRequestCount()).isEqualTo(i);
 			}
 		}
+	}
+
+	// Plan 6.4: an answer whose body breaks off is unknown, and keeps the status and request-id it came with.
+	@Test
+	void bodyThatBreaksOffKeepsTheStatusAndTheRequestId() {
+		server.enqueue(message("end_turn", text(OUTPUT)).setHeader("request-id", "req_cut")
+			.setSocketPolicy(SocketPolicy.DISCONNECT_DURING_RESPONSE_BODY));
+
+		ModelReply reply = model.call(MANIFEST, JPEG);
+
+		assertThat(reply).isEqualTo(new ModelReply.NoAnswer(200, "req_cut"));
+		assertThat(reply.row()).isEqualTo(ModelReply.Row.UNKNOWN);
+		assertThat(server.getRequestCount()).isEqualTo(1);
 	}
 
 	// K-6: only failures before a connection was made are NOT_SENT; anything else may follow a sent request.

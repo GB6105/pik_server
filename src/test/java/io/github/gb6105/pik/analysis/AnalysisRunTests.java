@@ -290,6 +290,23 @@ class AnalysisRunTests {
 		assertThat(fixtures.reservations(jobId)).containsOnly("RELEASED");
 	}
 
+	// Plan 6.4: an answer that broke off in its body is unknown, and its call keeps the status and request-id.
+	@Test
+	void answerThatBrokeOffKeepsItsStatusAndRequestIdOnTheCall() {
+		UUID jobId = fixtures.ready(fixtures.intake().android(), 1).job();
+		model.reply(new ModelReply.NoAnswer(200, "req_cut"));
+
+		assertThat(run.run(claimOne())).isEqualTo(Stop.DEFERRED);
+
+		Map<String, Object> call = fixtures.call(jobId);
+		assertThat(call.get("status")).isEqualTo("UNKNOWN");
+		assertThat(call.get("outcome")).isEqualTo("UNKNOWN");
+		assertThat(call.get("http_status")).isEqualTo(200);
+		assertThat(call.get("provider_request_id")).isEqualTo("req_cut");
+		assertThat(call.get("responded_at")).isNotNull();
+		assertThat(call.get("settled_cost_micros")).isEqualTo(manifests.current().settings().maxCostMicros());
+	}
+
 	@Test
 	void runThatLostItsJobSettlesOnlyItsCall() {
 		Installed device = fixtures.intake().android();

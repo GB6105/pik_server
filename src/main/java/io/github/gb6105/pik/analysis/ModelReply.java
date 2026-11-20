@@ -47,7 +47,8 @@ sealed interface ModelReply {
 		THROTTLED,
 
 		/**
-		 * 500, 502, 503, 504, 408, 409 and the other statuses, and failures after the request may have been sent.
+		 * 500, 502, 503, 504, 408, 409 and the other statuses, redirects (3xx, not followed) among them, and failures
+		 * after the request may have been sent.
 		 */
 		UNKNOWN,
 
@@ -131,10 +132,20 @@ sealed interface ModelReply {
 	}
 
 	/**
-	 * The request failed without an HTTP status after it may have been sent: a timeout, a broken connection, a body
+	 * The request failed without a readable answer after it may have been sent: a timeout, a broken connection, a body
 	 * that could not be read, or any failure that cannot be placed before the connection (plan K-6).
+	 *
+	 * @param status the HTTP status when the answer broke off in its body, {@code null} without one
+	 * @param requestId the {@code request-id} header of that answer, {@code null} when missing
 	 */
-	record NoAnswer() implements ModelReply {
+	record NoAnswer(@Nullable Integer status, @Nullable String requestId) implements ModelReply {
+
+		/**
+		 * No answer at all.
+		 */
+		NoAnswer() {
+			this(null, null);
+		}
 
 		@Override
 		public Row row() {

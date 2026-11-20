@@ -17,14 +17,17 @@ import org.jspecify.annotations.Nullable;
  * @param row the settlement table row, recorded as {@code external_call.outcome}
  * @param usage the tokens the provider reported, {@code null} when unknown
  * @param costMicros the cost settled, in micro dollars
+ * @param usageCostMicros the cost of {@code usage} at the prices of the call's manifest, whatever the row settles;
+ * {@code null} without usage
  * @param sendSpent whether the risky sends stay spent; released otherwise
  * @param sentAt when the request was sent, {@code null} when it was not
  * @param respondedAt when the provider answered, {@code null} without an answer
  * @param retryAfter the provider's {@code Retry-After}, {@code null} without one
  */
 record CallOutcome(String row, CallStatus status, @Nullable Integer httpStatus, @Nullable String stopReason,
-		@Nullable String requestId, @Nullable Usage usage, long costMicros, boolean sendSpent, @Nullable Instant sentAt,
-		@Nullable Instant respondedAt, Signal signal, @Nullable Duration retryAfter) {
+		@Nullable String requestId, @Nullable Usage usage, long costMicros, @Nullable Long usageCostMicros,
+		boolean sendSpent, @Nullable Instant sentAt, @Nullable Instant respondedAt, Signal signal,
+		@Nullable Duration retryAfter) {
 
 	/** The row of a valid output whose result conflicted with a stored one (plan K-21). */
 	static final String RESULT_CONFLICT = "RESULT_CONFLICT";
@@ -65,28 +68,34 @@ record CallOutcome(String row, CallStatus status, @Nullable Integer httpStatus, 
 			case ModelReply.NotSent notConnected -> {
 				return notSent();
 			}
+			// The answer broke off in its body: its status and request-id stay known (plan 6.4).
 			case ModelReply.NoAnswer unanswered -> {
+				httpStatus = unanswered.status();
+				requestId = unanswered.requestId();
+				respondedAt = (httpStatus != null) ? observedAt : null;
 			}
 		}
-		long used = (usage != null) ? costMicros(usage, price) : maxCostMicros;
+		Long actual = (usage != null) ? costMicros(usage, price) : null;
+		long used = (actual != null) ? actual : maxCostMicros;
 		Row row = reply.row();
 		return switch (row) {
 			case OUTPUT -> new CallOutcome(valid ? row.name() : Row.INVALID_OUTPUT.name(),
 					valid ? CallStatus.SUCCEEDED : CallStatus.RESPONDED_FAILURE, httpStatus, stopReason, requestId,
-					usage, used, true, sentAt, respondedAt, Signal.ANSWERED, null);
+					usage, used, actual, true, sentAt, respondedAt, Signal.ANSWERED, null);
 			case REFUSAL, TRUNCATED, INVALID_OUTPUT -> new CallOutcome(row.name(), CallStatus.RESPONDED_FAILURE,
-					httpStatus, stopReason, requestId, usage, used, true, sentAt, respondedAt, Signal.ANSWERED, null);
+					httpStatus, stopReason, requestId, usage, used, actual, true, sentAt, respondedAt, Signal.ANSWERED,
+					null);
 			case PROVIDER_REJECTED -> new CallOutcome(row.name(), CallStatus.RESPONDED_FAILURE, httpStatus, stopReason,
-					requestId, usage, used, true, sentAt, respondedAt, Signal.REJECTED, null);
+					requestId, usage, used, actual, true, sentAt, respondedAt, Signal.REJECTED, null);
 			// K-7: settled as a 400, so its sends stay spent; the circuit takes it as a configuration error.
 			case PAYMENT_REQUIRED -> new CallOutcome(row.name(), CallStatus.RESPONDED_FAILURE, httpStatus, stopReason,
-					requestId, usage, used, true, sentAt, respondedAt, Signal.CONFIG_ERROR, null);
+					requestId, usage, used, actual, true, sentAt, respondedAt, Signal.CONFIG_ERROR, null);
 			case CONFIGURATION_ERROR -> new CallOutcome(row.name(), CallStatus.RESPONDED_FAILURE, httpStatus,
-					stopReason, requestId, usage, used, false, sentAt, respondedAt, Signal.CONFIG_ERROR, null);
+					stopReason, requestId, usage, used, actual, false, sentAt, respondedAt, Signal.CONFIG_ERROR, null);
 			case THROTTLED -> new CallOutcome(row.name(), CallStatus.RESPONDED_FAILURE, httpStatus, stopReason,
-					requestId, usage, 0, false, sentAt, respondedAt, Signal.TRANSIENT, retryAfter);
+					requestId, usage, 0, actual, false, sentAt, respondedAt, Signal.TRANSIENT, retryAfter);
 			case UNKNOWN -> new CallOutcome(row.name(), CallStatus.UNKNOWN, httpStatus, stopReason, requestId, usage,
-					maxCostMicros, true, sentAt, respondedAt, Signal.TRANSIENT, retryAfter);
+					maxCostMicros, actual, true, sentAt, respondedAt, Signal.TRANSIENT, retryAfter);
 			case NOT_SENT -> notSent();
 		};
 	}
@@ -96,8 +105,8 @@ record CallOutcome(String row, CallStatus status, @Nullable Integer httpStatus, 
 	 * too close to send (design 2.5, last row).
 	 */
 	static CallOutcome notSent() {
-		return new CallOutcome(Row.NOT_SENT.name(), CallStatus.NOT_SENT, null, null, null, null, 0, false, null, null,
-				Signal.NOT_SENT, null);
+		return new CallOutcome(Row.NOT_SENT.name(), CallStatus.NOT_SENT, null, null, null, null, 0, null, false, null,
+				null, Signal.NOT_SENT, null);
 	}
 
 	/**
@@ -106,8 +115,8 @@ record CallOutcome(String row, CallStatus status, @Nullable Integer httpStatus, 
 	 * permit with its sends spent.
 	 */
 	static CallOutcome unknown(long maxCostMicros) {
-		return new CallOutcome(Row.UNKNOWN.name(), CallStatus.UNKNOWN, null, null, null, null, maxCostMicros, true, null,
-				null, Signal.TRANSIENT, null);
+		return new CallOutcome(Row.UNKNOWN.name(), CallStatus.UNKNOWN, null, null, null, null, maxCostMicros, null, true,
+				null, null, Signal.TRANSIENT, null);
 	}
 
 	/**
@@ -115,8 +124,8 @@ record CallOutcome(String row, CallStatus status, @Nullable Integer httpStatus, 
 	 */
 	static CallOutcome resultConflict(CallOutcome succeeded) {
 		return new CallOutcome(RESULT_CONFLICT, succeeded.status(), succeeded.httpStatus(), succeeded.stopReason(),
-				succeeded.requestId(), succeeded.usage(), succeeded.costMicros(), true, succeeded.sentAt(),
-				succeeded.respondedAt(), succeeded.signal(), null);
+				succeeded.requestId(), succeeded.usage(), succeeded.costMicros(), succeeded.usageCostMicros(), true,
+				succeeded.sentAt(), succeeded.respondedAt(), succeeded.signal(), null);
 	}
 
 	/**

@@ -137,13 +137,14 @@ class SendPermits {
 	}
 
 	private Permit decide(ClaimedJob claimed, RunBasis basis, CallManifest manifest) {
-		Instant now = Instant.now();
 		UUID ownerId = basis.ownerId();
 		UUID jobId = claimed.jobId();
 		UUID runToken = claimed.runToken();
 		boolean consentHolds = consents.basisHolds(ownerId, basis.consentVersion());
 		Set<UUID> existing = photos.holdExisting(ownerId, List.of(basis.photoId()));
 		LockedJob job = jobs.lock(jobId).orElseThrow();
+		// After the job lock: a permit that waited for the locks past the deadline or into the send margin fails them.
+		Instant now = Instant.now();
 		if (runs.findCall(jobId, runToken).isPresent()) {
 			return new Permit.Existing();
 		}

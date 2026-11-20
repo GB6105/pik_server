@@ -51,8 +51,9 @@ class ResponseSettlement {
 	 */
 	@Transactional(propagation = Propagation.MANDATORY)
 	Settled settleLocked(ClaimedJob claimed, CallRow call, CallOutcome outcome) {
-		Instant now = Instant.now();
 		LockedJob job = jobs.lock(claimed.jobId()).orElseThrow();
+		// After the lock, as in the completion: a response that waited for it past the deadline does not win (plan 1).
+		Instant now = Instant.now();
 		CallStatus status = runs.callStatus(call.id());
 		if (status != CallStatus.SENDING) {
 			if (status == CallStatus.UNKNOWN) {

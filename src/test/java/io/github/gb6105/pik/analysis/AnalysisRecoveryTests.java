@@ -290,6 +290,48 @@ class AnalysisRecoveryTests {
 		assertLateAnswerChangedNothingElse(jobId, photoId, gate);
 	}
 
+	// Plan 5.9: a late 5xx with usage, whose own row settles at the maximum, adjusts the call to the cost of its usage
+	// at the call's manifest prices; the day's settled cost moves by the difference, and a second late answer is a no-op.
+	@Test
+	void lateAnswerAdjustsToTheCostOfItsUsageWhateverItsRow() {
+		Installed device = fixtures.intake().android();
+		UUID jobId = fixtures.ready(device, 1).job();
+		UUID photoId = fixtures.photoOf(jobId);
+		Permitted permitted = permitted(claimOne());
+		expireLease(jobId);
+		assertThat(recovery.recover(jobId, permitted.claimed().runToken())).isEqualTo(LeaseRecovery.Outcome.RETRIED);
+		AnalysisProperties.Manifest settings = permitted.manifest().settings();
+		long max = settings.maxCostMicros();
+		assertThat(fixtures.call(jobId).get("settled_cost_micros")).isEqualTo(max);
+		long settledBefore = (Long) fixtures.spendDay().orElseThrow().get("settled_micros");
+		Map<String, Object> gate = fixtures.gate(GateCause.TRANSIENT_CIRCUIT);
+		ModelReply.Usage usage = new ModelReply.Usage(3001, 601, 1201, 401);
+		long actual = CallOutcome.costMicros(usage, settings.price());
+		assertThat(actual).isNotEqualTo(max);
+		CallOutcome late = CallOutcome.of(new ModelReply.Answered(500, "req_late", usage, null, null, null), false,
+				settings.price(), max, Instant.now(), Instant.now());
+		assertThat(late.costMicros()).isEqualTo(max);
+
+		assertThat(responses.settle(permitted.claimed(), permitted.call(), late))
+			.isEqualTo(ResponseSettlement.Settled.SETTLED_BEFORE);
+
+		Map<String, Object> call = fixtures.call(jobId);
+		assertThat(call.get("status")).isEqualTo("UNKNOWN");
+		assertThat(call.get("cost_state")).isEqualTo("ADJUSTED");
+		assertThat(call.get("settled_cost_micros")).isEqualTo(actual);
+		assertThat(call.get("cache_read_tokens")).isEqualTo(usage.cacheReadInputTokens());
+		assertThat(fixtures.spendDay().orElseThrow()).containsEntry("reserved_micros", 0L)
+			.containsEntry("settled_micros", settledBefore + actual - max);
+		assertLateAnswerChangedNothingElse(jobId, photoId, gate);
+
+		assertThat(responses.settle(permitted.claimed(), permitted.call(), refusal(permitted, MORE_TOKENS)))
+			.isEqualTo(ResponseSettlement.Settled.SETTLED_BEFORE);
+
+		assertThat(fixtures.call(jobId).get("settled_cost_micros")).isEqualTo(actual);
+		assertThat(fixtures.spendDay().orElseThrow()).containsEntry("settled_micros", settledBefore + actual - max);
+		assertLateAnswerChangedNothingElse(jobId, photoId, gate);
+	}
+
 	// Plan 5.9: a day row that is gone is not created again.
 	@Test
 	void lateAnswerWithoutItsDayRowAdjustsOnlyTheCall() {

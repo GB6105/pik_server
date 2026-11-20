@@ -61,22 +61,24 @@ class CallSettlements {
 
 	/**
 	 * Applies an answer that came after its call was confirmed unknown (plan 5.9): when it reports usage, the call's
-	 * cost becomes the cost of that usage once ({@code ADJUSTED}), also on the day of its permit, a day row that is
-	 * gone staying gone. The risky sends stay spent, and the answer stores no result, consumes no trial photo,
-	 * changes no job and counts for no circuit. Locks the call, then the daily cost.
+	 * cost becomes the cost of that usage at the call's manifest prices once ({@code ADJUSTED}), whatever the
+	 * answer's own row would settle (the maximum for a 5xx, nothing for a 429), also on the day of its permit, a day
+	 * row that is gone staying gone. The risky sends stay spent, and the answer stores no result, consumes no trial
+	 * photo, changes no job and counts for no circuit. Locks the call, then the daily cost.
 	 * @return whether the call was adjusted now; {@code false} without usage, or when it was adjusted before
 	 */
 	@Transactional(propagation = Propagation.MANDATORY)
 	boolean adjustLate(CallRow call, CallOutcome outcome, Instant now) {
 		ModelReply.Usage usage = outcome.usage();
-		if (usage == null) {
+		Long actual = outcome.usageCostMicros();
+		if (usage == null || actual == null) {
 			return false;
 		}
-		OptionalLong replaced = runs.adjustUnknown(call.id(), usage, outcome.costMicros());
+		OptionalLong replaced = runs.adjustUnknown(call.id(), usage, actual);
 		if (replaced.isEmpty()) {
 			return false;
 		}
-		runs.adjustSpend(call.budgetDay(), outcome.costMicros() - replaced.getAsLong(), now);
+		runs.adjustSpend(call.budgetDay(), actual - replaced.getAsLong(), now);
 		return true;
 	}
 
