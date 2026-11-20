@@ -105,8 +105,8 @@ class S3InputStoreTests {
 	void unreachableStorageIsUnavailable() {
 		AnalysisProperties.Upload upload = properties.upload();
 		AnalysisProperties.Upload closedPort = new AnalysisProperties.Upload(upload.urlTtl(), upload.confirmGrace(),
-				upload.maxAttempts(), upload.inFlightMargin(), upload.bucket(), upload.region(),
-				URI.create("http://127.0.0.1:1"));
+				upload.maxAttempts(), upload.inFlightMargin(), upload.notFoundRetryAfter(), upload.storageCallTimeout(),
+				upload.storageAttemptTimeout(), upload.bucket(), upload.region(), URI.create("http://127.0.0.1:1"));
 
 		try (S3InputStore unreachable = S3InputStore.create(closedPort)) {
 			assertThat(unreachable.head(key())).isEqualTo(new InputStore.Head.Unavailable());

@@ -167,6 +167,16 @@ public class TrialUsage {
 	}
 
 	/**
+	 * Whether the job still holds a reservation that is neither consumed nor released, read without a lock. A job's
+	 * reservations change only in transitions that lock the job first, so a caller holding the job's lock reads an
+	 * answer that holds until it commits.
+	 */
+	@Transactional(propagation = Propagation.MANDATORY)
+	public boolean holdsReservation(UUID principalId, UUID jobId) {
+		return !records.findReserved(principalId, jobId).isEmpty();
+	}
+
+	/**
 	 * Settles the job's reservations photo by photo, when its result is stored: the photos given a result are consumed
 	 * and the members whose metadata was deleted are released, under one lock of the quota and the device (design 2.4
 	 * step 6). The two sets split the photos of the job's reservations. A repeated call that asks for the state each

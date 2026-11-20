@@ -165,11 +165,15 @@ record AnalysisProperties(boolean intakeEnabled, Intake intake, Grouping groupin
 	 * @param maxAttempts the most upload attempts issued for one job
 	 * @param inFlightMargin time after the URL expires until an upload started before it surely ended, before which a
 	 * delete is not final (plan 7.4)
+	 * @param notFoundRetryAfter the {@code Retry-After} of a confirmation that finds no object yet
+	 * @param storageCallTimeout the limit of one storage call (HEAD, GET, DELETE) with the SDK retries
+	 * @param storageAttemptTimeout the limit of each HTTP attempt of a storage call
 	 * @param bucket the input bucket ({@code PIK_ANALYSIS_BUCKET})
 	 * @param region the AWS region of the bucket ({@code AWS_REGION})
 	 * @param endpoint the S3Mock URL of the local and test profiles; {@code null} uses AWS S3
 	 */
-	record Upload(Duration urlTtl, Duration confirmGrace, int maxAttempts, Duration inFlightMargin, String bucket,
+	record Upload(Duration urlTtl, Duration confirmGrace, int maxAttempts, Duration inFlightMargin,
+			Duration notFoundRetryAfter, Duration storageCallTimeout, Duration storageAttemptTimeout, String bucket,
 			String region, @Nullable URI endpoint) {
 
 		Upload {
@@ -178,6 +182,10 @@ record AnalysisProperties(boolean intakeEnabled, Intake intake, Grouping groupin
 			Assert.isTrue(!confirmGrace.isNegative(), "upload.confirm-grace must not be negative");
 			Assert.isTrue(maxAttempts >= 1, "upload.max-attempts must be at least 1");
 			Assert.isTrue(!inFlightMargin.isNegative(), "upload.in-flight-margin must not be negative");
+			Assert.isTrue(notFoundRetryAfter.isPositive(), "upload.not-found-retry-after must be positive");
+			Assert.isTrue(storageAttemptTimeout.isPositive(), "upload.storage-attempt-timeout must be positive");
+			Assert.isTrue(storageCallTimeout.compareTo(storageAttemptTimeout) >= 0,
+					"upload.storage-call-timeout must not be shorter than upload.storage-attempt-timeout");
 			Assert.isTrue(bucket != null && BUCKET.matcher(bucket).matches(),
 					"upload.bucket must be an S3 bucket name (PIK_ANALYSIS_BUCKET)");
 			Assert.isTrue(region != null && REGION.matcher(region).matches(),

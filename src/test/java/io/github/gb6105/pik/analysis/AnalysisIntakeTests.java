@@ -298,7 +298,8 @@ class AnalysisIntakeTests {
 					"representativePhotoId", "photoCount", "analysisJobId"));
 		assertThat(response.get("jobs")).hasSize(5).allSatisfy((job) -> {
 			assertThat(job.propertyNames()).containsExactlyInAnyOrder("analysisJobId", "requestId", "groupId",
-					"representativePhotoId", "status", "uploadRequired", "uploadPolicy");
+					"representativePhotoId", "status", "reason", "uploadRequired", "uploadPolicy");
+			assertThat(job.get("reason").isNull()).isTrue();
 			assertThat(job.get("uploadPolicy").propertyNames()).containsExactlyInAnyOrder("contentType", "maxBytes",
 					"maxLongEdgePx");
 		});

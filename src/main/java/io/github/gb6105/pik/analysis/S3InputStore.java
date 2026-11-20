@@ -12,6 +12,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.retry.RetryMode;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -46,11 +47,16 @@ final class S3InputStore implements InputStore, AutoCloseable {
 	}
 
 	/**
-	 * Builds the clients of the settings. An endpoint is S3Mock, which serves path-style URLs only.
+	 * Builds the clients of the settings. Calls keep the SDK standard retries, bounded per attempt and per call; they
+	 * all run outside database transactions (plan 1). An endpoint is S3Mock, which serves path-style URLs only.
 	 */
 	static S3InputStore create(AnalysisProperties.Upload upload) {
 		Region region = Region.of(upload.region());
-		S3ClientBuilder client = S3Client.builder().region(region);
+		S3ClientBuilder client = S3Client.builder()
+			.region(region)
+			.overrideConfiguration((config) -> config.retryStrategy(RetryMode.STANDARD)
+				.apiCallTimeout(upload.storageCallTimeout())
+				.apiCallAttemptTimeout(upload.storageAttemptTimeout()));
 		S3Presigner.Builder presigner = S3Presigner.builder().region(region);
 		URI endpoint = upload.endpoint();
 		if (endpoint != null) {

@@ -28,6 +28,8 @@ class AnalysisSettingsTests {
 			"pik.analysis.manifest.max-bytes=2097152", "pik.analysis.manifest.max-long-edge-px=1568",
 			"pik.analysis.upload.url-ttl=PT15M", "pik.analysis.upload.confirm-grace=PT15M",
 			"pik.analysis.upload.max-attempts=5", "pik.analysis.upload.in-flight-margin=PT30M",
+			"pik.analysis.upload.not-found-retry-after=PT5S", "pik.analysis.upload.storage-call-timeout=PT10S",
+			"pik.analysis.upload.storage-attempt-timeout=PT3S",
 			"pik.analysis.upload.bucket=pik-analysis-test", "pik.analysis.upload.region=us-east-1",
 			"pik.analysis.worker.enabled=false", "pik.analysis.worker.poll-interval=PT1S",
 			"pik.analysis.worker.global-slots=2", "pik.analysis.worker.principal-slots=4",
@@ -62,7 +64,8 @@ class AnalysisSettingsTests {
 
 	// The stage 5-2 records of DEFAULTS.
 	static final AnalysisProperties.Upload UPLOAD = new AnalysisProperties.Upload(Duration.ofMinutes(15),
-			Duration.ofMinutes(15), 5, Duration.ofMinutes(30), "pik-analysis-test", "us-east-1", null);
+			Duration.ofMinutes(15), 5, Duration.ofMinutes(30), Duration.ofSeconds(5), Duration.ofSeconds(10),
+			Duration.ofSeconds(3), "pik-analysis-test", "us-east-1", null);
 
 	static final AnalysisProperties.Worker WORKER = new AnalysisProperties.Worker(false, Duration.ofSeconds(1), 2, 4,
 			4, 3, Duration.ofSeconds(120), Duration.ofSeconds(70));
@@ -205,6 +208,11 @@ class AnalysisSettingsTests {
 		assertFails("upload.confirm-grace must not be negative", "pik.analysis.upload.confirm-grace=-PT1S");
 		assertFails("upload.max-attempts must be at least 1", "pik.analysis.upload.max-attempts=0");
 		assertFails("upload.in-flight-margin must not be negative", "pik.analysis.upload.in-flight-margin=-PT1S");
+		assertFails("upload.not-found-retry-after must be positive", "pik.analysis.upload.not-found-retry-after=PT0S");
+		assertFails("upload.storage-attempt-timeout must be positive",
+				"pik.analysis.upload.storage-attempt-timeout=PT0S");
+		assertFails("upload.storage-call-timeout must not be shorter than upload.storage-attempt-timeout",
+				"pik.analysis.upload.storage-call-timeout=PT2S");
 		assertFails("upload.endpoint must be an http or https URL", "pik.analysis.upload.endpoint=ftp://localhost");
 		assertFails("worker.global-slots must be at least 1", "pik.analysis.worker.global-slots=0");
 		assertFails("worker.principal-slots must be at least 1", "pik.analysis.worker.principal-slots=0");

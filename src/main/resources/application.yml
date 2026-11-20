@@ -105,6 +105,12 @@ pik:
       max-attempts: 5
       # Uploads started before the URL expired may end this much later; deletes before that are not final (R2-06).
       in-flight-margin: PT30M
+      # Retry-After of a confirmation that finds no object yet.
+      not-found-retry-after: PT5S
+      # HEAD, GET and DELETE run outside transactions with the SDK standard retries, each attempt and the whole call
+      # bounded.
+      storage-call-timeout: PT10S
+      storage-attempt-timeout: PT3S
       # Required. Credentials come from the AWS SDK default chain (the ECS task role when deployed).
       bucket: ${PIK_ANALYSIS_BUCKET:}
       region: ${AWS_REGION:}

@@ -1,11 +1,5 @@
 package io.github.gb6105.pik.analysis;
 
-import io.github.gb6105.pik.analysis.IntakeResponse.GroupView;
-import io.github.gb6105.pik.analysis.IntakeResponse.ItemView;
-import io.github.gb6105.pik.analysis.IntakeResponse.JobView;
-import io.github.gb6105.pik.analysis.IntakeResponse.UploadPolicy;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Types;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -16,6 +10,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -25,7 +20,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 /**
- * Plain SQL for intake: one batch per table in the business transaction, and the reads of the response projection.
+ * Plain SQL for intake: one batch per table in the business transaction, and the one read of the response projection.
  * The rows carry photo IDs and {@code contentVersion} values, so their {@code toString} hides them.
  */
 @Repository
@@ -185,87 +180,60 @@ class IntakeRecords {
 			.toArray(MapSqlParameterSource[]::new));
 	}
 
-	boolean requestExists(UUID requestId) {
-		return jdbc.sql("SELECT EXISTS (SELECT 1 FROM analysis_request WHERE id = :id)")
-			.param("id", requestId)
-			.query(Boolean.class)
-			.single();
-	}
-
 	/**
-	 * The items of a request in {@code photoId} order with the current status of the job each points at.
-	 * {@code analyzedVersion} is the version the job analyzes the photo at: the item's own for an accepted photo, the
-	 * accepted item's of the job's request for a photo in progress.
+	 * The rows of a request's response in one statement, so that they come from one snapshot even under READ
+	 * COMMITTED (plan 4.3, ADR-0034): JSON arrays of the items, the groups and the jobs, each in the order of the
+	 * response (design 1.5). Items are in {@code photoId} order with the current status of the job each points at;
+	 * {@code analyzedVersion} is the version that job analyzes the photo at, the item's own for an accepted photo and
+	 * the accepted item's of the job's request for a photo in progress. Groups are in the order of their
+	 * representatives' {@code photoId}. Jobs are those the items point at, once each: the jobs the request created and
+	 * the jobs of other requests its {@code IN_PROGRESS} photos wait for (the scope of {@code counts} and
+	 * {@code phase}), named and ordered by the {@code photoId} of their representative kept on the job (unsigned, as
+	 * {@code uuid} compares), then by job ID, with the upload policy of their manifest and their failure code.
+	 * @param ownerId the request's owner; {@code null} reads the request whoever owns it
+	 * @return empty when the request does not exist or is of another owner
 	 */
-	List<ItemView> items(UUID requestId) {
+	Optional<ProjectionRows> projection(UUID requestId, @Nullable UUID ownerId) {
 		return jdbc.sql("""
-				SELECT i.client_ref, i.admission_result, i.code, i.reason, i.retryable, i.analysis_job_id, i.group_id,
-				       i.group_role, i.photo_version, i.vector_ignored_reason, j.status AS execution,
-				       a.photo_version AS analyzed_version
-				FROM analysis_request_item i
-				LEFT JOIN analysis_job j ON j.id = i.analysis_job_id
-				LEFT JOIN analysis_request_item a ON a.request_id = j.request_id AND a.photo_id = i.photo_id
-				                                 AND a.analysis_job_id = j.id AND a.admission_result = 'ACCEPTED'
-				WHERE i.request_id = :request
-				ORDER BY i.client_ref
-				""").param("request", requestId).query(IntakeRecords::item).list();
-	}
-
-	/**
-	 * The groups of a request in the {@code photoId} order of their representatives.
-	 */
-	List<GroupView> groups(UUID requestId) {
-		return jdbc.sql("""
-				SELECT g.id, rep.client_ref AS representative, g.photo_count, j.id AS job_id
-				FROM analysis_group g
-				JOIN analysis_request_item rep ON rep.request_id = g.request_id
-				                              AND rep.photo_id = g.representative_photo_id
-				LEFT JOIN analysis_job j ON j.group_id = g.id
-				WHERE g.request_id = :request
-				ORDER BY rep.client_ref
+				SELECT
+				  (SELECT COALESCE(json_agg(json_build_object(
+				            'photoId', i.client_ref, 'admissionResult', i.admission_result, 'code', i.code,
+				            'reason', i.reason, 'retryable', i.retryable, 'analysisJobId', i.analysis_job_id,
+				            'groupId', i.group_id, 'role', i.group_role, 'execution', j.status,
+				            'observedVersion', i.photo_version, 'analyzedVersion', a.photo_version,
+				            'vectorIgnored', i.vector_ignored_reason) ORDER BY i.client_ref), '[]'::json)
+				   FROM analysis_request_item i
+				   LEFT JOIN analysis_job j ON j.id = i.analysis_job_id
+				   LEFT JOIN analysis_request_item a ON a.request_id = j.request_id AND a.photo_id = i.photo_id
+				                                    AND a.analysis_job_id = j.id AND a.admission_result = 'ACCEPTED'
+				   WHERE i.request_id = r.id) AS items,
+				  (SELECT COALESCE(json_agg(json_build_object(
+				            'groupId', g.id, 'representativePhotoId', rep.client_ref, 'photoCount', g.photo_count,
+				            'analysisJobId', j.id) ORDER BY rep.client_ref), '[]'::json)
+				   FROM analysis_group g
+				   JOIN analysis_request_item rep ON rep.request_id = g.request_id
+				                                 AND rep.photo_id = g.representative_photo_id
+				   LEFT JOIN analysis_job j ON j.group_id = g.id
+				   WHERE g.request_id = r.id) AS groups,
+				  (SELECT COALESCE(json_agg(json_build_object(
+				            'analysisJobId', j.id, 'requestId', j.request_id, 'groupId', j.group_id,
+				            'representativePhotoId', j.representative_client_ref, 'status', j.status,
+				            'reason', j.failure_code, 'uploadRequired', j.status = 'AWAITING_UPLOAD',
+				            'uploadPolicy', json_build_object('contentType', m.content_type, 'maxBytes', m.max_bytes,
+				                                              'maxLongEdgePx', m.max_long_edge_px))
+				            ORDER BY j.representative_client_ref, j.id), '[]'::json)
+				   FROM analysis_job j
+				   JOIN analysis_call_manifest m ON m.id = j.manifest_id
+				   WHERE j.id IN (SELECT ri.analysis_job_id FROM analysis_request_item ri
+				                  WHERE ri.request_id = r.id AND ri.analysis_job_id IS NOT NULL)) AS jobs
+				FROM analysis_request r
+				WHERE r.id = :request AND (CAST(:owner AS uuid) IS NULL OR r.owner_id = CAST(:owner AS uuid))
 				""")
 			.param("request", requestId)
-			.query((rs, rowNum) -> new GroupView(rs.getObject("id", UUID.class),
-					rs.getObject("representative", UUID.class), rs.getInt("photo_count"),
-					rs.getObject("job_id", UUID.class)))
-			.list();
-	}
-
-	/**
-	 * The jobs the items of a request point at, once each: the jobs it created and the jobs of other requests its
-	 * {@code IN_PROGRESS} photos wait for (the scope of {@code counts} and {@code phase}). Each carries the client's ID
-	 * of its representative photo, read from the photo row, and is ordered by it (unsigned, as {@code uuid} compares),
-	 * then by job ID, with the upload policy of its manifest.
-	 */
-	List<JobView> jobs(UUID requestId) {
-		return jdbc.sql("""
-				SELECT j.id, j.request_id, j.group_id, p.client_ref AS representative, j.status, m.content_type,
-				       m.max_bytes, m.max_long_edge_px
-				FROM analysis_job j
-				JOIN analysis_call_manifest m ON m.id = j.manifest_id
-				JOIN photo p ON p.id = j.photo_id
-				WHERE j.id IN (SELECT i.analysis_job_id FROM analysis_request_item i
-				               WHERE i.request_id = :request AND i.analysis_job_id IS NOT NULL)
-				ORDER BY p.client_ref, j.id
-				""").param("request", requestId).query((rs, rowNum) -> {
-			JobStatus status = JobStatus.valueOf(rs.getString("status"));
-			return new JobView(rs.getObject("id", UUID.class), rs.getObject("request_id", UUID.class),
-					rs.getObject("group_id", UUID.class), rs.getObject("representative", UUID.class), status,
-					status == JobStatus.AWAITING_UPLOAD, new UploadPolicy(rs.getString("content_type"),
-							rs.getLong("max_bytes"), rs.getInt("max_long_edge_px")));
-		}).list();
-	}
-
-	private static ItemView item(ResultSet rs, int rowNum) throws SQLException {
-		String role = rs.getString("group_role");
-		String execution = rs.getString("execution");
-		String ignored = rs.getString("vector_ignored_reason");
-		return new ItemView(rs.getObject("client_ref", UUID.class),
-				AdmissionResult.valueOf(rs.getString("admission_result")), rs.getString("code"),
-				rs.getString("reason"), rs.getBoolean("retryable"), null, rs.getObject("analysis_job_id", UUID.class),
-				rs.getObject("group_id", UUID.class), (role != null) ? GroupRole.valueOf(role) : null,
-				(execution != null) ? JobStatus.valueOf(execution) : null, rs.getString("photo_version"),
-				rs.getString("analyzed_version"), (ignored != null) ? VectorIgnoredReason.valueOf(ignored) : null);
+			.param("owner", ownerId, Types.OTHER)
+			.query((rs, rowNum) -> new ProjectionRows(rs.getString("items"), rs.getString("groups"),
+					rs.getString("jobs")))
+			.optional();
 	}
 
 	private static OffsetDateTime timestamp(Instant instant) {
@@ -323,6 +291,20 @@ class IntakeRecords {
 		@Override
 		public String toString() {
 			return "ItemRow[requestId=" + requestId + ", admissionResult=" + admissionResult + "]";
+		}
+
+	}
+
+	/**
+	 * The JSON arrays of {@link #projection}, of {@code IntakeResponse.ItemView}, {@code GroupView} and
+	 * {@code JobView} rows.
+	 */
+	record ProjectionRows(String items, String groups, String jobs) {
+
+		// They hold photo IDs and contentVersion values.
+		@Override
+		public String toString() {
+			return "ProjectionRows[hidden]";
 		}
 
 	}

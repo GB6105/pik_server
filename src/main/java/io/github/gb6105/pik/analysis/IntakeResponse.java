@@ -79,17 +79,19 @@ record IntakeResponse(UUID jobId, CommandResult result, boolean retryable, Phase
 	 * A job an item of the request points at: one the request created or one its photos in progress wait for.
 	 *
 	 * @param requestId the request that created the job, the path of its uploads
-	 * @param representativePhotoId the client's ID of the photo the job analyzes, the image to upload; a request that
-	 * sent only a member of the job's group does not have it among its items
+	 * @param representativePhotoId the client's ID of the photo the job analyzes, the image to upload, kept on the job;
+	 * a request that sent only a member of the job's group does not have it among its items
+	 * @param reason why the job ended without a result, {@code null} while it runs or when it succeeded
 	 * @param uploadRequired whether the device must upload the representative image
 	 * @param uploadPolicy what the upload must satisfy, from the job's call manifest
 	 */
 	record JobView(UUID analysisJobId, UUID requestId, UUID groupId, UUID representativePhotoId, JobStatus status,
-			boolean uploadRequired, UploadPolicy uploadPolicy) {
+			@Nullable FailureCode reason, boolean uploadRequired, UploadPolicy uploadPolicy) {
 
 		@Override
 		public String toString() {
-			return "JobView[analysisJobId=" + analysisJobId + ", requestId=" + requestId + ", status=" + status + "]";
+			return "JobView[analysisJobId=" + analysisJobId + ", requestId=" + requestId + ", status=" + status
+					+ ", reason=" + reason + "]";
 		}
 
 	}
