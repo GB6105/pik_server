@@ -3,8 +3,8 @@
 > 프로젝트 기록의 진입점. 작업이 끝날 때마다 이 파일을 최신 상태로 덮어쓴다.
 > 결정 근거는 `adr/`, 날짜별 진행 기록은 `devlog/`에 둔다.
 
-- 최종 갱신: 2026-11-19
-- 현재 단계: **5-1 분석 접수·묶음 병합 완료** (PR #13, `b3b243e`). 다음 = 5-2 업로드·실행·결과·정산 (D-09 해소, 단말 OCR 본문 미전송)
+- 최종 갱신: 2026-11-20
+- 현재 단계: **5-2 분석 업로드·실행·결과·정산 구현 완료, 미병합** (브랜치 `feature/FR-I-03-analysis-run`, [ADR-0035](adr/0035-stage5-2-analysis-run-implementation.md)). 다음 = 검토점 B (Codex 전체 검토) → PR (사용자 승인 후) → 5-3 액션·이벤트. 접수 꺼짐 유지 (`intake-enabled=false`)
 
 ## 기록 체계
 | 문서 | 경로 | 용도 | 갱신 시점 |
@@ -23,7 +23,7 @@
 | 2 | 공통 기반 (모듈 골격, ProblemDetail, 멱등 기록, 보안, 구조화 로그) + 익명 주체 발급 (ADR-0020) | 완료 (ADR-0025~0027) |
 | 3 | 동의 기록 (FR-O-02): 단일 동의 + 목적 필드, 철회 처리 | 완료 (ADR-0028) |
 | 4 | 이용량 (FR-B-01): 예약·반환, 기기·계정 이중 집계, 재설치 판별 | 완료 (ADR-0029) |
-| 5 | 분석 접수·묶음 판단 (FR-I-01·02) → 분석 (FR-I-03) → 액션·이벤트 생성 (FR-G-01~03, 웹 연결 제외). PR 3개: 5-1 접수·묶음 / 5-2 업로드·실행·결과·정산 / 5-3 액션·이벤트 | 설계 확정 ([ADR-0031](adr/0031-stage5-analysis-pipeline.md), `docs/design/stage5-analysis-pipeline.md`). 모델과 무관한 계약 (모델·버전·차원·임계값 = 설정값), 모듈 `photo` + `analysis` (2026-11-01 사용자 결정). 첫 실행 Messages (D-25 사용자 결정), 검색용 파생 정보 포함·불명 호출 사진마다 1회 재호출 (사용자 결정, D-26). 5-1 완료 ([ADR-0034](adr/0034-stage5-1-intake-implementation.md), PR #13 병합 `b3b243e`, 접수 기본 꺼짐). 5-2·5-3 대기 |
+| 5 | 분석 접수·묶음 판단 (FR-I-01·02) → 분석 (FR-I-03) → 액션·이벤트 생성 (FR-G-01~03, 웹 연결 제외). PR 3개: 5-1 접수·묶음 / 5-2 업로드·실행·결과·정산 / 5-3 액션·이벤트 | 설계 확정 ([ADR-0031](adr/0031-stage5-analysis-pipeline.md), `docs/design/stage5-analysis-pipeline.md`). 모델과 무관한 계약 (모델·버전·차원·임계값 = 설정값), 모듈 `photo` + `analysis` (2026-11-01 사용자 결정). 첫 실행 Messages (D-25 사용자 결정), 검색용 파생 정보 포함·불명 호출 사진마다 1회 재호출 (사용자 결정, D-26). 5-1 완료 ([ADR-0034](adr/0034-stage5-1-intake-implementation.md), PR #13 병합 `b3b243e`, 접수 기본 꺼짐). 5-2 구현 완료·미병합 ([ADR-0035](adr/0035-stage5-2-analysis-run-implementation.md), PR 대기). 5-3 대기 |
 | 6 | 3회 클릭 집계 (FR-B-01), 웹 연결 (FR-X-06), FR-G-04 | 대기 |
 | 7 | 로그인·로그아웃 (FR-A-01·03) | 대기 |
 | 8 | 구독 (FR-B-02~05) | 대기. 선행: P03 정가 (임시 기준·처리량 구조·D-27은 결정, ADR-0033 #2~#4) |
@@ -70,6 +70,7 @@
 - 단계 5-1 분석 접수·묶음 (FR-I-01·02): V5 마이그레이션 (`photo`·`photo_vector`·`analysis_grouping_rule`·`analysis_call_manifest`·`analysis_request`·`analysis_group`·`analysis_job`·`analysis_request_item`), `photo` 모듈 (원본 버전 관측·불변 벡터 버전·변경 번호 발급), `analysis` 모듈 (`POST /analysis-jobs`, 묶음 규칙 v1·벡터 검사·규칙·호출 manifest, 재분류·체험 예약·`StartRequired` 재시도, 투영 재생), 실행기 단계 API·비저장 오류·장기 작업 오류 `jobId = null`, 동의 advisory 잠금·기준 버전, `NotCovered` 재시도 여부·`StartGuard`, 요청 기기 확인·첫 체험 assertion 포트 (대역). 사용자 결정 Q1~Q16·`jobs[]` 범위·문자열 규칙, `analysis_job` 잠금 = `FOR NO KEY UPDATE` 규칙 (C-8). 시험 472개 통과 ([ADR-0034](adr/0034-stage5-1-intake-implementation.md))
 - 이후 단계 정책 사용자 결정 ([ADR-0033](adr/0033-later-stage-policy-proposals.md) #2·#3·#4·#10·#11): Pro 임시 기준 월 $8·일 100장·초기 3,000장 (정가 미정, P03), 탈퇴 뒤 같은 구매의 초기량 재지급 감수 (D-27 해소), 보관 기간 제안값 (P08·P11), 무료·만료 기초 검색 = 체험 대상 범위 (P02, SSOT 기준), 정리 독려 14일 뒤 반복·권한 요청 3회·Pik 선발송 알림 기기당 하루 1개 (P09), 메모·태그·검색 페이지 상한 (P10). SSOT 보고 FR-G-01↔FR-E-01 완료 (특별 규정으로 해석 유지, ADR-0030 #8)
 - 단계 5-1 병합 (PR #13, `b3b243e`). D-09 해소 (사용자 결정 2026-11-19, [ADR-0033](adr/0033-later-stage-policy-proposals.md) #6): 첫 출시 = 단말이 `text.status`만 보내고 글자는 Claude가 이미지에서 읽는다. OCR 본문 동봉은 D-07 측정에서 이득이 입증되면 추가. 축소 해상도는 D-07로 이관
+- 단계 5-2 분석 업로드·실행·결과·정산 (FR-I-03, FR-I-01·02 후속, 브랜치 `feature/FR-I-03-analysis-run`, 미병합): V6 마이그레이션 (`analysis_upload_attempt`·`external_call`·`analysis_result`·`photo_ai_budget`·`ai_spend_day`·`ai_send_daily`·`ai_gate`·`analysis_input_rate`, `analysis_job` 실행 열), 업로드 API 3개 (시도 발급·확정·상태 조회 ETag), worker (claim·허가·Claude 호출·완료·응답 정산·불명·관문·예산), 배치 7개 (회수·처리 기한·임대 회수·객체 삭제·청소 대조·입력 속도 정리·감시), Claude 어댑터·manifest v1·프롬프트·스키마·검증기, 5c 판정 (`EXISTING_RESULT` 등), 수동 재처리 API, `AnalysisCompleted`. 잠금 순서 개정·전이별 잠금 표, 객체 최종 삭제 규칙 (`DELETE_SENT` + 수명 주기 3일). 착수 = 사용자 선택 "구현 시작", Codex 계획 검토 R1~R4·코드 검토점 A (5건 수용·수정). 시험 833개 통과 ([ADR-0035](adr/0035-stage5-2-analysis-run-implementation.md))
 
 ## 다음 할 일
 - [x] 단계 4 PR 병합 (PR #11, `3d1df32`)
@@ -77,12 +78,12 @@
 - [x] Codex 최종 검증 R16~R18: R15 nonce 왕복 닫힘, 반영 오류 3건 수정, 체험 대상 투영 (`trialEligible`)·기기별 알림 일 슬롯·로그인 인계 대안 채택, 같은 시각 묶음 범위는 사용자 결정. R18 확정 가능
 - [x] 단계 5-1 구현 (`photo` + 접수·묶음, ADR-0034)
 - [x] 단계 5-1 PR 병합 (PR #13, `b3b243e`)
-- [ ] 단계 5-2 (업로드·실행·정산), 5-3 (생성·API). ERD 반영은 각 구현 PR에서 (ADR-0031). 5-2 조건 (ADR-0034):
-  - 재생 투영을 한 스냅샷으로 읽기 (REPEATABLE READ 읽기 TX 또는 단일 조회)
-  - claim·작업 잠금 = 네이티브 SQL `FOR NO KEY UPDATE [SKIP LOCKED]` (`FOR UPDATE`·`DELETE`·키 열 UPDATE 금지, 주체 접수 잠금을 먼저 잡은 TX 예외), C-8의 claim 경로 변형 시험 추가
-  - `AlreadyReserved` 보유 작업이 종료 상태일 때 클라이언트 해석 (`IN_PROGRESS` + `phase = DONE`) 정리
-  - 결과 복사·정산의 구성원 = 원접수 `ACCEPTED` 항목만 (R19 O2, D-28)
-- [ ] 보관 단계: 항목 → 작업 FK (`fk_analysis_request_item_job`)가 두 접수의 삭제 기한을 묶는 문제 (참조 항목 먼저 삭제 또는 작업 기한 = 마지막 참조 접수), 미참조 `photo_vector` 정리 (`data-retention.md`, ADR-0034)
+- [x] 단계 5-2 구현 (업로드·실행·결과·정산, ADR-0035). ADR-0034의 5-2 조건 4개 충족 (투영 SQL 1개, claim `FOR NO KEY UPDATE SKIP LOCKED` + C-10, `AlreadyReserved` 종료 작업 해석, 구성원 = 원접수 `ACCEPTED`)
+- [ ] 단계 5-2 검토점 B (Codex 전체 검토) → PR (사용자 승인 후). ERD 반영 (V6)은 erd-editor로 별도
+- [ ] 단계 5-3 (액션·이벤트 생성, `AnalysisCompleted` 리스너, 수동 재처리 HTTP 진입점). 병합 뒤 접수 활성화는 D-29·D-07 결정 후
+- [ ] 실제 S3 계약 시험 (서명 헤더·`If-None-Match`·URL/자격 만료 뒤 PUT·삭제 뒤 재PUT·느린 PUT·`ChecksumMode` HEAD·`ListBucket`·수명 주기 3일), 분석 버킷·IAM·worker 서비스 구성 (운영 배포 전, `docs/design/operations-infrastructure.md` B11)
+- [ ] 단계 10 탈퇴 TX = 동의 배타 잠금 + 비동의 결정 기록 → 주체 비활성 (5-2 계약, `consistency-rules.md`, ADR-0035 #6)
+- [ ] 보관 단계: 분석 기록 정리 배치 (시도 → `external_call` → 종료 작업·항목·접수 순서, 설계 문서 4.3), 항목 → 작업 FK (`fk_analysis_request_item_job`)가 두 접수의 삭제 기한을 묶는 문제 (참조 항목 먼저 삭제 또는 작업 기한 = 마지막 참조 접수), 미참조 `photo_vector` 정리 (`data-retention.md`, ADR-0034)
 - [ ] ERD 모듈 간 논리 연결선 표기 통일 (새 표 = 연결선 없음, 기존 표 = 있음, 예: `analysis_job.photo_id` → `photo`). `docs/erd/pik.erd.json`은 MCP 편집기로만
 - [ ] `Device-Check-Token` 길이 상한 결정 (현재 = Tomcat 헤더 8 KB, Apple 토큰 크기 확인 뒤, ADR-0034)
 - [ ] B7 DeviceCheck 설치 경로 "확인 전" 상태 구현 (D-23 결정, ADR-0032 #7): `startDeviceCheck`·`startedElsewhere`·취소 복원 전이 포함 (R19 O3). 5-1은 접수의 시작 판정 (`needsDeviceCheck()`)만 대비, 지원 완료로 보지 않음
@@ -98,10 +99,10 @@
 - [ ] 운영 JWK Set (ES256) 생성·보관·교체 절차 (배포 환경 구성 때, D-13과 함께, ADR-0027)
 - [ ] 유사도 벡터 모델을 클라이언트와 합의 (묶음 활성화 `groupingEnabled=true` 전. 5-1 착수는 막지 않음, ADR-0021·0031)
 - [ ] TypeSafe Jev 직접 API early access 신청, 데이터 보관·처리 국가 확인 (D-08). 테스트 키로 직접 API 호출은 확인함 (2026-10-26). 그 키가 early access 키였는지는 TypeSafe 콘솔에서 확인 (사용자, 기록 없음)
-- [ ] Haiku 5.5·Jev 측정용 실제 사진·검색어 표본 구성 (D-07)
+- [ ] Haiku 5.5·Jev 측정용 실제 사진·검색어 표본 구성 (D-07). 5-2 측정 실행은 사용자 승인 후 (실제 사진·비용 발생)
 - [x] 분석 작업·접수 단위 상태명 확정 (ADR-0031, 설계 문서 2.1)
 - [ ] Terraform 인프라 코드·CD 파이프라인 작성 (배포 환경 구성 전, 출구 = NAT 없이 공인 IP, ADR-0015·0032 #1). B1 보안 그룹 CI 검사 (태스크 보안 그룹 인바운드 `0.0.0.0/0`·`::/0`, `worker` 인바운드 규칙 거부)는 설계만 반영됨, 구현은 이 작업에서
-- [ ] ER 설계안을 Flyway 마이그레이션에 반영: 공통 인프라 4개는 V1 완료 (ADR-0026), 주체·설치·기기는 V2 완료 (ADR-0027), 동의는 V3 완료 (ADR-0028), 체험 이용량은 V4 완료 (ADR-0029), 사진·분석 접수는 V5 완료 (ADR-0034), 나머지는 각 단계 (ADR-0022)
+- [ ] ER 설계안을 Flyway 마이그레이션에 반영: 공통 인프라 4개는 V1 완료 (ADR-0026), 주체·설치·기기는 V2 완료 (ADR-0027), 동의는 V3 완료 (ADR-0028), 체험 이용량은 V4 완료 (ADR-0029), 사진·분석 접수는 V5 완료 (ADR-0034), 분석 실행은 V6 (5-2 브랜치, ADR-0035), 나머지는 각 단계 (ADR-0022)
 - [ ] FR-A-04 기술 검증: PHCloudIdentifier 신뢰성 (앨범 iCloud 식별자 지원 포함), 같은 기기 재설치 때 이전 연결 찾기 (단계 9 전, D-20, ADR-0022·0024)
 - [ ] Google Places 국내 장소 품질 측정: 공연장·카페·주소 표본 (단계 9 전, D-07 표본과 함께, ADR-0024)
 - [ ] 지도 앱 URL 스킴 확인 (카카오맵·네이버 지도), RevenueCat 복원 동작 기본값 유지 확인 (ADR-0024)
@@ -114,12 +115,13 @@
 
 | ID | 결정 사항 | 선택지 | 필요 시점 | 막는 작업 |
 |---|---|---|---|---|
-| D-01 | 미정 정책 P01~P11 확정 (P01·P02·P11 확정, P03·P05·P07·P08·P09·P10 일부 확정, ADR-0020~0022·0024·0033) | 남은 값: P03 정가 (임시 $8), P05 임계값 (v1 값 = 설정값, 묶음 기본 꺼짐, ADR-0034), P07 FR-A-04 검증, P08 탈퇴 최소 기록 기간 (법률 검토), P09 이벤트 알림 선행 시간·장소 반경, P10 태그 정규화·AND/OR·전역 편집. `.claude/docs/open-policies.md` 참고 | 각 FR 구현 전 | FR-B, FR-I, FR-E, FR-N, FR-L 인수 조건 |
-| D-07 | 분석 모델 재결정 | Haiku 5.5 유지 / 경로별 Sonnet 5.5·Opus 5.5 상향 (실제 사진 표본 측정 기반, 추론 토큰 포함 비용). 측정 절차·합격 기준 초안: ADR-0033 #5. 검색 블록 비용·검색 품질 측정 포함 (ADR-0031 #20). 5-1 업로드 정책 기본값 = `image/jpeg`·1568px·2 MiB (설정값, 측정 때 확정, ADR-0034 #3. 축소 해상도는 D-09에서 이관). 제안 (사용자 확인 전): ADR-0033 #5 해상도 후보 (1092/1568px)는 표준 등급 기준. Haiku 5.5는 고해상도 등급 (최대 2576px) → 2576px (+ `maxPixels` 또는 시각 토큰 상한)을 후보에 추가할지 결정. 글자 많은 사진 (영수증·티켓) 이득 가능, 비용 약 2배 | 단계 5-2 구현과 함께 측정 | 분석 정확도·비용, P03 |
+| D-01 | 미정 정책 P01~P11 확정 (P01·P02·P11 확정, P03·P05·P07·P08·P09·P10 일부 확정, ADR-0020~0022·0024·0033) | 남은 값: P03 정가 (임시 $8), P05 임계값 (v1 값 = 설정값 `pik.analysis.grouping.*`, 묶음 기본 꺼짐, ADR-0034. 재분석 조건 = 기존 결과 재사용 `EXISTING_RESULT`, 관측 버전 무관, 5-2 구현, ADR-0035), P07 FR-A-04 검증, P08 탈퇴 최소 기록 기간 (법률 검토), P09 이벤트 알림 선행 시간·장소 반경, P10 태그 정규화·AND/OR·전역 편집. `.claude/docs/open-policies.md` 참고 | 각 FR 구현 전 | FR-B, FR-I, FR-E, FR-N, FR-L 인수 조건 |
+| D-07 | 분석 모델 재결정 | Haiku 5.5 유지 / 경로별 Sonnet 5.5·Opus 5.5 상향 (실제 사진 표본 측정 기반, 추론 토큰 포함 비용). 측정 절차·합격 기준 초안: ADR-0033 #5. 검색 블록 비용·검색 품질 측정 포함 (ADR-0031 #20). 5-1 업로드 정책 기본값 = `image/jpeg`·1568px·2 MiB (설정값, 측정 때 확정, ADR-0034 #3. 축소 해상도는 D-09에서 이관). 제안 (사용자 확인 전): ADR-0033 #5 해상도 후보 (1092/1568px)는 표준 등급 기준. Haiku 5.5는 고해상도 등급 (최대 2576px) → 2576px (+ `maxPixels` 또는 시각 토큰 상한)을 후보에 추가할지 결정. 글자 많은 사진 (영수증·티켓) 이득 가능, 비용 약 2배. 5-2 구현 완료 (manifest 값 = 설정값 `pik.analysis.manifest.*`, 측정 결과 = 새 manifest ID, ADR-0035). 측정 범위 추가: manifest 토큰 상한 (`imageTokenCap` 4,784·`promptTokenCap` 8,000 개발값), thinking A/B (adaptive·`low`·`max_tokens` 4,096 / 끔·`low`·2,048), 프롬프트 캐시 손익분기 (적중률 약 21.7%), API 키 헤더 (SDK가 `Authorization: Bearer`로 보냄) 수락 확인 | 측정 실행 = 사용자 승인 후 (실제 사진·비용 발생), 접수 활성화 전 | 분석 정확도·비용, P03, 접수 활성화 (D-29) |
 | D-08 | Jev 이용 조건 (테스트 키로 직접 API 호출 확인, 2026-10-26) | 직접 API (early access) / Vercel AI Gateway. 데이터 보관·학습·처리 국가 서면 확인, 계약 실패 = Basic 검색 출시 보류 (ADR-0033 #7) | 검색 구현·동의 안내 확정 전 | FR-S-01·02, FR-O-02 안내 문구 |
 | D-14 | ADR-0017·0019의 `(제안)` 항목 확인 (나머지는 ADR-0024에서 확정) | 검색 구현 세부: 폴더마다 Jev `noul` 질문 / 폴더를 선택지로 한 번에 묻는 `choice`, 상대 날짜 토큰, 캐시 단위. Pro LLM 초기값 Haiku 5.5 (설정값). 알림: 분석 완료 화면 갱신 = 상태 조회 (ETag), 장소 알림 서버 확인 때 오프라인이면 마지막 동기화 상태로 판단 (ADR-0019). 검색 캐시 단위 제안: 폴더별 Caffeine (ADR-0033 #8) | 검색은 D-08 확인 후, 알림은 단계 9 전 | FR-S-01·02, FR-I-06, FR-N-02 |
 | D-20 | iCloud 사진 photoId 수렴, 재설치 때 연결 이관 | 두 번째 기기가 만든 photoId를 같은 `cloud_ref`의 서버 photoId로 바꾸는 절차, 이전 설치 (`device` 행)의 `photo_device_link`와 `organize_state` DEVICE 키를 새 설치로 옮기는 방법 (iOS는 기기 식별자 없음). FR-A-04 기술 검증과 함께 결정. 수렴 규칙 초안: ADR-0033 #9 | 단계 9 전 | FR-A-02·04, FR-L-05 (ADR-0022) |
-| D-28 | 사진의 영속 묶음 (`photo_group`·`photo_group_member`) 설계 | 5-1 = 접수 범위 `analysis_group`만, 영속 묶음은 단계 9에서 추가하고 `analysis_group`·`analysis_result`로 초기 채움 (사용자 결정 Q1, ADR-0034 #1). 정할 것: 현재 묶음 변경·대표 재선정·재편성, `change_seq` 동기화, `rule_version` = `analysis_grouping_rule` 참조. 인수 조건 (R19 O2): 원접수 `ACCEPTED` 항목만 구성원 스냅샷, 성공 묶음의 구성·벡터 참조 수명을 항목 90일 정리 전에 사진·결과 수명 구조로 보존 | 단계 9 전 (O2 구성원 기준은 5-2) | FR-I-02 (기존 묶음 버전), FR-I-04, FR-S-03, ADR-0024 #5·#6-3 |
+| D-28 | 사진의 영속 묶음 (`photo_group`·`photo_group_member`) 설계 | 5-1 = 접수 범위 `analysis_group`만, 영속 묶음은 단계 9에서 추가하고 `analysis_group`·`analysis_result`로 초기 채움 (사용자 결정 Q1, ADR-0034 #1). 정할 것: 현재 묶음 변경·대표 재선정·재편성, `change_seq` 동기화, `rule_version` = `analysis_grouping_rule` 참조. 인수 조건 (R19 O2): 원접수 `ACCEPTED` 항목만 구성원 스냅샷 (5-2 구현 완료, ADR-0035), 성공 묶음의 구성·벡터 참조 수명을 항목 90일 정리 전에 사진·결과 수명 구조로 보존 | 단계 9 전 | FR-I-02 (기존 묶음 버전), FR-I-04, FR-S-03, ADR-0024 #5·#6-3 |
+| D-29 | 분석 접수 활성화 전 운영 값 (5-2 계획 §14, R2-09) | 전역 일일 비용 한도 (개발값 KST 하루 $1), 전역 worker 슬롯 (2)·송신 속도 (전역 초당 1, worker 최대 2개), 시간당 업로드 한도 (주체 300장·600 MB, 체험 기기 100장·200 MB), D-07 합격 기준 (ADR-0033 #5 초안: 사진당 비용·p95 지연·정확도). `max_tokens`를 올리면 예약과 실제 출력 상한이 함께 커짐 → D-07 결과와 함께 제시 (ADR-0035) | 5-3 병합 뒤 `pik.analysis.intake-enabled=true` 전 | 분석 접수 활성화, 운영 배포 |
 
 ## 위험·제약
 - 저장소가 공개 상태라 요구사항 원문 (`docs/spec`)·ADR·`.claude/docs`가 공개된다. 사용자가 수용했다 (2026-10-26). 비공개가 필요해지면 이력에서 제거한 뒤 저장소 재생성 또는 Private 전환을 검토한다 (Free 플랜이면 Private 저장소에 Ruleset 미적용).

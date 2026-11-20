@@ -37,13 +37,19 @@
 - 단계 5 = `photo` (사진 행·원본 버전 관측·`photo_vector`, `PhotoSourceChanged`), `analysis` (접수·작업·시도·호출·결과·예산·manifest, `AnalysisCompleted`). 소유 표·잠금 순서 = `docs/design/stage5-analysis-pipeline.md` 0.3·4.3 (ADR-0031)
 - 단계 5-1 구현 (ADR-0034): `photo` → `shared`만. `analysis` → `shared`·`account`·`consent`·`usage`·`photo`. `account`·`consent`·`usage`는 `photo`·`analysis`에 의존하지 않음
   - `photo` 공개 = `PhotoObservations` (`observe`·`issueChangeSeqs`·`keepVectors` = 호출자 TX 필수, `findIds` = 읽기 TX), `PhotoSourceChanged` (발행만, 리스너 = 5-3). 5-1은 JPA 엔티티 없이 JDBC
-  - `analysis` 공개 API 없음 (`POST /analysis-jobs`만). 5-2에서 `AnalysisCompleted` 추가
+  - `analysis` 공개 API 없음 (`POST /analysis-jobs`만)
   - `account` 추가 공개: `RequestingDevices.find(principal, device)` → `RequestingDevice` (기기·설치·`Platform`·`trialMarkId`), `TrialStartAttestations` (`challenge`·`verify`, 포트 `AssertionVerifier` + `local`·`test` 전용 대역)
   - `consent` 추가 공개: `AiConsents.lockGrantedBasis` → `ConsentBasis(version)` (공유 잠금, 호출자 TX 필수)
   - `usage` 추가 공개: `Reservation.NotCovered(retryable)` (예약 반환을 기다리면 들어감), `recordStart(…, StartGuard)` (`StartGuard.beforeStart` = Apple 호출 직전에만 1회)
+- 단계 5-2 구현 (ADR-0035): 의존 방향 5-1과 같음 (순환 없음). 외부 연동 = `analysis` 내부 포트 + 어댑터 (`InputStore` = S3, `AnalysisModel` = Claude, `SendRateLimiter` = 인스턴스 버킷)
+  - `analysis` 공개: 이벤트 `AnalysisCompleted(ownerId, photoId, resultId, epoch)` (`photoId` = `photo.id`. 완료 TX 안에서 `ApplicationEventPublisher`로 저장한 결과마다 1개, 리스너 = 5-3. 접수 꺼짐이라 운영 발행 없음), `AnalysisResults.find(ownerId, photoId)` (결과 + 현재 epoch, 읽기), `AnalysisResults.regenerate(ownerId, photoId, expectedEpoch)` (결과 행 잠금 아래 epoch CAS +1·`change_seq` 발급·같은 TX 재발행, 불일치 = 409 `EPOCH_CONFLICT`. 모델 호출·정산 없음, HTTP 진입점 = 5-3)
+  - `usage` 추가: `settle(principal, job, consumeIds, releaseIds)` (MANDATORY, 두 집합 = 작업 예약 사진의 분할, 같은 최종 상태 재실행 = no-op, 다른 최종 상태 = 예외), `holdsReservation(principal, job)` (MANDATORY, 잠금 없음, 작업 잠금 아래 호출), 기기 송신 `lockDeviceSend(mark, multiplier)`·`reserveDeviceSend(mark)`·`releaseDeviceSend(mark)` (MANDATORY), `deviceSendExhausted(mark, multiplier)` (읽기, 잠금 없음, 접수 빠른 판정). 한도 = 체험 한도 × `multiplier` (analysis 설정값)
+  - `consent` 추가: `AiConsents.basisHolds(principal, basisVersion)` (MANDATORY, 공유 잠금, 기준 뒤 비동의 없음)
+  - `account` 추가: `Principals.isActive(principal)` (읽기, 잠금 없음, 동의 공유 잠금 아래 호출. 모르는 주체 = false)
+  - `photo` 추가: `PhotoObservations.holdExisting(owner, photoIds)` (MANDATORY, id 순 `FOR SHARE`, 메타데이터가 있는 ID 반환)
 - `action` 모듈 = 사진별 액션·웹페이지 후보·번역. `analysis`의 분석 완료 이벤트를 `action`과 `event`가 각자 구독 (ADR-0024). 생성 행 (`action_generation`·`event_generation`)은 각 모듈 소유, 리스너 = `NOT_SUPPORTED` 조정 + 별도 빈 TX + 실패 기록 TX (ADR-0031 #16)
-- `usage` 모듈 = 무료 체험 이용량 (`usage_quota`·`usage_reservation`·`device_trial_mark`, ERD 그룹 '계정과 구독'). `account`가 설치 등록 때 `TrialDevices`로 기기 기록을 만들고 `device.trial_mark_id`에 둠. 분석 접수는 `TrialUsage`로 접수 트랜잭션 안에서 예약·완료·반환. 잠금 순서 = 주체 할당량 → 기기 기록, 트랜잭션 하나에 주체 하나·기기 기록 하나만, 바꾼 트랜잭션 안의 `REQUIRES_NEW`에서 다시 바꾸기 금지 (일괄 처리는 주체·기기마다 트랜잭션 분리, 어기면 `IllegalStateException`). Pro 한도·3회 클릭은 해당 단계에서 추가 (ADR-0029). 단계 5에서 사진별 `settle`·기기 송신 예약을 추가 (ADR-0031)
-- `consent` 모듈 = 외부 전송 동의 (`ai_consent`, ERD 그룹 '계정과 구독'). 다른 모듈은 `AiConsents.isGranted`로 전송 직전·결과 저장 직전에 확인, 철회 이벤트 없음 (ADR-0028)
+- `usage` 모듈 = 무료 체험 이용량 (`usage_quota`·`usage_reservation`·`device_trial_mark`, ERD 그룹 '계정과 구독'). `account`가 설치 등록 때 `TrialDevices`로 기기 기록을 만들고 `device.trial_mark_id`에 둠. 분석 접수는 `TrialUsage`로 접수 트랜잭션 안에서 예약·완료·반환. 잠금 순서 = 주체 할당량 → 기기 기록, 트랜잭션 하나에 주체 하나·기기 기록 하나만, 바꾼 트랜잭션 안의 `REQUIRES_NEW`에서 다시 바꾸기 금지 (일괄 처리는 주체·기기마다 트랜잭션 분리, 어기면 `IllegalStateException`). Pro 한도·3회 클릭은 해당 단계에서 추가 (ADR-0029). 단계 5-2에서 사진별 `settle`·기기 송신 예약을 추가 (ADR-0031, 구현 ADR-0035)
+- `consent` 모듈 = 외부 전송 동의 (`ai_consent`, ERD 그룹 '계정과 구독'). 빠른 확인 = `AiConsents.isGranted`, 전송 직전·결과 저장 직전 = `basisHolds` (5-2), 철회 이벤트 없음 (ADR-0028)
 
 ## 스키마 공통 규칙 (ADR-0022)
 - ER 설계안: `docs/erd/pik.erd.json` (erd-editor)
@@ -59,7 +65,7 @@
 | 트리거 | 후속 처리 |
 |---|---|
 | 메타데이터 변경 | 기존 분석에 반영 → 검색·추천·이벤트 갱신 |
-| 분석 완료 | 출처 기록 → 액션·이벤트·검색 정보 반영. 재전달 시 중복 생성 금지 |
+| 분석 완료 (`AnalysisCompleted`, 결과마다, 수동 재처리 = epoch + 1 재발행) | 출처 기록 → 액션·이벤트·검색 정보 반영. 재전달 시 중복 생성 금지, 지난 epoch 무시 |
 | 이벤트 수정·완료 | 알림 버전 갱신 → 기존 예약 무효화 → 허용 예약만 반영 |
 | 검증된 구독 변경 | 이용 자격 갱신 → 신규 분석 허용/중단 → Pro 검색 범위 갱신 |
 
@@ -70,6 +76,7 @@
 
 ## 배치
 - 미분석 작업(Pro 처리량·우선순위), 허용된 실패 작업 재시도
+- 분석 실행 (5-2): 업로드 회수·처리 기한·임대 회수·객체 삭제·청소 대조·입력 속도 창 정리·회로·예산 감시 (ShedLock 이름 = `consistency-rules.md`)
 - 서버 동기화 미완료분, 결과 확인 필요 작업
 - 기한 도달한 리마인드·이벤트 알림, 정리 독려 (기기별 남은 대상)·권한 요청 발송 조건, 기기별 발송 행 재시도 (`notification_delivery`, ADR-0024)
 - 플랫폼 구독 알림 누락·이용 기간 종료 재대조 (만료 미확인 구독은 RevenueCat 재조회, 확인 전까지 Pro 유지, ADR-0024)
