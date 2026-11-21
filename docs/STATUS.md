@@ -3,8 +3,8 @@
 > 프로젝트 기록의 진입점. 작업이 끝날 때마다 이 파일을 최신 상태로 덮어쓴다.
 > 결정 근거는 `adr/`, 날짜별 진행 기록은 `devlog/`에 둔다.
 
-- 최종 갱신: 2026-11-20
-- 현재 단계: **5-2 분석 업로드·실행·결과·정산 구현 완료, 미병합** (브랜치 `feature/FR-I-03-analysis-run`, [ADR-0035](adr/0035-stage5-2-analysis-run-implementation.md)). 다음 = PR (사용자 승인 후) → 5-3 액션·이벤트. 접수 꺼짐 유지 (`intake-enabled=false`)
+- 최종 갱신: 2026-11-21
+- 현재 단계: **5-2 분석 업로드·실행·결과·정산 병합 완료** (PR #15, `eac2e93`, [ADR-0035](adr/0035-stage5-2-analysis-run-implementation.md)). 다음 = 5-3 액션·이벤트. 접수·worker 꺼짐 유지 (`intake-enabled=false`, `worker.enabled=false`). 켜기 전에 D-07 측정 (사용자 승인 필요)·D-29 결정
 
 ## 기록 체계
 | 문서 | 경로 | 용도 | 갱신 시점 |
@@ -23,7 +23,7 @@
 | 2 | 공통 기반 (모듈 골격, ProblemDetail, 멱등 기록, 보안, 구조화 로그) + 익명 주체 발급 (ADR-0020) | 완료 (ADR-0025~0027) |
 | 3 | 동의 기록 (FR-O-02): 단일 동의 + 목적 필드, 철회 처리 | 완료 (ADR-0028) |
 | 4 | 이용량 (FR-B-01): 예약·반환, 기기·계정 이중 집계, 재설치 판별 | 완료 (ADR-0029) |
-| 5 | 분석 접수·묶음 판단 (FR-I-01·02) → 분석 (FR-I-03) → 액션·이벤트 생성 (FR-G-01~03, 웹 연결 제외). PR 3개: 5-1 접수·묶음 / 5-2 업로드·실행·결과·정산 / 5-3 액션·이벤트 | 설계 확정 ([ADR-0031](adr/0031-stage5-analysis-pipeline.md), `docs/design/stage5-analysis-pipeline.md`). 모델과 무관한 계약 (모델·버전·차원·임계값 = 설정값), 모듈 `photo` + `analysis` (2026-11-01 사용자 결정). 첫 실행 Messages (D-25 사용자 결정), 검색용 파생 정보 포함·불명 호출 사진마다 1회 재호출 (사용자 결정, D-26). 5-1 완료 ([ADR-0034](adr/0034-stage5-1-intake-implementation.md), PR #13 병합 `b3b243e`, 접수 기본 꺼짐). 5-2 구현 완료·미병합 ([ADR-0035](adr/0035-stage5-2-analysis-run-implementation.md), PR 대기). 5-3 대기 |
+| 5 | 분석 접수·묶음 판단 (FR-I-01·02) → 분석 (FR-I-03) → 액션·이벤트 생성 (FR-G-01~03, 웹 연결 제외). PR 3개: 5-1 접수·묶음 / 5-2 업로드·실행·결과·정산 / 5-3 액션·이벤트 | 설계 확정 ([ADR-0031](adr/0031-stage5-analysis-pipeline.md), `docs/design/stage5-analysis-pipeline.md`). 모델과 무관한 계약 (모델·버전·차원·임계값 = 설정값), 모듈 `photo` + `analysis` (2026-11-01 사용자 결정). 첫 실행 Messages (D-25 사용자 결정), 검색용 파생 정보 포함·불명 호출 사진마다 1회 재호출 (사용자 결정, D-26). 5-1 완료 ([ADR-0034](adr/0034-stage5-1-intake-implementation.md), PR #13 병합 `b3b243e`, 접수 기본 꺼짐). 5-2 완료 ([ADR-0035](adr/0035-stage5-2-analysis-run-implementation.md), PR #15 병합 `eac2e93`, 접수·worker 기본 꺼짐). 5-3 대기 |
 | 6 | 3회 클릭 집계 (FR-B-01), 웹 연결 (FR-X-06), FR-G-04 | 대기 |
 | 7 | 로그인·로그아웃 (FR-A-01·03) | 대기 |
 | 8 | 구독 (FR-B-02~05) | 대기. 선행: P03 정가 (임시 기준·처리량 구조·D-27은 결정, ADR-0033 #2~#4) |
@@ -70,7 +70,7 @@
 - 단계 5-1 분석 접수·묶음 (FR-I-01·02): V5 마이그레이션 (`photo`·`photo_vector`·`analysis_grouping_rule`·`analysis_call_manifest`·`analysis_request`·`analysis_group`·`analysis_job`·`analysis_request_item`), `photo` 모듈 (원본 버전 관측·불변 벡터 버전·변경 번호 발급), `analysis` 모듈 (`POST /analysis-jobs`, 묶음 규칙 v1·벡터 검사·규칙·호출 manifest, 재분류·체험 예약·`StartRequired` 재시도, 투영 재생), 실행기 단계 API·비저장 오류·장기 작업 오류 `jobId = null`, 동의 advisory 잠금·기준 버전, `NotCovered` 재시도 여부·`StartGuard`, 요청 기기 확인·첫 체험 assertion 포트 (대역). 사용자 결정 Q1~Q16·`jobs[]` 범위·문자열 규칙, `analysis_job` 잠금 = `FOR NO KEY UPDATE` 규칙 (C-8). 시험 472개 통과 ([ADR-0034](adr/0034-stage5-1-intake-implementation.md))
 - 이후 단계 정책 사용자 결정 ([ADR-0033](adr/0033-later-stage-policy-proposals.md) #2·#3·#4·#10·#11): Pro 임시 기준 월 $8·일 100장·초기 3,000장 (정가 미정, P03), 탈퇴 뒤 같은 구매의 초기량 재지급 감수 (D-27 해소), 보관 기간 제안값 (P08·P11), 무료·만료 기초 검색 = 체험 대상 범위 (P02, SSOT 기준), 정리 독려 14일 뒤 반복·권한 요청 3회·Pik 선발송 알림 기기당 하루 1개 (P09), 메모·태그·검색 페이지 상한 (P10). SSOT 보고 FR-G-01↔FR-E-01 완료 (특별 규정으로 해석 유지, ADR-0030 #8)
 - 단계 5-1 병합 (PR #13, `b3b243e`). D-09 해소 (사용자 결정 2026-11-19, [ADR-0033](adr/0033-later-stage-policy-proposals.md) #6): 첫 출시 = 단말이 `text.status`만 보내고 글자는 Claude가 이미지에서 읽는다. OCR 본문 동봉은 D-07 측정에서 이득이 입증되면 추가. 축소 해상도는 D-07로 이관
-- 단계 5-2 분석 업로드·실행·결과·정산 (FR-I-03, FR-I-01·02 후속, 브랜치 `feature/FR-I-03-analysis-run`, 미병합): V6 마이그레이션 (`analysis_upload_attempt`·`external_call`·`analysis_result`·`photo_ai_budget`·`ai_spend_day`·`ai_send_daily`·`ai_gate`·`analysis_input_rate`, `analysis_job` 실행 열), 업로드 API 3개 (시도 발급·확정·상태 조회 ETag), worker (claim·허가·Claude 호출·완료·응답 정산·불명·관문·예산), 배치 7개 (회수·처리 기한·임대 회수·객체 삭제·청소 대조·입력 속도 정리·감시), Claude 어댑터·manifest v1·프롬프트·스키마·검증기, 5c 판정 (`EXISTING_RESULT` 등), 수동 재처리 API, `AnalysisCompleted`. 잠금 순서 개정·전이별 잠금 표, 객체 최종 삭제 규칙 (`DELETE_SENT` + 수명 주기 3일). 착수 = 사용자 선택 "구현 시작", Codex 계획 검토 R1~R4·코드 검토점 A (5건)·B (6건) 수용·수정. 시험 846개 통과 ([ADR-0035](adr/0035-stage5-2-analysis-run-implementation.md))
+- 단계 5-2 분석 업로드·실행·결과·정산 (FR-I-03, FR-I-01·02 후속, PR #15 병합 `eac2e93`): V6 마이그레이션 (`analysis_upload_attempt`·`external_call`·`analysis_result`·`photo_ai_budget`·`ai_spend_day`·`ai_send_daily`·`ai_gate`·`analysis_input_rate`, `analysis_job` 실행 열), 업로드 API 3개 (시도 발급·확정·상태 조회 ETag), worker (claim·허가·Claude 호출·완료·응답 정산·불명·관문·예산), 배치 7개 (회수·처리 기한·임대 회수·객체 삭제·청소 대조·입력 속도 정리·감시), Claude 어댑터·manifest v1·프롬프트·스키마·검증기, 5c 판정 (`EXISTING_RESULT` 등), 수동 재처리 API, `AnalysisCompleted`. 잠금 순서 개정·전이별 잠금 표, 객체 최종 삭제 규칙 (`DELETE_SENT` + 수명 주기 3일). 착수 = 사용자 선택 "구현 시작", Codex 계획 검토 R1~R4·코드 검토점 A (5건)·B (6건) 수용·수정. 시험 846개 통과 ([ADR-0035](adr/0035-stage5-2-analysis-run-implementation.md))
 
 ## 다음 할 일
 - [x] 단계 4 PR 병합 (PR #11, `3d1df32`)
@@ -80,7 +80,7 @@
 - [x] 단계 5-1 PR 병합 (PR #13, `b3b243e`)
 - [x] 단계 5-2 구현 (업로드·실행·결과·정산, ADR-0035). ADR-0034의 5-2 조건 4개 충족 (투영 SQL 1개, claim `FOR NO KEY UPDATE SKIP LOCKED` + C-10, `AlreadyReserved` 종료 작업 해석, 구성원 = 원접수 `ACCEPTED`)
 - [x] 단계 5-2 검토점 B (Codex 전체 검토): 6건 모두 수용·수정 (ADR-0035). ERD 반영 (V6) 완료 (`49ecbe7`)
-- [ ] 단계 5-2 PR (사용자 승인 후)
+- [x] 단계 5-2 PR 병합 (PR #15, `eac2e93`). CI에서 발견한 시계 정밀도 결함 (발급 응답 만료 시각의 나노초) 수정 `bad0a92`
 - [ ] 단계 5-3 (액션·이벤트 생성, `AnalysisCompleted` 리스너, 수동 재처리 HTTP 진입점). 병합 뒤 접수 활성화는 D-29·D-07 결정 후
 - [ ] 실제 S3 계약 시험 (서명 헤더·`If-None-Match`·URL/자격 만료 뒤 PUT·삭제 뒤 재PUT·느린 PUT·`ChecksumMode` HEAD·`ListBucket`·수명 주기 3일), 분석 버킷·IAM·worker 서비스 구성 (운영 배포 전, `docs/design/operations-infrastructure.md` B11)
 - [ ] 단계 10 탈퇴 TX = 동의 배타 잠금 + 비동의 결정 기록 → 주체 비활성 (5-2 계약, `consistency-rules.md`, ADR-0035 #6)
@@ -103,7 +103,7 @@
 - [ ] Haiku 5.5·Jev 측정용 실제 사진·검색어 표본 구성 (D-07). 5-2 측정 실행은 사용자 승인 후 (실제 사진·비용 발생)
 - [x] 분석 작업·접수 단위 상태명 확정 (ADR-0031, 설계 문서 2.1)
 - [ ] Terraform 인프라 코드·CD 파이프라인 작성 (배포 환경 구성 전, 출구 = NAT 없이 공인 IP, ADR-0015·0032 #1). B1 보안 그룹 CI 검사 (태스크 보안 그룹 인바운드 `0.0.0.0/0`·`::/0`, `worker` 인바운드 규칙 거부)는 설계만 반영됨, 구현은 이 작업에서
-- [ ] ER 설계안을 Flyway 마이그레이션에 반영: 공통 인프라 4개는 V1 완료 (ADR-0026), 주체·설치·기기는 V2 완료 (ADR-0027), 동의는 V3 완료 (ADR-0028), 체험 이용량은 V4 완료 (ADR-0029), 사진·분석 접수는 V5 완료 (ADR-0034), 분석 실행은 V6 (5-2 브랜치, ADR-0035), 나머지는 각 단계 (ADR-0022)
+- [ ] ER 설계안을 Flyway 마이그레이션에 반영: 공통 인프라 4개는 V1 완료 (ADR-0026), 주체·설치·기기는 V2 완료 (ADR-0027), 동의는 V3 완료 (ADR-0028), 체험 이용량은 V4 완료 (ADR-0029), 사진·분석 접수는 V5 완료 (ADR-0034), 분석 실행은 V6 완료 (ADR-0035), 나머지는 각 단계 (ADR-0022)
 - [ ] FR-A-04 기술 검증: PHCloudIdentifier 신뢰성 (앨범 iCloud 식별자 지원 포함), 같은 기기 재설치 때 이전 연결 찾기 (단계 9 전, D-20, ADR-0022·0024)
 - [ ] Google Places 국내 장소 품질 측정: 공연장·카페·주소 표본 (단계 9 전, D-07 표본과 함께, ADR-0024)
 - [ ] 지도 앱 URL 스킴 확인 (카카오맵·네이버 지도), RevenueCat 복원 동작 기본값 유지 확인 (ADR-0024)
