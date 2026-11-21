@@ -49,9 +49,13 @@ import tools.jackson.databind.JsonNode;
 /**
  * {@code POST /analysis-jobs/{requestId}/upload-attempts} against PostgreSQL and S3Mock (plan 4.1, 11.2 "발급", 11.3
  * C-13), with jobs created by real intake requests.
+ * <p>
+ * The URL TTL carries a sub-microsecond part so that the issued expiry has nanoseconds on every clock. The macOS JDK
+ * clock has microsecond precision, but the Linux clock (CI, production) has nanosecond precision, and PostgreSQL
+ * keeps microseconds.
  */
 @Import({ TestcontainersConfiguration.class, S3MockConfiguration.class })
-@SpringBootTest(properties = "pik.analysis.intake-enabled=true")
+@SpringBootTest(properties = { "pik.analysis.intake-enabled=true", "pik.analysis.upload.url-ttl=PT15M0.000000123S" })
 @AutoConfigureMockMvc
 class UploadAttemptIssueTests {
 

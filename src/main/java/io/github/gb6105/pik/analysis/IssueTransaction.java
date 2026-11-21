@@ -92,7 +92,9 @@ class IssueTransaction {
 				decided.add(Item.rejected(item.analysisJobId(), null, rejection));
 				continue;
 			}
-			Instant expiresAt = earlier(now.plus(upload.urlTtl()), job.uploadDeadline());
+			// Cut to the microseconds that PostgreSQL keeps, so the response states the stored url_expires_at. The
+			// Linux clock has nanoseconds. Cutting down keeps the expiry within the TTL and the upload deadline.
+			Instant expiresAt = earlier(now.plus(upload.urlTtl()), job.uploadDeadline()).truncatedTo(ChronoUnit.MICROS);
 			UUID attemptId = UuidV7.generate();
 			issued.add(new NewAttempt(attemptId, ownerId, job.id(), item.contentLength(), item.sha256(), expiresAt));
 			issuedJobs.add(job.id());
