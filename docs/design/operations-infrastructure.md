@@ -1,7 +1,7 @@
 # 운영·인프라·보안 설계
 
 - 결정 기록: [ADR-0032](../adr/0032-operations-infrastructure-security.md). 이 문서가 세부 계약이고, ADR은 결정과 근거를 요약한다
-- 대상: D-06·D-11·D-13·D-21·D-22·D-23·D-24, DB 복구·삭제 배치·키 운영
+- 대상: D-06·D-11·D-13·D-21·D-22·D-23·D-24, DB 복구·삭제 배치·키 운영, 분석 입력 저장소·worker (B11, 단계 5-2 [ADR-0035](../adr/0035-stage5-2-analysis-run-implementation.md))
 - 기준: [단계 5 설계 문서](stage5-analysis-pipeline.md). 가격 = AWS 서울 공식 Price List (2026-11-01 확인), USD, 세금 제외
 - "사용자 결정" 표시 항목은 2026-11-01에 모두 결정됐다 (D-13·D-21·D-23·D-24, 원장 보관 기간 = P08). 값을 바꾸면 이 문서와 ADR-0032를 함께 고친다
 
@@ -134,3 +134,48 @@
 - 쓰기 키 전환 전 모든 실행 주체가 새 키 집합을 가졌는지 확인, 롤백 가능한 키 집합 유지
 - 유출 대응: 접근 차단 → 새 쓰기 키 → 노출 범위 확인 → 옛 읽기 키 관리. 알려진 후보 ID와 과거 HMAC 대조 위험은 남음 (무단 키 삭제로 기록을 잃지 않음)
 - 절차 문서 `docs/runbook/key-rotation.md`
+
+## B11 분석 입력 저장소·worker (단계 5-2, ADR-0035)
+- 배포 전 요구 사항. Terraform·CD는 배포 환경 구성 작업에서 만든다. 접수는 5-3 병합 전까지 꺼짐 (`intake-enabled=false`)
+
+### B11.1 S3 버킷
+- 분석 입력 전용 버킷 1개 (`PIK_ANALYSIS_BUCKET`, 리전 `AWS_REGION`). 객체 키 = `analysis-input/{jobId}/{attemptId}` (사진·주체 ID 없음)
+- 수명 주기 = `analysis-input/` 객체 생성 3일 뒤 만료. 서버 삭제의 `DELETE_SENT`는 삭제 요청 성공만 뜻하고, 물리적 부재의 최종 보장은 이 규칙이다 (P08 안내 "업로드 후 4일 안에 삭제 대상")
+- 버전 관리 = 끔 (Claude 판단, 사용자 확인 전). 켜면 `DeleteObject`가 삭제 표식만 남기고 이전 버전이 남는다. 켜야 하면 비최신 버전 만료 규칙을 함께 둔다
+- 공개 접근 차단. 업로드 = presigned PUT만 (서명 헤더 `Content-Type: image/jpeg`·`Content-Length`·`x-amz-checksum-sha256`·`If-None-Match: *`). 서버 접근 경로 = S3 gateway endpoint (B1)
+- 암호화 = SSE-S3 기본. SSE-KMS로 바꾸면 태스크 역할에 KMS 권한 추가
+
+### B11.2 IAM (api·worker 태스크 역할 공통)
+| 권한 | 리소스 | 쓰는 곳 |
+|---|---|---|
+| `s3:PutObject` | `arn:aws:s3:::<bucket>/analysis-input/*` | presigned PUT 서명 (서명한 역할의 권한이 업로드에 적용) |
+| `s3:GetObject` | 같음 | HEAD (확정·회수 배치. IAM에는 별도 `HeadObject` 동작이 없고 `GetObject`가 허용), 조건부 GET (worker 입력 준비) |
+| `s3:DeleteObject` | 같음 | 객체 삭제 배치 |
+| `s3:ListBucket` | `arn:aws:s3:::<bucket>` | 없는 키 HEAD = 404 |
+- `ListBucket`이 없으면 없는 키 HEAD가 403이다. 서버는 403을 저장소 장애 (503·다음 주기)로 처리하므로 모든 미업로드가 가려진다. 배포 관문에서 확인 (B11.5)
+- 배치 (회수·삭제·대조)는 api·worker 모든 인스턴스에 예약되므로 두 역할 모두 같은 권한
+- AWS 자격 = SDK 기본 자격 체인 (ECS 작업 역할). 정적 키 금지
+
+### B11.3 worker 서비스
+- 같은 이미지에서 설정 `pik.analysis.worker.enabled=true`인 서비스만 claim 루프·Claude 호출 (기본 false, Spring 프로필 아님). 켜졌는데 `ANTHROPIC_API_KEY`가 비어 있으면 기동 실패
+- 보안 그룹 = 인바운드 0, 출구 = 공인 IP (B1)
+- 슬롯: `worker.global-slots` = 전 인스턴스 합계 상한 (전역 claim 잠금 아래 셈), `worker.principal-slots` = 주체 상한 4. 임대 120초 > 송신 여유 70초 > HTTP 전체 60초
+- 송신 속도 = 인스턴스 버킷 `send-rate.global-per-second` ÷ `send-rate.max-instances`. `max-instances` = worker 서비스 최대 태스크 수와 맞춘다. 실제 태스크가 더 많으면 전역 속도를 넘을 수 있다 (429 일시 회로가 2차 방어)
+- 운영 값 (전역 일일 비용 한도·전역 슬롯·송신 속도·시간당 업로드 한도) = 접수 활성화 전 사용자 결정 (`docs/STATUS.md`). 현재 `application.yml` 값은 개발값
+
+### B11.4 설정·비밀
+| 키 | 소스 | 비고 |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | SSM SecureString → ECS task `secrets` | 비밀, worker만. Spring 속성 `pik.analysis.claude.api-key`로 바인딩 |
+| `PIK_ANALYSIS_BUCKET` | SSM Parameter Store → ECS task | 비밀 아님. 모든 프로필에서 기동 필수 |
+| `AWS_REGION` | Fargate가 태스크에 설정 (다른 실행 환경은 같은 방식으로 주입) | 모든 프로필에서 기동 필수 |
+| `pik.analysis.claude.key-version` | 설정값 | 비밀 아님. 키 교체·설정 회로 해제 때 운영자가 바꿈 |
+- API 키 교체: 새 키 SSM 등록 → `key-version` 변경 → worker 재배포 (B10과 같이 실행 중 태스크에 반영 안 됨). 설정 지문이 바뀌면 열린 설정 회로가 반개방 → probe 1개로 복구 확인
+- `upload.endpoint` (S3Mock)·`claude.base-url` (가짜 서버) = `local`·`test` 프로필만. 그 밖에서 설정하면 기동 실패 (ADR-0027 방식)
+- 로컬 = `compose.yaml` S3Mock 5.1.0 (`127.0.0.1:9090`, 버킷 자동 생성, 서명 미검증). Gradle `bootRun`·`test` = `aws.*` 시스템 속성 자리값 (비밀 아님, 개발자 AWS 자격을 쓰지 않음)
+
+### B11.5 운영 배포 전 실제 S3 계약 시험 (S3Mock은 서명·만료·조건부 쓰기를 실제와 다르게 처리할 수 있음)
+- 서명 헤더 누락·변조 거절, `If-None-Match: *` 두 번째 PUT 거절, URL 만료 뒤 PUT 거절, 자격 만료 뒤 PUT 거절
+- 삭제 뒤 같은 URL 재PUT (만료 전 = 되살아남 → 최종 삭제가 처리), 만료 직전 시작한 느린 PUT의 완료 시각 (업로드 진행 여유 30분 확인)
+- `ChecksumMode` HEAD의 sha256 반환, `ListBucket` 없을 때 없는 키 HEAD = 403 확인, 수명 주기 3일 동작
+- 실패하면 업로드 경로를 다시 정한다 (설계 문서 2.3)

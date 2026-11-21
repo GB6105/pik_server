@@ -36,7 +36,8 @@ record IntakeResponse(UUID jobId, CommandResult result, boolean retryable, Phase
 	 * @param code the error class of a photo that is not analyzed, as {@code ErrorCode}
 	 * @param reason the detailed reason, such as {@code SUBSCRIPTION_REQUIRED} or {@code TRIAL_UNAVAILABLE}
 	 * @param retryable whether the photo may be sent again with a new key
-	 * @param retryAfter seconds to wait before sending the photo again; set from stage 5-2 on
+	 * @param retryAfter seconds to wait before sending the photo again, counted from the intake
+	 * ({@code INPUT_RETRY_LATER})
 	 * @param analysisJobId the job that analyzes the photo, possibly of another request
 	 * @param groupId the group of this request the photo is in
 	 * @param execution the current status of that job
@@ -79,17 +80,19 @@ record IntakeResponse(UUID jobId, CommandResult result, boolean retryable, Phase
 	 * A job an item of the request points at: one the request created or one its photos in progress wait for.
 	 *
 	 * @param requestId the request that created the job, the path of its uploads
-	 * @param representativePhotoId the client's ID of the photo the job analyzes, the image to upload; a request that
-	 * sent only a member of the job's group does not have it among its items
+	 * @param representativePhotoId the client's ID of the photo the job analyzes, the image to upload, kept on the job;
+	 * a request that sent only a member of the job's group does not have it among its items
+	 * @param reason why the job ended without a result, {@code null} while it runs or when it succeeded
 	 * @param uploadRequired whether the device must upload the representative image
 	 * @param uploadPolicy what the upload must satisfy, from the job's call manifest
 	 */
 	record JobView(UUID analysisJobId, UUID requestId, UUID groupId, UUID representativePhotoId, JobStatus status,
-			boolean uploadRequired, UploadPolicy uploadPolicy) {
+			@Nullable FailureCode reason, boolean uploadRequired, UploadPolicy uploadPolicy) {
 
 		@Override
 		public String toString() {
-			return "JobView[analysisJobId=" + analysisJobId + ", requestId=" + requestId + ", status=" + status + "]";
+			return "JobView[analysisJobId=" + analysisJobId + ", requestId=" + requestId + ", status=" + status
+					+ ", reason=" + reason + "]";
 		}
 
 	}

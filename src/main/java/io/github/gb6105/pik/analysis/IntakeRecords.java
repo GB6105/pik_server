@@ -1,11 +1,5 @@
 package io.github.gb6105.pik.analysis;
 
-import io.github.gb6105.pik.analysis.IntakeResponse.GroupView;
-import io.github.gb6105.pik.analysis.IntakeResponse.ItemView;
-import io.github.gb6105.pik.analysis.IntakeResponse.JobView;
-import io.github.gb6105.pik.analysis.IntakeResponse.UploadPolicy;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Types;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -16,6 +10,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -25,7 +20,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 /**
- * Plain SQL for intake: one batch per table in the business transaction, and the reads of the response projection.
+ * Plain SQL for intake: one batch per table in the business transaction, and the one read of the response projection.
  * The rows carry photo IDs and {@code contentVersion} values, so their {@code toString} hides them.
  */
 @Repository
@@ -82,6 +77,57 @@ class IntakeRecords {
 		return statuses;
 	}
 
+	/**
+	 * The owner's stored results of the photos (5c {@code EXISTING_RESULT}), read without locks. The caller holds the
+	 * photo rows {@code FOR UPDATE}, and a result is stored only under a share lock on its photo (the completion
+	 * transaction), so none appears for them before the caller ends; a regeneration changes only the epoch.
+	 * @return server photo ID to its result; photos without one are missing
+	 */
+	Map<UUID, ExistingResult> findResults(UUID ownerId, Collection<UUID> photoIds) {
+		Map<UUID, ExistingResult> results = new HashMap<>();
+		if (photoIds.isEmpty()) {
+			return results;
+		}
+		jdbc.sql("""
+				SELECT photo_id, id, photo_version FROM analysis_result
+				WHERE owner_id = :owner AND photo_id IN (:photos)
+				""")
+			.param("owner", ownerId)
+			.param("photos", photoIds)
+			.query((rs, rowNum) -> Map.entry(rs.getObject("photo_id", UUID.class),
+					new ExistingResult(rs.getObject("id", UUID.class), rs.getString("photo_version"))))
+			.list()
+			.forEach((row) -> results.put(row.getKey(), row.getValue()));
+		return results;
+	}
+
+	/**
+	 * The lifetime budgets of the owner's photos (5c {@code INPUT_RETRY_LATER} and {@code ATTEMPTS_EXHAUSTED}), read
+	 * without locks for a quick refusal: the permit checks the sends again under the budget lock. Read after the live
+	 * jobs are locked (5c'), so a block that the ending of such a job records is seen once that ending commits.
+	 * @return server photo ID to its budget; photos without a budget row are missing
+	 */
+	Map<UUID, PhotoLimits> findBudgets(UUID ownerId, Collection<UUID> photoIds) {
+		Map<UUID, PhotoLimits> budgets = new HashMap<>();
+		if (photoIds.isEmpty()) {
+			return budgets;
+		}
+		jdbc.sql("""
+				SELECT photo_id, risk_sends, input_blocked_until FROM photo_ai_budget
+				WHERE owner_id = :owner AND photo_id IN (:photos)
+				""")
+			.param("owner", ownerId)
+			.param("photos", photoIds)
+			.query((rs, rowNum) -> {
+				OffsetDateTime blockedUntil = rs.getObject("input_blocked_until", OffsetDateTime.class);
+				return Map.entry(rs.getObject("photo_id", UUID.class), new PhotoLimits(rs.getInt("risk_sends"),
+						(blockedUntil != null) ? blockedUntil.toInstant() : null));
+			})
+			.list()
+			.forEach((row) -> budgets.put(row.getKey(), row.getValue()));
+		return budgets;
+	}
+
 	void insertRequest(RequestRow row) {
 		jdbc.sql("""
 				INSERT INTO analysis_request (id, owner_id, origin, trigger, device_id, trial_mark_id, consent_version,
@@ -128,10 +174,11 @@ class IntakeRecords {
 			return;
 		}
 		batch.batchUpdate("""
-				INSERT INTO analysis_job (id, owner_id, request_id, group_id, photo_id, photo_version, funding,
-				                          manifest_id, status, base_priority, queued_at, upload_deadline,
-				                          processing_deadline, created_at, updated_at, version)
-				VALUES (:id, :owner, :request, :group, :photo, :photoVersion, :funding, :manifest, :status,
+				INSERT INTO analysis_job (id, owner_id, request_id, group_id, photo_id, photo_version,
+				                          representative_client_ref, funding, manifest_id, status, base_priority,
+				                          queued_at, upload_deadline, processing_deadline, created_at, updated_at,
+				                          version)
+				VALUES (:id, :owner, :request, :group, :photo, :photoVersion, :clientRef, :funding, :manifest, :status,
 				        :basePriority, :now, :uploadDeadline, :processingDeadline, :now, :now, 0)
 				""", rows.stream()
 			.map((row) -> new MapSqlParameterSource().addValue("id", row.id())
@@ -140,6 +187,7 @@ class IntakeRecords {
 				.addValue("group", row.groupId())
 				.addValue("photo", row.photoId())
 				.addValue("photoVersion", row.photoVersion())
+				.addValue("clientRef", row.representativeClientRef())
 				.addValue("funding", row.funding().name())
 				.addValue("manifest", row.manifestId())
 				.addValue("status", JobStatus.AWAITING_UPLOAD.name())
@@ -155,10 +203,11 @@ class IntakeRecords {
 				INSERT INTO analysis_request_item (request_id, photo_id, owner_id, client_ref, photo_version,
 				                                   basis_change_seq, taken_at, text_status, ocr_version,
 				                                   admission_result, code, reason, retryable, group_id, group_role,
-				                                   analysis_job_id, vector_id, vector_ignored_reason, created_at)
+				                                   analysis_job_id, vector_id, vector_ignored_reason, reused_result_id,
+				                                   reused_photo_version, retry_at, created_at)
 				VALUES (:request, :photo, :owner, :clientRef, :photoVersion, :basisChangeSeq, :takenAt, :textStatus,
 				        :ocrVersion, :admissionResult, :code, :reason, :retryable, :group, :groupRole, :job, :vector,
-				        :vectorIgnoredReason, :now)
+				        :vectorIgnoredReason, :reusedResult, :reusedPhotoVersion, :retryAt, :now)
 				""", rows.stream()
 			.map((row) -> new MapSqlParameterSource().addValue("request", row.requestId())
 				.addValue("photo", row.photoId())
@@ -179,91 +228,73 @@ class IntakeRecords {
 				.addValue("vector", row.vectorId(), Types.OTHER)
 				.addValue("vectorIgnoredReason",
 						(row.vectorIgnoredReason() != null) ? row.vectorIgnoredReason().name() : null, Types.VARCHAR)
+				.addValue("reusedResult", row.reusedResultId(), Types.OTHER)
+				.addValue("reusedPhotoVersion", row.reusedPhotoVersion(), Types.VARCHAR)
+				.addValue("retryAt", timestampOrNull(row.retryAt()), Types.TIMESTAMP_WITH_TIMEZONE)
 				.addValue("now", timestamp(row.createdAt())))
 			.toArray(MapSqlParameterSource[]::new));
 	}
 
-	boolean requestExists(UUID requestId) {
-		return jdbc.sql("SELECT EXISTS (SELECT 1 FROM analysis_request WHERE id = :id)")
-			.param("id", requestId)
-			.query(Boolean.class)
-			.single();
-	}
-
 	/**
-	 * The items of a request in {@code photoId} order with the current status of the job each points at.
-	 * {@code analyzedVersion} is the version the job analyzes the photo at: the item's own for an accepted photo, the
-	 * accepted item's of the job's request for a photo in progress.
+	 * The rows of a request's response in one statement, so that they come from one snapshot even under READ
+	 * COMMITTED (plan 4.3, ADR-0034): JSON arrays of the items, the groups and the jobs, each in the order of the
+	 * response (design 1.5). Items are in {@code photoId} order with the current status of the job each points at;
+	 * {@code analyzedVersion} is the version that job analyzes the photo at, the item's own for an accepted photo and
+	 * the accepted item's of the job's request for a photo in progress, and the reused result's for an existing result.
+	 * {@code retryAfter} is the wait a refused item was given, in whole seconds from the intake rounded up, the same in
+	 * every replay and status read, so that the status {@code ETag} holds. Groups are in the order of their
+	 * representatives' {@code photoId}. Jobs are listed once each: the jobs the request created, also after its items
+	 * were deleted (plan 2.9, R2-08), and the jobs of other requests its {@code IN_PROGRESS} photos wait for (the scope
+	 * of {@code counts} and {@code phase}), named and ordered by the {@code photoId} of their representative kept on
+	 * the job (unsigned, as {@code uuid} compares), then by job ID, with the upload policy of their manifest and their
+	 * failure code.
+	 * @param ownerId the request's owner; {@code null} reads the request whoever owns it
+	 * @return empty when the request does not exist or is of another owner
 	 */
-	List<ItemView> items(UUID requestId) {
+	Optional<ProjectionRows> projection(UUID requestId, @Nullable UUID ownerId) {
 		return jdbc.sql("""
-				SELECT i.client_ref, i.admission_result, i.code, i.reason, i.retryable, i.analysis_job_id, i.group_id,
-				       i.group_role, i.photo_version, i.vector_ignored_reason, j.status AS execution,
-				       a.photo_version AS analyzed_version
-				FROM analysis_request_item i
-				LEFT JOIN analysis_job j ON j.id = i.analysis_job_id
-				LEFT JOIN analysis_request_item a ON a.request_id = j.request_id AND a.photo_id = i.photo_id
-				                                 AND a.analysis_job_id = j.id AND a.admission_result = 'ACCEPTED'
-				WHERE i.request_id = :request
-				ORDER BY i.client_ref
-				""").param("request", requestId).query(IntakeRecords::item).list();
-	}
-
-	/**
-	 * The groups of a request in the {@code photoId} order of their representatives.
-	 */
-	List<GroupView> groups(UUID requestId) {
-		return jdbc.sql("""
-				SELECT g.id, rep.client_ref AS representative, g.photo_count, j.id AS job_id
-				FROM analysis_group g
-				JOIN analysis_request_item rep ON rep.request_id = g.request_id
-				                              AND rep.photo_id = g.representative_photo_id
-				LEFT JOIN analysis_job j ON j.group_id = g.id
-				WHERE g.request_id = :request
-				ORDER BY rep.client_ref
+				SELECT
+				  (SELECT COALESCE(json_agg(json_build_object(
+				            'photoId', i.client_ref, 'admissionResult', i.admission_result, 'code', i.code,
+				            'reason', i.reason, 'retryable', i.retryable, 'analysisJobId', i.analysis_job_id,
+				            'groupId', i.group_id, 'role', i.group_role, 'execution', j.status,
+				            'retryAfter', CAST(CEIL(EXTRACT(EPOCH FROM i.retry_at - i.created_at)) AS bigint),
+				            'observedVersion', i.photo_version,
+				            'analyzedVersion', COALESCE(i.reused_photo_version, a.photo_version),
+				            'vectorIgnored', i.vector_ignored_reason) ORDER BY i.client_ref), '[]'::json)
+				   FROM analysis_request_item i
+				   LEFT JOIN analysis_job j ON j.id = i.analysis_job_id
+				   LEFT JOIN analysis_request_item a ON a.request_id = j.request_id AND a.photo_id = i.photo_id
+				                                    AND a.analysis_job_id = j.id AND a.admission_result = 'ACCEPTED'
+				   WHERE i.request_id = r.id) AS items,
+				  (SELECT COALESCE(json_agg(json_build_object(
+				            'groupId', g.id, 'representativePhotoId', rep.client_ref, 'photoCount', g.photo_count,
+				            'analysisJobId', j.id) ORDER BY rep.client_ref), '[]'::json)
+				   FROM analysis_group g
+				   JOIN analysis_request_item rep ON rep.request_id = g.request_id
+				                                 AND rep.photo_id = g.representative_photo_id
+				   LEFT JOIN analysis_job j ON j.group_id = g.id
+				   WHERE g.request_id = r.id) AS groups,
+				  (SELECT COALESCE(json_agg(json_build_object(
+				            'analysisJobId', j.id, 'requestId', j.request_id, 'groupId', j.group_id,
+				            'representativePhotoId', j.representative_client_ref, 'status', j.status,
+				            'reason', j.failure_code, 'uploadRequired', j.status = 'AWAITING_UPLOAD',
+				            'uploadPolicy', json_build_object('contentType', m.content_type, 'maxBytes', m.max_bytes,
+				                                              'maxLongEdgePx', m.max_long_edge_px))
+				            ORDER BY j.representative_client_ref, j.id), '[]'::json)
+				   FROM analysis_job j
+				   JOIN analysis_call_manifest m ON m.id = j.manifest_id
+				   WHERE j.request_id = r.id
+				      OR j.id IN (SELECT ri.analysis_job_id FROM analysis_request_item ri
+				                  WHERE ri.request_id = r.id AND ri.analysis_job_id IS NOT NULL)) AS jobs
+				FROM analysis_request r
+				WHERE r.id = :request AND (CAST(:owner AS uuid) IS NULL OR r.owner_id = CAST(:owner AS uuid))
 				""")
 			.param("request", requestId)
-			.query((rs, rowNum) -> new GroupView(rs.getObject("id", UUID.class),
-					rs.getObject("representative", UUID.class), rs.getInt("photo_count"),
-					rs.getObject("job_id", UUID.class)))
-			.list();
-	}
-
-	/**
-	 * The jobs the items of a request point at, once each: the jobs it created and the jobs of other requests its
-	 * {@code IN_PROGRESS} photos wait for (the scope of {@code counts} and {@code phase}). Each carries the client's ID
-	 * of its representative photo, read from the photo row, and is ordered by it (unsigned, as {@code uuid} compares),
-	 * then by job ID, with the upload policy of its manifest.
-	 */
-	List<JobView> jobs(UUID requestId) {
-		return jdbc.sql("""
-				SELECT j.id, j.request_id, j.group_id, p.client_ref AS representative, j.status, m.content_type,
-				       m.max_bytes, m.max_long_edge_px
-				FROM analysis_job j
-				JOIN analysis_call_manifest m ON m.id = j.manifest_id
-				JOIN photo p ON p.id = j.photo_id
-				WHERE j.id IN (SELECT i.analysis_job_id FROM analysis_request_item i
-				               WHERE i.request_id = :request AND i.analysis_job_id IS NOT NULL)
-				ORDER BY p.client_ref, j.id
-				""").param("request", requestId).query((rs, rowNum) -> {
-			JobStatus status = JobStatus.valueOf(rs.getString("status"));
-			return new JobView(rs.getObject("id", UUID.class), rs.getObject("request_id", UUID.class),
-					rs.getObject("group_id", UUID.class), rs.getObject("representative", UUID.class), status,
-					status == JobStatus.AWAITING_UPLOAD, new UploadPolicy(rs.getString("content_type"),
-							rs.getLong("max_bytes"), rs.getInt("max_long_edge_px")));
-		}).list();
-	}
-
-	private static ItemView item(ResultSet rs, int rowNum) throws SQLException {
-		String role = rs.getString("group_role");
-		String execution = rs.getString("execution");
-		String ignored = rs.getString("vector_ignored_reason");
-		return new ItemView(rs.getObject("client_ref", UUID.class),
-				AdmissionResult.valueOf(rs.getString("admission_result")), rs.getString("code"),
-				rs.getString("reason"), rs.getBoolean("retryable"), null, rs.getObject("analysis_job_id", UUID.class),
-				rs.getObject("group_id", UUID.class), (role != null) ? GroupRole.valueOf(role) : null,
-				(execution != null) ? JobStatus.valueOf(execution) : null, rs.getString("photo_version"),
-				rs.getString("analyzed_version"), (ignored != null) ? VectorIgnoredReason.valueOf(ignored) : null);
+			.param("owner", ownerId, Types.OTHER)
+			.query((rs, rowNum) -> new ProjectionRows(rs.getString("items"), rs.getString("groups"),
+					rs.getString("jobs")))
+			.optional();
 	}
 
 	private static OffsetDateTime timestamp(Instant instant) {
@@ -299,10 +330,11 @@ class IntakeRecords {
 	/**
 	 * @param photoId the server photo ID of the representative
 	 * @param photoVersion its version observed at intake
+	 * @param representativeClientRef its API photoId
 	 */
 	record JobRow(UUID id, UUID ownerId, UUID requestId, UUID groupId, UUID photoId, String photoVersion,
-			Funding funding, String manifestId, int basePriority, Instant queuedAt, Instant uploadDeadline,
-			Instant processingDeadline) {
+			UUID representativeClientRef, Funding funding, String manifestId, int basePriority, Instant queuedAt,
+			Instant uploadDeadline, Instant processingDeadline) {
 
 		@Override
 		public String toString() {
@@ -311,15 +343,59 @@ class IntakeRecords {
 
 	}
 
+	/**
+	 * @param reusedResultId the result an {@code EXISTING_RESULT} photo reuses
+	 * @param reusedPhotoVersion the photo version of that result
+	 * @param retryAt when a photo refused with {@code INPUT_RETRY_LATER} may be sent again
+	 */
 	record ItemRow(UUID requestId, UUID photoId, UUID ownerId, UUID clientRef, String photoVersion,
 			long basisChangeSeq, @Nullable Instant takenAt, TextStatus textStatus, @Nullable String ocrVersion,
 			AdmissionResult admissionResult, @Nullable String code, @Nullable String reason, boolean retryable,
 			@Nullable UUID groupId, @Nullable GroupRole groupRole, @Nullable UUID analysisJobId,
-			@Nullable UUID vectorId, @Nullable VectorIgnoredReason vectorIgnoredReason, Instant createdAt) {
+			@Nullable UUID vectorId, @Nullable VectorIgnoredReason vectorIgnoredReason, @Nullable UUID reusedResultId,
+			@Nullable String reusedPhotoVersion, @Nullable Instant retryAt, Instant createdAt) {
 
 		@Override
 		public String toString() {
 			return "ItemRow[requestId=" + requestId + ", admissionResult=" + admissionResult + "]";
+		}
+
+	}
+
+	/**
+	 * A stored result of a photo, reused by intake.
+	 *
+	 * @param photoVersion the photo version the result is for
+	 */
+	record ExistingResult(UUID resultId, String photoVersion) {
+
+		@Override
+		public String toString() {
+			return "ExistingResult[resultId=" + resultId + "]";
+		}
+
+	}
+
+	/**
+	 * What intake reads of a photo's lifetime budget.
+	 *
+	 * @param riskSends the risky sends counted for the photo
+	 * @param inputBlockedUntil until when the photo is held back after invalid inputs, {@code null} when it is not
+	 */
+	record PhotoLimits(int riskSends, @Nullable Instant inputBlockedUntil) {
+
+	}
+
+	/**
+	 * The JSON arrays of {@link #projection}, of {@code IntakeResponse.ItemView}, {@code GroupView} and
+	 * {@code JobView} rows.
+	 */
+	record ProjectionRows(String items, String groups, String jobs) {
+
+		// They hold photo IDs and contentVersion values.
+		@Override
+		public String toString() {
+			return "ProjectionRows[hidden]";
 		}
 
 	}

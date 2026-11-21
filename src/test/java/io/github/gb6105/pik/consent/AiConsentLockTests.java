@@ -8,6 +8,7 @@ import io.github.gb6105.pik.TestcontainersConfiguration;
 import io.github.gb6105.pik.consent.DecisionRequest.Choice;
 import io.github.gb6105.pik.shared.id.UuidV7;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -58,6 +59,78 @@ class AiConsentLockTests {
 	void basisNeedsTheCallersTransaction() {
 		assertThatExceptionOfType(IllegalTransactionStateException.class)
 			.isThrownBy(() -> consents.lockGrantedBasis(principal));
+		assertThatExceptionOfType(IllegalTransactionStateException.class)
+			.isThrownBy(() -> consents.basisHolds(principal, 1));
+	}
+
+	@Test
+	void basisHoldsWhenTheConsentIsGrantedAgain() {
+		decide(Choice.GRANTED, 0);
+		assertThat(holds(1)).isTrue();
+
+		decide(Choice.GRANTED, 1);
+
+		assertThat(holds(1)).isTrue();
+		assertThat(holds(2)).isTrue();
+	}
+
+	@Test
+	void withdrawalBreaksTheBasisEvenWhenGrantedAgain() {
+		decide(Choice.GRANTED, 0);
+		decide(Choice.DENIED, 1);
+		assertThat(decisions()).containsExactly("GRANTED", "WITHDRAWN");
+		assertThat(holds(1)).isFalse();
+
+		decide(Choice.GRANTED, 2);
+
+		assertThat(holds(1)).isFalse();
+		assertThat(holds(3)).isTrue();
+	}
+
+	@Test
+	void denialAfterTheBasisBreaksIt() {
+		decide(Choice.GRANTED, 0);
+		decide(Choice.DENIED, 1);
+		decide(Choice.DENIED, 2);
+		decide(Choice.GRANTED, 3);
+		assertThat(decisions()).containsExactly("GRANTED", "WITHDRAWN", "DENIED", "GRANTED");
+
+		assertThat(holds(2)).isFalse();
+		assertThat(holds(4)).isTrue();
+	}
+
+	@Test
+	void basisDoesNotHoldWithoutAGrantInForce() {
+		assertThat(holds(0)).isFalse();
+
+		decide(Choice.DENIED, 0);
+
+		assertThat(holds(0)).isFalse();
+		assertThat(holds(1)).isFalse();
+	}
+
+	@Test
+	void decisionWaitsWhileABasisCheckHoldsTheConsent() throws Exception {
+		decide(Choice.GRANTED, 0);
+		CountDownLatch locked = new CountDownLatch(1);
+		CountDownLatch release = new CountDownLatch(1);
+		CompletableFuture<Boolean> check = CompletableFuture.supplyAsync(() -> transactions.execute((status) -> {
+			boolean holds = consents.basisHolds(principal, 1);
+			locked.countDown();
+			awaitLatch(release);
+			return holds;
+		}));
+		assertThat(locked.await(5, TimeUnit.SECONDS)).isTrue();
+
+		CompletableFuture<ConsentState> decision = CompletableFuture.supplyAsync(
+				() -> transactions.execute((status) -> consents.decide(principal, device, request(Choice.DENIED, 1))));
+		await().atMost(Duration.ofSeconds(5)).until(() -> waitingAdvisoryLocks() > 0);
+		assertThat(decision).isNotDone();
+		release.countDown();
+
+		assertThat(check.get(5, TimeUnit.SECONDS)).isTrue();
+		assertThat(decision.get(5, TimeUnit.SECONDS).version()).isEqualTo(2);
+		assertThat(holds(1)).isFalse();
 	}
 
 	@Test
@@ -131,6 +204,17 @@ class AiConsentLockTests {
 
 	private Optional<ConsentBasis> basis() {
 		return transactions.execute((status) -> consents.lockGrantedBasis(principal));
+	}
+
+	private boolean holds(long basisVersion) {
+		return transactions.execute((status) -> consents.basisHolds(principal, basisVersion));
+	}
+
+	private List<String> decisions() {
+		return jdbc.sql("SELECT decision FROM ai_consent WHERE principal_id = :principal ORDER BY version")
+			.param("principal", principal)
+			.query(String.class)
+			.list();
 	}
 
 	private void decide(Choice decision, long version) {

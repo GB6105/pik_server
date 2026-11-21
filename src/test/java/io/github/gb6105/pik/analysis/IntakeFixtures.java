@@ -55,7 +55,21 @@ final class IntakeFixtures {
 	Installed androidWithoutConsent() {
 		byte[] androidId = new byte[8];
 		ThreadLocalRandom.current().nextBytes(androidId);
-		return install("ANDROID", "{\"androidId\": \"%s\"}".formatted(HexFormat.of().formatHex(androidId)), null);
+		return androidWithoutConsent(HexFormat.of().formatHex(androidId));
+	}
+
+	/**
+	 * A new Android install with a granted consent on the device of {@code androidId}, which shares the trial mark of
+	 * the device's earlier installs.
+	 */
+	Installed android(String androidId) {
+		Installed installed = androidWithoutConsent(androidId);
+		grantConsent(installed);
+		return installed;
+	}
+
+	private Installed androidWithoutConsent(String androidId) {
+		return install("ANDROID", "{\"androidId\": \"%s\"}".formatted(androidId), null);
 	}
 
 	/**

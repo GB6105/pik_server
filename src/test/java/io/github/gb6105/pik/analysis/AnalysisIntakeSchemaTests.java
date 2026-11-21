@@ -86,7 +86,14 @@ class AnalysisIntakeSchemaTests {
 				"analysis_request_item.taken_at", "analysis_request_item.ocr_version", "analysis_request_item.code",
 				"analysis_request_item.reason", "analysis_request_item.group_id", "analysis_request_item.group_role",
 				"analysis_request_item.analysis_job_id", "analysis_request_item.vector_id",
-				"analysis_request_item.vector_ignored_reason");
+				"analysis_request_item.vector_ignored_reason",
+				// Columns V6 adds to these tables.
+				"analysis_call_manifest.max_pixels", "analysis_call_manifest.max_tokens",
+				"analysis_call_manifest.max_cost_micros", "analysis_job.run_token", "analysis_job.locked_until",
+				"analysis_job.next_attempt_at", "analysis_job.probe_excluded_until", "analysis_job.input_sha256",
+				"analysis_job.input_etag", "analysis_job.failure_code", "analysis_job.ended_at",
+				"analysis_request_item.reused_result_id", "analysis_request_item.reused_photo_version",
+				"analysis_request_item.retry_at");
 	}
 
 	@Test
@@ -171,7 +178,8 @@ class AnalysisIntakeSchemaTests {
 		UUID request = insertRequest();
 		assertRejectedBy("uk_analysis_job_photo_active", () -> insertJob(request, photo, "AWAITING_UPLOAD"));
 
-		jdbc.sql("UPDATE analysis_job SET status = :status WHERE id = :id")
+		jdbc.sql("UPDATE analysis_job SET status = :status, failure_code = 'UPLOAD_EXPIRED', ended_at = now()"
+				+ " WHERE id = :id")
 			.param("status", status)
 			.param("id", first)
 			.update();
@@ -281,7 +289,7 @@ class AnalysisIntakeSchemaTests {
 		UUID request = insertRequest();
 		rows.insert("analysis_request_item",
 				with(notAccepted(request, UuidV7.generate()), "admission_result", "EXISTING_RESULT", "code", null,
-						"reason", null));
+						"reason", null, "reused_result_id", UuidV7.generate(), "reused_photo_version", "content-1"));
 
 		assertThat(jdbc.sql("SELECT admission_result FROM analysis_request_item WHERE request_id = :request")
 			.param("request", request)
@@ -366,7 +374,21 @@ class AnalysisIntakeSchemaTests {
 	}
 
 	private UUID insertJob(UUID request, UUID photo, String status) {
-		return insertJobOfGroup(request, insertGroup(request, photo), photo, "status", status);
+		return insertJobOfGroup(request, insertGroup(request, photo), photo, statusColumns(status));
+	}
+
+	/**
+	 * The status with the V6 execution columns its CHECKs require.
+	 */
+	private static Object[] statusColumns(String status) {
+		OffsetDateTime now = OffsetDateTime.now();
+		return switch (status) {
+			case "READY" -> new Object[] { "status", status, "next_attempt_at", now, "input_sha256", new byte[32] };
+			case "RUNNING" -> new Object[] { "status", status, "next_attempt_at", now, "input_sha256", new byte[32],
+					"run_token", UUID.randomUUID(), "locked_until", now.plusMinutes(2) };
+			case "SUCCEEDED" -> new Object[] { "status", status, "ended_at", now };
+			default -> new Object[] { "status", status };
+		};
 	}
 
 	private UUID insertJobWith(UUID request, Object... changes) {
@@ -422,6 +444,7 @@ class AnalysisIntakeSchemaTests {
 		row.put("group_id", group);
 		row.put("photo_id", photo);
 		row.put("photo_version", "content-1");
+		row.put("representative_client_ref", UUID.randomUUID());
 		row.put("funding", "TRIAL");
 		row.put("manifest_id", manifestId);
 		row.put("status", status);

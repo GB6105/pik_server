@@ -20,7 +20,7 @@
 | CONFLICT | 버전 충돌·반영 중·허용 안 되는 상태 전이 | 409 |
 | UNSUPPORTED_OPERATION | 지원하지 않는 동작 | 422 |
 | TEMPORARY_FAILURE | 통신·외부 처리·일시 저장 장애 | 503 |
-| RATE_LIMITED | 호출 제한 초과 (검색 해석, 단말 장소 조회). `Retry-After` 헤더 포함, `retryable` = true, 멱등 기록에 저장 안 함. **SSOT 오류 표에 없음** (ADR-0024 #13-2) | 429 |
+| RATE_LIMITED | 호출 제한 초과 (검색 해석, 단말 장소 조회, 분석 업로드 발급 입력 속도). `Retry-After` 헤더 포함, `retryable` = true, 멱등 기록에 저장 안 함. **SSOT 오류 표에 없음** (ADR-0024 #13-2) | 429 |
 
 ## 공통 응답 필드 (요구사항 172행, ADR-0023)
 | 요구사항 | 필드 | 범위 |
@@ -125,10 +125,51 @@
 | `admissionResult` | `code` / `reason` | `retryable` |
 |---|---|---|
 | `ACCEPTED` | 없음 (`analysisJobId` = 새 작업) | false |
+| `EXISTING_RESULT` | 없음 (`analyzedVersion` = 재사용 결과의 버전. 관측 버전이 달라도 재분석·차감 없음) | false |
 | `IN_PROGRESS` | 없음 (`analysisJobId` = 진행 작업, 다른 접수의 작업일 수 있음) | false |
+| `NOT_ACCEPTED` | `RATE_LIMITED` / `INPUT_RETRY_LATER` + `retryAfter` (입력 반복 실패 차단) | true |
+| `NOT_ACCEPTED` | `FORBIDDEN` / `ATTEMPTS_EXHAUSTED` (사진 평생 송신 소진) | false |
+| `NOT_ACCEPTED` | `FORBIDDEN` / `ANALYSIS_UNAVAILABLE` (체험 기기 송신 한도 소진, 빠른 판정. 최종 판정 = 허가) | false |
 | `NOT_ACCEPTED` | `FORBIDDEN` / `SUBSCRIPTION_REQUIRED` (체험이 묶음 전체를 덮지 못함) | 예약 반환 대기면 true, 소진·체험 없음이면 false |
 | `NOT_ACCEPTED` | `FORBIDDEN` / `TRIAL_UNAVAILABLE` (체험 기록 없는 기기, 사용자 결정 Q10) | false |
-- `EXISTING_RESULT`, `INPUT_RETRY_LATER`·`ATTEMPTS_EXHAUSTED`·`ANALYSIS_UNAVAILABLE` 판정과 `retryAfter` = 5-2 (사용자 결정 Q11)
+- 판정 순서 (5c, 5-2, ADR-0035): `EXISTING_RESULT` → `IN_PROGRESS` → `INPUT_RETRY_LATER` → `ATTEMPTS_EXHAUSTED` → `ANALYSIS_UNAVAILABLE` → 예약 (`SUBSCRIPTION_REQUIRED`·`TRIAL_UNAVAILABLE`)
+- `INPUT_RETRY_LATER`는 항목 사유 (요청 전체 429 아님, 접수 상태 코드·저장은 위 규칙 그대로). `retryAfter` = 접수 때 고정한 `ceil(retry_at − 접수 시각)` 초. 재생·상태 조회 모두 같은 값 (줄어들지 않음, ETag 안정). 단말은 접수 응답을 받은 시각부터 셈
+- `jobs[].status` = 작업 상태, `jobs[].reason` = 종료 사유 (`failure_code`, 진행 중·성공 = null. 값 = 설계 문서 2.1)
+- 방어 분기: `AlreadyReserved` 예약을 가진 작업이 이미 종료 = 그 사진 `IN_PROGRESS` + 그 작업은 종료 (`phase` 계산에서 `DONE`). 설계 경로로는 생기지 않음 (종료 전이가 같은 TX에서 예약 반환). 단말은 `jobs[]`의 작업 상태를 따름
+
+### 분석 업로드·상태 (FR-I-01·03, ADR-0031 #5, ADR-0035)
+- 계약 세부·판정 순서 = `docs/design/stage5-analysis-pipeline.md` 2.3
+
+| 엔드포인트 | 요청 | 응답 |
+|---|---|---|
+| `POST /analysis-jobs/{requestId}/upload-attempts` (즉시 처리 변경, `Idempotency-Key`) | `{items[1~100]{analysisJobId, contentLength (1~작업 manifest `maxBytes`), sha256 (표준 base64 + padding, 32바이트)}}` | 200 `{jobId (= 키), result, retryable, items[]}`. 항목 = `analysisJobId`, `result` (`ISSUED`/`REJECTED`), `attemptId`, `expiresAt` (시도 고정 만료), `upload {url, method: PUT, headers, expiresAt (서명 만료 ≤ 시도 만료)}`, `code`·`reason`·`retryable` |
+| `POST /analysis-jobs/{requestId}/upload-attempts/{attemptId}/complete` (`Idempotency-Key`, 본문 없음) | - | 200 `{jobId (= 키), result (SUCCEEDED/FAILED/CANCELLED), retryable, code, reason, analysisJobId, attemptId, attemptStatus, status}` |
+| `GET /analysis-jobs/{requestId}` (Query) | `If-None-Match` 선택 | 200 접수 투영 (`POST /analysis-jobs` 성공 본문과 같은 모양) + `pollAfterSeconds`, `ETag` (본문 SHA-256, 강한 ETag), 일치 = 304. URL 없음 |
+- PUT 서명 헤더 (단말이 그대로 보냄) = `Content-Type: image/jpeg`, `Content-Length`, `x-amz-checksum-sha256`, `If-None-Match: *`
+- 공통 순서: 인증·키·`API-Version` → 요청 기기 (401 `ACCESS_TOKEN_INVALID`) → (발급) 사전 조회 → 접수 소유 / (확정) 시도 소유 → 사전 조회. 소유 아님 = 404 `RESOURCE_NOT_FOUND` (비저장). 발급 값 오류 = 400 `VALIDATION_FAILED`, 같은 작업 2번 = 400 `DUPLICATE_ANALYSIS_JOB` (비저장). URL 서명 = 실행기 뒤 TX 밖 (첫 응답·재생 공통, 저장 본문에 URL 없음)
+- `pollAfterSeconds` = `READY`·`RUNNING` 작업이 있으면 3초 ± 20% (접수마다 고정), 업로드 대기만·모두 종료 = null. 상태 조회 = 같은 접수의 첫 응답·재생과 같은 투영 (SQL 문 1개 = 한 스냅샷)
+
+| 상황 | 응답 | 멱등 기록 |
+|---|---|---|
+| 발급 입력 속도 초과 (주체·체험 기기 시간당 항목·바이트) | 429 `RATE_LIMITED` / `UPLOAD_RATE_LIMITED` + `Retry-After` (다음 창), 요청 전체 롤백 | 안 함 |
+| 서명 실패 (자격 조회·만료 보장 실패) | 503 `TEMPORARY_FAILURE` / `STORAGE_UNAVAILABLE` (같은 키 재전송 = 재생 + 재서명) | 판정은 이미 저장 |
+| 확정: 시도가 현재 `ISSUED` 아님·작업 종료 | 409 `CONFLICT` / `ATTEMPT_NOT_CURRENT` (`retryable=false`) | 저장 |
+| 확정: 객체 없음 (HEAD 404) | 409 `CONFLICT` / `UPLOAD_NOT_FOUND` + `Retry-After` (설정 5초) | 안 함 |
+| 확정: 저장소 장애 (HEAD 403·5xx·시간 초과) | 503 `STORAGE_UNAVAILABLE` | 안 함 |
+| 확정: 이미 `CONFIRMED` | 200 no-op (`SUCCEEDED`) | 저장 |
+
+| 항목 사유 (`items[]`·확정 `reason`) | `code` | `retryable` | 뜻 |
+|---|---|---|---|
+| `RESOURCE_NOT_FOUND` | `NOT_FOUND` | false | 이 접수의 작업 아님 |
+| `ATTEMPT_NOT_ALLOWED` | `CONFLICT` | false | 작업이 업로드 대기 아님 |
+| `UPLOAD_EXPIRED` | `CONFLICT` | false | 업로드 기한 − 10초 지남 |
+| `PRINCIPAL_INACTIVE` / `CONSENT_WITHDRAWN` | `FORBIDDEN` | false | 주체 비활성 / 접수 기준 동의 무효 |
+| `RESERVATION_MISSING` | `CONFLICT` | false | 미반환 체험 예약 없음 (확정이면 작업 `FAILED(RESERVATION_MISSING)`) |
+| `UPLOAD_ATTEMPT_LIMIT` | `CONFLICT` | false | 발급 5회 소진 (작업 종료는 회수 배치) |
+| `VALIDATION_FAILED` | `INVALID_INPUT` | false | `contentLength` > 작업 `maxBytes` |
+| `ATTEMPT_NOT_CURRENT` | `CONFLICT` | true | 재생한 시도가 현재 시도 아님·만료 10초 전 지남 → 새 키로 발급 |
+| `UPLOAD_INVALID` | `INVALID_INPUT` | true | 확정한 객체 불일치·늦은 업로드 (그 시도만 거절, 작업 유지, 새 시도 가능) |
+- 확정이 작업을 끝내면 200 + `result` = `CANCELLED` (`CONSENT_WITHDRAWN`·`PROCESSING_EXPIRED`) 또는 `FAILED` (`PRINCIPAL_INACTIVE`·`RESERVATION_MISSING`), `reason` = 종료 사유, `code` = `FORBIDDEN` (동의·주체) / `CONFLICT` (그 밖)
 
 ## 정상 결과로 취급
 - 빈 검색 결과

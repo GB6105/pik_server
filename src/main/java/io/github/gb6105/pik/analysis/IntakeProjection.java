@@ -1,6 +1,8 @@
 package io.github.gb6105.pik.analysis;
 
+import io.github.gb6105.pik.analysis.IntakeRecords.ProjectionRows;
 import io.github.gb6105.pik.analysis.IntakeResponse.Counts;
+import io.github.gb6105.pik.analysis.IntakeResponse.GroupView;
 import io.github.gb6105.pik.analysis.IntakeResponse.ItemView;
 import io.github.gb6105.pik.analysis.IntakeResponse.JobView;
 import io.github.gb6105.pik.shared.error.CommandResult;
@@ -12,18 +14,28 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Builds the intake response from the database: the decisions stored with the request and the current status of
- * the jobs they point at (design 1.5). The first response and every replayed success go through it, so a
- * retransmission reports progress with the first status code (consistency-rules.md). Runs in the caller's
- * transaction: the business transaction or the one in which the executor replays.
+ * the jobs they point at (design 1.5). The first response, every replayed success and the status query go through
+ * it, so a retransmission reports progress with the first status code (consistency-rules.md). The rows come from one
+ * SQL statement ({@link IntakeRecords#projection}), one snapshot whatever transaction it runs in (plan 4.3).
  */
 @Component
 @RequiredArgsConstructor
 class IntakeProjection implements ReplayProjection {
+
+	private static final TypeReference<List<ItemView>> ITEMS = new TypeReference<>() {
+	};
+
+	private static final TypeReference<List<GroupView>> GROUPS = new TypeReference<>() {
+	};
+
+	private static final TypeReference<List<JobView>> JOBS = new TypeReference<>() {
+	};
 
 	private final IntakeRecords records;
 
@@ -44,16 +56,24 @@ class IntakeProjection implements ReplayProjection {
 	 * @return the response, {@code null} when the request does not exist
 	 */
 	@Nullable IntakeResponse build(UUID requestId) {
-		if (!records.requestExists(requestId)) {
-			return null;
-		}
-		List<ItemView> items = records.items(requestId);
+		return records.projection(requestId, null).map((rows) -> response(requestId, rows)).orElse(null);
+	}
+
+	/**
+	 * @return the response of the owner's request, {@code null} when the owner has no such request
+	 */
+	@Nullable IntakeResponse find(UUID ownerId, UUID requestId) {
+		return records.projection(requestId, ownerId).map((rows) -> response(requestId, rows)).orElse(null);
+	}
+
+	private IntakeResponse response(UUID requestId, ProjectionRows rows) {
+		List<ItemView> items = jsonMapper.readValue(rows.items(), ITEMS);
 		Map<AdmissionResult, Integer> decisions = new HashMap<>();
 		for (ItemView item : items) {
 			decisions.merge(item.admissionResult(), 1, Integer::sum);
 		}
 		// The jobs of the response are the scope of the counts and the phase.
-		List<JobView> jobs = records.jobs(requestId);
+		List<JobView> jobs = jsonMapper.readValue(rows.jobs(), JOBS);
 		int waiting = (int) jobs.stream().filter((job) -> job.status().waiting()).count();
 		int done = (int) jobs.stream().filter((job) -> job.status().over()).count();
 		int running = jobs.size() - waiting - done;
@@ -62,7 +82,7 @@ class IntakeProjection implements ReplayProjection {
 				decisions.getOrDefault(AdmissionResult.IN_PROGRESS, 0),
 				decisions.getOrDefault(AdmissionResult.NOT_ACCEPTED, 0), waiting, running, done);
 		return new IntakeResponse(requestId, CommandResult.ACCEPTED, false, phase(jobs.size(), waiting, done), counts,
-				items, records.groups(requestId), jobs);
+				items, jsonMapper.readValue(rows.groups(), GROUPS), jobs);
 	}
 
 	private static Phase phase(int jobs, int waiting, int done) {

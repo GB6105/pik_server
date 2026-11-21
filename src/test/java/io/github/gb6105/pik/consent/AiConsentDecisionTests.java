@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -22,6 +23,7 @@ import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.exception.ConstraintViolationException.ConstraintKind;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import org.springframework.dao.DataIntegrityViolationException;
 
 /**
@@ -85,6 +87,17 @@ class AiConsentDecisionTests {
 		assertThat(regranted.granted()).isTrue();
 		assertThat(regranted.reconsentRequired()).isFalse();
 		assertThat(regranted.features()).isEqualTo(Feature.ALL);
+	}
+
+	@Test
+	void basisOnAGrantBelowTheMinimumNoLongerHolds() {
+		latest(consent(ConsentDecision.GRANTED, 1, 1));
+
+		assertThat(consents(2, 2).basisHolds(principal, 1)).isFalse();
+		InOrder order = inOrder(locks, records);
+		order.verify(locks).lockShared(principal);
+		order.verify(records).findLatest(principal, PURPOSE);
+		assertThat(consents(2, 1).basisHolds(principal, 1)).isTrue();
 	}
 
 	@Test

@@ -1,6 +1,6 @@
 # 단계 5 분석 파이프라인 설계: 접수·실행·생성
 
-- 결정 기록: [ADR-0031](../adr/0031-stage5-analysis-pipeline.md). 운영·인프라는 [ADR-0032](../adr/0032-operations-infrastructure-security.md), 이후 단계 정책은 [ADR-0033](../adr/0033-later-stage-policy-proposals.md)
+- 결정 기록: [ADR-0031](../adr/0031-stage5-analysis-pipeline.md). 구현 보완은 5-1 [ADR-0034](../adr/0034-stage5-1-intake-implementation.md), 5-2 [ADR-0035](../adr/0035-stage5-2-analysis-run-implementation.md). 운영·인프라는 [ADR-0032](../adr/0032-operations-infrastructure-security.md), 이후 단계 정책은 [ADR-0033](../adr/0033-later-stage-policy-proposals.md)
 - 대상 FR: FR-I-01·02·03, FR-G-01~03, FR-E-01
 - 전제 (사용자 확정): 모델과 무관한 계약, PR 3개 (5-1 접수 / 5-2 실행 / 5-3 생성), 신규 모듈 `photo` + `analysis` (기존 `action`·`event`·`usage` 모듈은 확장)
 - SSOT·ADR과 충돌하면 SSOT·ADR 우선. 이 문서는 구현 PR마다 실제 DDL·API와 맞춰 갱신
@@ -32,14 +32,17 @@
 - 확인·수정은 원래 `generated_value`와 자동 근거를 바꾸지 않는다 (분석 이력 보존)
 - 이 판정도 오류를 줄일 뿐 무오류 확인이 아니다
 
-### 0.3 잠금 순서 (모든 TX 공통, 앞에서 뒤로만)
-`멱등 키 → 동의 (공유/배타) → 주체 접수 → 주체 이벤트 → 전역 claim → photo (id 순) → analysis_request → analysis_job (id 순) → external_call → 이용량 할당 → 주체 일일 송신 → 기기 기록 → photo_ai_budget → 일일 비용 → 생성 행 → photo_action·event (id 순) → owner_change_counter`
+### 0.3 잠금 순서 (모든 TX 공통, 앞에서 뒤로만. 5-2 개정 = ADR-0035)
+`멱등 키 → 동의 (공유/배타) → 주체 접수 → 주체 이벤트 → 전역 claim → photo (id 순) → analysis_request → analysis_job (id 순) → analysis_upload_attempt → 입력 속도 (주체 → 체험 기록) → external_call → 주체 일일 송신 → 이용량 할당 → 기기 기록 → photo_ai_budget → 일일 비용 → ai_gate (BUDGET → CONFIG_CIRCUIT → TRANSIENT_CIRCUIT) → 생성 행 → photo_action·event (id 순) → owner_change_counter`
+- 5-2 개정: 주체 일일 송신을 이용량 할당 **앞**으로 옮김 (완료 TX의 `usage.settle`이 할당·기기를 한 번에 잠금. 이전 순서 할당 → 일일 → 기기면 `settle`을 둘로 나눠야 함). 시도·입력 속도·`ai_gate` 위치 추가 (5-1 순서에 없던 표)
+- 기기 기록 행 = 체험 사용량 + 송신 수 (`send_count`). 같은 TX에서 이미 잡은 행을 다시 잠그는 것은 순서 위반 아님. 같은 표의 행끼리 = 입력 속도 `PRINCIPAL → TRIAL_MARK`, `ai_gate` 원인 순서 (잠글 원인만)
+- 전이별 잠금 표 = `.claude/docs/consistency-rules.md`. 표에 없는 쓰기를 추가하면 표를 먼저 고친다
 - 행 생성 (`INSERT … ON CONFLICT`)은 그 자원의 순서 위치에서 한다 (마지막이 아님). 이미 잠근 상위 행 아래에서만 충돌하는 삽입 (예: 작업 잠금 아래의 `external_call`)은 위치 제약 없음
 - `owner_change_counter`는 도메인 쓰기·flush 뒤 발급
 - 예외: claim의 우선순위 순 `FOR NO KEY UPDATE SKIP LOCKED` (대기하지 않음)
 - `analysis_job` 잠금 (ADR-0034): 이용량보다 먼저 작업을 잠그는 TX (claim·상태 전이·완료·취소)는 `FOR NO KEY UPDATE`보다 강한 잠금 금지 (`FOR UPDATE`·`DELETE`·`id`·`group_id` UPDATE 포함). 예외 = 주체 접수 잠금을 먼저 잡은 TX. 작업 잠금은 네이티브 SQL (JPA `SKIP_LOCKED`는 `FOR UPDATE`를 낼 수 있음). 근거 = 접수의 `AlreadyReserved` 항목 FK 검사 (`KEY SHARE`)가 이용량 잠금 뒤에 옴 (1.2 5d). 시험 C-8이 고정
 - 만료·취소·회수 배치 = 후보 조회 (잠금 없음) + 작업별 전이 TX
-- advisory 잠금 네임스페이스 분리 (멱등·동의·접수·이벤트·claim·기기)
+- advisory 잠금 네임스페이스 분리 (멱등·동의 `consent:`·접수 `analysis.intake:`·이벤트·claim `analysis.claim:`·기기). 전역 claim = `analysis.claim:global`, 다른 잠금 없이 TX 첫 잠금으로만
 
 ## 1. 단계 5-1 접수·묶음
 ### 1.1 요청 `POST /analysis-jobs`
@@ -69,6 +72,7 @@
    f. `issueChangeSeqs` (생성·`source_change_seq` 증가 사진만, 도메인 쓰기·flush 뒤 마지막 `owner_change_counter`)
    g. 실행기가 `Outcome(새 작업 ≥ 1 = 202, 그 밖 = 200, 투영 응답)`과 멱등 기록 저장 후 커밋
 - 5-2가 같은 자리 (5c)에 더할 판정 (사용자 결정 Q11): `EXISTING_RESULT`, 입력 반복 실패 차단 (`INPUT_RETRY_LATER`, 2.7), 사진 평생 송신 (`ATTEMPTS_EXHAUSTED`), 체험 기기 송신 한도 소진 = 항목 `NOT_ACCEPTED`/`ANALYSIS_UNAVAILABLE` (빠른 거절, 최종 판정은 허가). 5-1은 enum·CHECK만
+  - 5-2 구현 (ADR-0035): 순서 = `EXISTING_RESULT` (진행 중 판정보다 먼저, 관측 버전 무관, `SUCCEEDED` 작업의 대표·구성원 모두) → `IN_PROGRESS` (비종료 작업만) → `INPUT_RETRY_LATER` → `ATTEMPTS_EXHAUSTED` → `ANALYSIS_UNAVAILABLE`. 기기 송신 소진은 TX 전 잠금 없는 읽기 (TX 안이면 뒤의 예약 잠금이 같은 JPA 엔티티를 다시 읽지 않음). 체험 시작 크기 계산도 이 판정으로 빠질 사진을 뺌 (보낼 것이 없는 요청은 체험 시작·DeviceCheck 없음)
 - 5-1 `funding` = `TRIAL` 고정 (사용자 결정 Q14, Pro = 단계 8). 체험 시작 판정 = usage `needsDeviceCheck()`, B7 "확인 전" 설치 경로는 D-23 구현 (사용자 결정 Q9)
 
 ### 1.3 묶음 규칙 v1 (P05 초기값, 설정값)
@@ -111,16 +115,19 @@
 ### 2.1 상태
 | 현재 | 사건 | 다음 | 함께 (한 TX) |
 |---|---|---|---|
-| `AWAITING_UPLOAD` | 확정 공통 조건 통과 | `READY` | 시도 `CONFIRMED`, ETag·sha256 |
-| `AWAITING_UPLOAD` | 발급 한도 도달 ∧ 현재 시도 사용 불가 (2.3) | `FAILED(UPLOAD_ATTEMPTS_EXHAUSTED)` | 반환, 묶음 해제, 삭제 outbox |
-| `AWAITING_UPLOAD` | 업로드 기한 + 유예 경과, 확정 불가 | `CANCELLED(UPLOAD_EXPIRED)` | 반환, 해제, 삭제 outbox |
+| `AWAITING_UPLOAD` | 확정 공통 조건 통과 | `READY` | 시도 `CONFIRMED`, 작업 `input_sha256`·`input_etag` 복사 |
+| `AWAITING_UPLOAD` | 발급 한도 도달 ∧ 현재 시도 사용 불가 (2.3) | `FAILED(UPLOAD_ATTEMPTS_EXHAUSTED)` | 반환, 묶음 해제, 삭제 예약 |
+| `AWAITING_UPLOAD` | 업로드 기한 + 유예 경과, 확정 불가 | `CANCELLED(UPLOAD_EXPIRED)` | 반환, 해제, 삭제 예약 |
+| `AWAITING_UPLOAD` | 확정 때 `TRIAL` 미반환 예약 없음 (API·회수 배치) | `FAILED(RESERVATION_MISSING)` | 반환, 해제, 삭제 예약 (ADR-0035, 검토 A-01) |
 | `READY` | claim | `RUNNING` | `attempt_count+1`, 새 `run_token`, 임대 |
-| `RUNNING` | 결과 저장 | `SUCCEEDED` | 결과, 사진별 정산 (`settle`), 비용·송신 정산, 저장한 결과의 `AnalysisCompleted` 발행, 삭제 outbox |
+| `RUNNING` | 결과 저장 | `SUCCEEDED` | 결과, 사진별 정산 (`settle`), 비용·송신 정산, 저장한 결과의 `AnalysisCompleted` 발행, 삭제 예약 |
 | `RUNNING` | 일시 실패·예산 연기·회수 (송신 없음)·불명 확정 | `READY` | 토큰 폐기, `next_attempt_at` (불명은 2.6) |
-| `RUNNING` | 영구 실패 | `FAILED(사유)` | 반환, 해제, 삭제 outbox |
-| 비종료 | 처리 기한 경과 | `CANCELLED(PROCESSING_EXPIRED)` | 반환, 해제, 삭제 outbox |
-| 비종료 | 동의 무효 (검사 시점) | `CANCELLED(CONSENT_WITHDRAWN)` | 반환, 해제, 삭제 outbox |
-| 비종료 | 주체 비활성·대표 사진 메타데이터 삭제 | `INELIGIBLE` | 반환, 해제, 삭제 outbox |
+| `RUNNING` | 영구 실패 | `FAILED(사유)` | 반환, 해제, 삭제 예약 |
+| 비종료 | 처리 기한 경과 | `CANCELLED(PROCESSING_EXPIRED)` | 반환, 해제, 삭제 예약 |
+| 비종료 | 동의 무효 (검사 시점) | `CANCELLED(CONSENT_WITHDRAWN)` | 반환, 해제, 삭제 예약 |
+| 비종료 | 주체 비활성·대표 사진 메타데이터 삭제 | `INELIGIBLE(PRINCIPAL_INACTIVE/REPRESENTATIVE_DELETED)` | 반환, 해제, 삭제 예약 |
+- `failure_code` (V6 CHECK, 응답 `jobs[].reason`): `FAILED` = `UPLOAD_ATTEMPTS_EXHAUSTED`·`RESERVATION_MISSING`·`INPUT_CHANGED`·`INPUT_MISSING`·`INPUT_INVALID`·`REFUSAL`·`TRUNCATED`·`INVALID_OUTPUT`·`PROVIDER_REJECTED`·`UNKNOWN_OUTCOME`·`ATTEMPTS_EXHAUSTED`·`DEVICE_BUDGET_EXHAUSTED`·`RESULT_CONFLICT` / `CANCELLED` = `UPLOAD_EXPIRED`·`PROCESSING_EXPIRED`·`CONSENT_WITHDRAWN` / `INELIGIBLE` = `PRINCIPAL_INACTIVE`·`REPRESENTATIVE_DELETED`. CHECK: 실패 3상태 ⇔ `failure_code`, 종료 4상태 ⇔ `ended_at`
+- 모든 종료 = 공통 종료 전이 1개 (토큰이 있으면 그 실행이 작업을 쥔 때만, 시도 전부 삭제 예약 (`ISSUED` → `ABANDONED`), 전체 반환 1회, `INPUT_INVALID`면 사진 카운터, probe 해제)
 - 종료 작업은 다시 열지 않는다. 시도 = `ISSUED` → `CONFIRMED`/`REJECTED`/`SUPERSEDED`/`ABANDONED` (작업 종료). URL 만료는 PUT만 막는다
 - 호출 = `SENDING` → `SUCCEEDED`/`RESPONDED_FAILURE`/`UNKNOWN`/`NOT_SENT`, 본문 저장 안 함. 정산 상태: `cost_state` (`RESERVED`/`SETTLED`/`ADJUSTED`), `send_state` (`RESERVED`/`SPENT`/`RELEASED`). 정산은 호출 행 CAS로 한 번만
 
@@ -132,45 +139,61 @@
 | 확정 유예 | 15분 | 업로드 기한 또는 마지막 시도 URL 만료 (회수 배치만) |
 | 처리 기한 | 48시간 (claim·허가·완료에서도 검사) | 접수 |
 | 임대 120초 / 송신 여유 70초 / HTTP 전체 60초 | | claim / 허가 / 송신 |
-| 임시 객체 | 종료 즉시 삭제 outbox, 청소 6시간, 수명 주기 3일, 미삭제 경보 | |
+| 임시 객체 | 종료 즉시 삭제 예약 (2.9), 최종 삭제 = URL 만료 + 업로드 진행 여유 30분 뒤 시작한 삭제, 청소 대조 6시간, 수명 주기 3일 (최종 보장), 미삭제 경보 | |
 - 안내 (P08 확정, ADR-0033 #10): "분석 후 즉시 삭제, 남은 경우에도 업로드 후 4일 안에 삭제 대상"
 
 ### 2.3 업로드
 - 시도 발급 `POST /analysis-jobs/{requestId}/upload-attempts` (`Idempotency-Key`), `items[]` ≤ 100 = `analysisJobId`, `contentLength` ≤ `maxBytes`, `sha256`. 응답 = 대상별 처리 목록 (200)
   - 서명 헤더 `Content-Type: image/jpeg`, `Content-Length`, `x-amz-checksum-sha256`, `If-None-Match: *`. 실제 S3 시험 실패 시 업로드 경로 재결정 (HEAD 후퇴는 동등 보호 아님)
-  - **신규 발급** 조건: `AWAITING_UPLOAD` ∧ 업로드 기한 전 ∧ 기준 동의 ∧ 주체 활성 ∧ 미반환 예약 ∧ `issued_count < 5` ∧ 입력 속도 제한 (2.7). 성공 = `issued_count+1`, 이전 `ISSUED` → `SUPERSEDED`
+  - **신규 발급** 조건: `AWAITING_UPLOAD` ∧ 업로드 기한 > now + 10초 ∧ 기준 동의 ∧ 주체 활성 ∧ 미반환 예약 ∧ `issued_count < 5` ∧ 입력 속도 제한 (2.7, 새 표 `analysis_input_rate`). 성공 = `issued_count+1`, 이전 `ISSUED` → `SUPERSEDED` + 삭제 예약
   - 한도 도달 신규 발급 = 항목 `REJECTED`/`UPLOAD_ATTEMPT_LIMIT` (작업 상태는 그대로, 종료는 회수 배치)
-  - **재생** (같은 키): 저장된 시도 ID → 소유·기준 동의·주체 활성·그 시도가 현재 `ISSUED`·고정 URL 만료 전이면 같은 만료로 재서명. 횟수 검사 없음. 아니면 항목 `REJECTED`/`ATTEMPT_NOT_CURRENT` (새 키로 신규 발급). 저장 본문에 URL 없음
-- 확정 `POST .../upload-attempts/{attemptId}/complete`
-  1. 소유 검증 (아니면 404) → 멱등 사전 조회
-  2. 같은 시도 `CONFIRMED` = S3 없이 200. 다른 시도 확정·시도가 `ISSUED` 아님·작업 종료 = 409 `ATTEMPT_NOT_CURRENT` (저장)
-  3. TX 밖 HEAD: 404 = 409 `UPLOAD_NOT_FOUND` + `Retry-After` (저장 안 함), 403·5xx = 503
-  4. TX: 동의 공유 → 작업 → 확정 공통 조건 재확인
-  - 확정 공통 조건 (확정 API·회수 배치 공용) = 현재 `ISSUED` ∧ `LastModified` ≤ URL 만료 ∧ 미반환 예약 ∧ 기준 동의 ∧ 주체 활성 ∧ 처리 기한 전
-  - 결과 (200, 업무 변경 커밋): 정상 `READY` / 메타데이터 불일치 = 시도 `REJECTED` + 삭제 outbox, 항목 `FAILED`·`UPLOAD_INVALID` / 동의 무효 = `CANCELLED` / 조건 실패 (기한·예약·주체) = 해당 종료 전이 + 항목 사유
-- 상태 조회 `GET /analysis-jobs/{requestId}` = URL 없는 안정 투영, `ETag`/304 (소유 검증 뒤), `pollAfterSeconds` + 지터
+  - **재생** (같은 키): 저장된 시도 ID → 소유·기준 동의·주체 활성·그 시도가 현재 `ISSUED`·고정 URL 만료 > now + 10초면 같은 만료로 재서명. 횟수 검사 없음. 아니면 항목 `REJECTED`/`ATTEMPT_NOT_CURRENT` (새 키로 신규 발급). 저장 본문에 URL 없음
+  - 서명 (첫 응답·재생 공통, 실행기 뒤 TX 밖): 서명 만료 ≤ `url_expires_at`. 어기면 새 시각으로 최대 3회 재서명, 실패 = 503 `STORAGE_UNAVAILABLE` (기록은 저장됨, 같은 키 재전송 = 재생 + 재서명, 검토 A-03). 응답 `item.expiresAt` = 시도 고정 만료, `upload.expiresAt` = 서명 만료 (더 늦지 않음)
+- 확정 `POST .../upload-attempts/{attemptId}/complete` (구현 = ADR-0035)
+  1. 요청 기기 확인 → 소유 검증 (아니면 404, 비저장) → 멱등 사전 조회
+  2. 잠금 없이 시도 읽기 → `ISSUED`면 TX 밖 HEAD (`ChecksumMode.ENABLED`) → 결과를 관측값 (`Present`/`Absent`/`Unavailable`)으로 업무 TX에 넘김 (모든 분기 실행기 경유)
+  3. TX: 동의 공유 → 작업 → 시도. 잠금 아래 판정: 이 시도 `CONFIRMED` = 200 no-op (회수 배치가 먼저 확정한 경우 포함) / 현재 `ISSUED` 아님·작업 종료 = 409 `ATTEMPT_NOT_CURRENT` (저장) / 관측 없음 (방어 분기)·`Unavailable` (403·5xx·시간 초과) = 503 `STORAGE_UNAVAILABLE` (비저장) / `Absent` = 409 `UPLOAD_NOT_FOUND` + `Retry-After` (설정 5초, 비저장) / `Present` = 확정 공통 조건
+  - 확정 공통 조건 (확정 API·회수 배치 공용, 관측한 시도가 잠금 아래 현재 `ISSUED`일 때만) = 기준 동의 ∧ 주체 활성 ∧ 처리 기한 전 ∧ 미반환 예약 (`TRIAL`) ∧ `LastModified` ≤ URL 만료 ∧ 크기·sha256·Content-Type 일치
+  - 결과 (200, 업무 변경 커밋): 정상 `READY` (`next_attempt_at = now`) / 늦은 업로드·메타데이터 불일치 = 그 시도만 `REJECTED` (`LATE_UPLOAD`/`SIZE_MISMATCH`/`CHECKSUM_MISMATCH`/`CONTENT_TYPE_MISMATCH`) + 삭제 예약, 응답 `UPLOAD_INVALID` (작업 유지, 새 시도 가능) / 동의 무효 = `CANCELLED(CONSENT_WITHDRAWN)` / 주체 비활성·처리 기한·예약 없음 = 공통 종료 (`PRINCIPAL_INACTIVE`·`PROCESSING_EXPIRED`·`RESERVATION_MISSING`)
+- 상태 조회 `GET /analysis-jobs/{requestId}` = 소유 검증 (아니면 404) 뒤 URL 없는 안정 투영 (SQL 문 1개, TX 없음 → 한 스냅샷). `ETag` = 본문 SHA-256 (강한 ETag), `If-None-Match` 일치 = 304. `pollAfterSeconds` = `READY`·`RUNNING` 작업이 있으면 3초 × (1 ± 20%, 접수 ID로 고정), 그 밖 (업로드 대기만·모두 종료) null. `jobs[]` = 이 접수가 만든 작업 ∪ 항목이 참조한 작업 (항목 90일 정리 뒤에도 남음, 검토 A-02), 대표 식별자 = `analysis_job.representative_client_ref`, `reason` = `failure_code`
 
 ### 2.4 실행
 1. claim TX: `ai_gate`의 모든 원인 중 최대 `blocked_until > now()`면 claim 안 함 (잠금 없이 읽음) → 전역 claim 잠금 → 빈 전역 슬롯 → `READY ∧ next_attempt_at ≤ now() ∧ 처리 기한 전`을 정렬 `effective_priority, queued_at, job_id` 순 `FOR NO KEY UPDATE SKIP LOCKED` (네이티브 SQL, 0.3) → 주체 동시 실행 상한 (초기 4) 초과 주체 건너뜀
    - `effective_priority = max(0, 2×base_priority + 1 − floor(대기/10분) − (접수의 first_result_at이 null이면 1))` (조회 때 계산, 노화 배치 없음). 같은 등급에서 첫 결과가 1단계 앞서고, 후속 작업은 10분 대기면 따라잡음
    - `base_priority` = `NEW_PHOTOS` 0, `ORGANIZE` 1, `PRO_BACKLOG` 2. `queued_at`은 재시도 때 초기화하지 않음. 실행 자원이 계속 공급되고 작업이 자격을 유지하면 base b 작업은 `(2b+1)×10분` 뒤 최상위에 도달 (예산 차단·기한 초과까지 막는다는 뜻은 아님)
    - 대표 부하에서 실행 계획·읽은 행 수·정렬 spill·claim 잠금 p95 측정. 병목이면 오래 기다린 후보를 반드시 포함하는 제한 조회 또는 저장한 승격 시각으로 바꿈
+   - 구현 (ADR-0035): 관문 사전 판정 = 어느 원인이든 `OPEN`이고 반개방 시각 전이면 claim 안 함, 반개방 원인이 있으면 probe 1개만 claim (관문 행을 원인 순서로 잠가 `generation` 재확인). 주체 상한은 SQL 안 주체별 순번 (`ROW_NUMBER`)으로 바깥 `LIMIT` 전에 적용, 잠긴 후보로 슬롯이 남으면 본 ID를 빼고 다시 조회 (`worker.claim-rounds` 3회)
 2. 준비 (TX 밖): `If-Match: ETag` GET (최대 바이트에서 중단) → 헤더 크기·픽셀 선검사 → 디코딩 → sha256 대조. 412·404·디코딩 실패 = `FAILED(INPUT_CHANGED/INPUT_MISSING/INPUT_INVALID)`, 송신 없음 (`INPUT_INVALID`는 2.7 반복 실패 카운터 증가)
-3. 허가 TX: 동의 공유 → 작업 → **기존 허가 조회** (있으면 그것을 반환, 재송신 안 함) → 조건 (`RUNNING ∧ 토큰 ∧ 남은 임대 ≥ 송신 여유 ∧ 처리 기한 전 ∧ 주체 활성 ∧ 기준 동의 ∧ 입력 확정 ∧ 작업 manifest 실행 가능`) → 예약 (2.7) → `external_call` 삽입 (유니크 (job, run_token), 작업의 manifest ID). **이 커밋이 전송 시작 경계**
+3. 허가 TX: 동의 공유 → 대표 photo 공유 → 작업 → **기존 허가 조회** (있으면 그것을 반환, 재송신 안 함) → 조건 (`RUNNING ∧ 토큰 ∧ 남은 임대 ≥ 송신 여유 ∧ 처리 기한 전 ∧ 주체 활성 ∧ 기준 동의 ∧ 입력 확정 ∧ 작업 manifest 실행 가능`) → 예약 (2.7) → `external_call` 삽입 (유니크 (job, run_token), 작업의 manifest ID). **이 커밋이 전송 시작 경계**
 4. 송신: 로컬 기한 재확인 (지났으면 호출 `NOT_SENT`) → HTTP 1회 (SDK `maxRetries(0)`, 시간 제한 명시)
 5. 응답 처리 (TX 밖): 공통 검증기 (2.5)·결과 변환
-6. 완료 TX: 동의 공유 → 구성 사진 존재 확인 (공유) → 접수 (`first_result_at`) → 작업 → 호출 → 할당 → 주체 일일 → 기기 → `photo_ai_budget` → 일일 비용
+6. 완료 TX: 동의 공유 → 구성 사진 존재 확인 (원접수 `ACCEPTED` 항목의 사진, id 순 공유) → 접수 (`first_result_at`) → 작업 → 시도 → 호출 → 주체 일일 → 할당·기기 (`settle`) → 기기 송신 → `photo_ai_budget` → 일일 비용 → `ai_gate` → 결과 → `owner_change_counter` (0.3 개정 순서, 바꾸는 행만 잠금)
    - 승자 = `RUNNING ∧ 토큰 일치` (임대가 지났어도 회수가 먼저 커밋하지 않았으면 허용) ∧ 처리 기한 전
    - 동의·주체 무효 = 응답 폐기 + 해당 종료 전이 (정산은 그대로)
    - 결과 저장: 대표 `DIRECT`, 구성 `INHERITED` (원래 작업 ID 보관, ADR-0024 #6-3), 자기 사진 항목의 `basis_change_seq`·작업 manifest ID 복사
    - 예약 집합 R을 결과를 저장할 사진 C와 메타데이터가 삭제된 구성원 D로 나눔 (C ∩ D = ∅, C ∪ D = R, ID로 검사). usage `settle(principal, job, C, D)` 한 번으로 C = consume, D = release (quota·기기 잠금 아래). 기존 작업 전체 consume/release를 순서대로 호출 금지. 재실행 멱등 = 예약별 최종 상태가 요청과 같으면 no-op
    - `first_result_at`이 null이면 지금 시각으로 설정 (첫 `SUCCEEDED`)
-   - 비용·송신 정산 1회 (2.5 표), **실제 저장한 결과에만** `AnalysisCompleted(owner, photo, resultId, epoch=1)` 발행, 삭제 outbox → `SUCCEEDED`. 이미 발생한 비용·위험 송신은 구성원 반환과 무관하게 유지
+   - 비용·송신 정산 1회 (2.5 표), **실제 저장한 결과에만** `AnalysisCompleted(owner, photo, resultId, epoch=1)` 발행 (같은 TX, `ApplicationEventPublisher`), 삭제 예약 → `SUCCEEDED`. 이미 발생한 비용·위험 송신은 구성원 반환과 무관하게 유지
    - 진 응답 = 결과 버림, 호출만 정산. DB 일시 실패 = 같은 응답으로 완료 TX만 제한 재시도
 7. 회수: `RUNNING ∧ locked_until < now()` → 그 토큰의 호출 없음 = `READY` + 토큰 폐기, `SENDING` 호출 있음 = 불명 확정 (2.6)
 
 ### 2.5 Claude 호출·응답
-- 호출 manifest (불변 행, ID = 내용 SHA-256, 기동 때 설정에서 만들고 없으면 삽입, 범위 검사 실패 = 기동 실패): model `claude-haiku-5-5`, promptVersion (프롬프트 본문 해시), schemaVersion (결과 v1), thinking 설정, effort 초기 `low`, `max_tokens` 1,024, `maxLongEdgePx`, `maxBytes`, `maxPixels`, contentType, 이미지 토큰 상한, OCR 사용·상한 (초기 사용 안 함), 캐시 정책 (prefix 범위·5분), `outputLocale` (생성 라벨 언어, 초기 `ko-KR`), 가격 버전 (입력·캐시 생성·캐시 읽기·출력 단가), 최대 비용 (계산값). 값은 모두 D-07 측정 대상
+- 호출 manifest (불변 행, ID = 정규 JSON 내용 SHA-256, 기동 때 설정에서 만들고 없으면 삽입, 범위 검사 실패 = 기동 실패). 5-2 내용 (`pik.analysis.manifest.*`, 값은 모두 D-07 측정 대상, ADR-0035):
+
+  | 키 | 초기값 |
+  |---|---|
+  | `model` | `claude-haiku-5-5` |
+  | `uploadPolicy` | 5-1 모양 그대로 `{contentType: image/jpeg, maxBytes: 2097152, maxLongEdgePx: 1568}` |
+  | `maxPixels` (최상위) | 2,458,624 (1568 × 1568) |
+  | `prompt` / `promptVersion` / `userText` | 자원 디렉터리 `v1` / `analysis/prompt/v1/system.md` SHA-256 / user 지시 텍스트 |
+  | `schemaVersion` / `outputFormat` | 1 / `{type: json_schema, schemaSha256}` (`analysis/schema/v1.json`) |
+  | `thinking` / `effort` / `maxTokens` | `adaptive` / `low` / 4,096 (설계 초기값 1,024는 thinking이 같은 상한을 써 JSON 잘림 위험, ADR-0035) |
+  | `imageTokenCap` / `promptTokenCap` | 4,784 / 8,000 (개발값, 시스템 프롬프트 추정 1,300~1,600 토큰) |
+  | `cache` / `outputLocale` | `{enabled: true, ttl: PT5M}` (시스템 프롬프트만) / `ko-KR` |
+  | `price` | `{version, inputMicrosPerMtok 100000, cacheWriteMicrosPerMtok 125000, cacheReadMicrosPerMtok 10000, outputMicrosPerMtok 500000}` |
+  | `maxCostMicros` | 3,527 = ⌈(`promptTokenCap` × 캐시 생성 + `imageTokenCap` × 입력 + `maxTokens` × 출력) / 10⁶⌉. 캐시 꺼짐에도 캐시 생성 단가 (두 경우 모두 상한) |
+  - 열 `max_pixels`·`max_tokens`·`max_cost_micros` = 셋 다 있어야 실행 가능 (5-1 행 = NULL, 실행 불가). OCR 사용·상한 키 없음 (D-09, 단말 OCR 본문 미전송)
+  - 요청: `maxRetries(0)`, 요청 전체 60초, 블록은 `type`으로 읽음, `temperature`·`top_p`·`top_k`·prefill·`fallbacks` 없음. SDK `anthropic-java` 3.10.0은 API 키를 `Authorization: Bearer`로 보냄 (`X-Api-Key` 아님) → 첫 실제 호출 (D-07)에서 수락 확인
 - 접수가 현재 manifest를 작업에 고정 (`uploadPolicy`의 근원). 호출·결과도 **작업의 manifest**로 실행·기록. 실행 가능한 manifest 목록 = 현재 + 이전 (프롬프트·스키마 자원을 버전별로 보관). 이전 manifest를 실행할 수 없게 만드는 배포는 해당 작업이 빠진 뒤 (런북)
 - 원장 (`external_call`): manifest ID, 입력 sha256, 예산 일자, 사용 토큰 (입력·출력·캐시 생성·캐시 읽기), 정산 상태
 - 캐시: 안정된 공통 prefix만, 늘리지 않음, 사용량으로 이득 확인
@@ -188,8 +211,27 @@
 | 500·504, 송신 뒤 끊김·시간 초과 | `UNKNOWN` | 최대 (같은 worker가 늦게 받으면 1회 `ADJUSTED`) | 소진 | 유지 | 불명 (2.6) |
 | 송신 전 실패·로컬 기한 초과 | `NOT_SENT` | 0 | 해제 | 유지 | 백오프 `READY` (기한 지났으면 해당 종료) |
 - 규칙: 사용량 없이 최대 비용으로 정산하는 응답은 위험 송신도 소진. 예외는 401·403·404 하나뿐
-- 설정 오류 회로 (401·403·404, 또는 400 비율이 임계 초과): manifest·키 설정 버전이 바뀌거나 운영자가 풀 때까지 열림. 풀린 뒤 전역 claim 잠금 아래 `ai_gate.probe_job_id` 1개만 지정해 claim, 허가에서도 probe 자격 확인, 성공해야 정상 claim 재개. probe 사망은 임대 회수로 재개. 이미 커밋한 허가는 회로가 취소하지 않음. HTTP 상태만으로 원인을 단정하지 않고 경보로 운영자 확인
-- 일시 회로 (429·529·5xx 연속): 지수 백오프로 자동 반개방
+
+응답 분류 (구현, 정산표 행 = `external_call.outcome`):
+| 관측 | 정산표 행 |
+|---|---|
+| 2xx `end_turn` + text JSON 파싱 성공 | 검증기 통과 = 정상, 실패 = 검증 실패 (`INVALID_OUTPUT`) |
+| 2xx `refusal` / `max_tokens` / 그 밖 stop reason·text 없음·파싱 실패 | `REFUSAL` / `TRUNCATED` / `INVALID_OUTPUT` |
+| 2xx인데 응답 봉투 해석 실패 | `INVALID_OUTPUT` (사용량을 읽으면 실제, 없으면 최대 비용 + 소진) |
+| 2xx 본문을 읽다 끊김 | 불명 (`UNKNOWN`) |
+| 400·413·422·그 밖 4xx | 400 행 (`PROVIDER_REJECTED`) |
+| 402 | 400 행 (정산·소진 그대로) + 설정 회로 `OPEN` (위험 송신 해제 예외를 넓히지 않음) |
+| 401·403·404 | 예외 행 (해제) + 설정 회로 |
+| 429·529 | 429·529 행 (`Retry-After`) + 일시 회로 |
+| 408·409·500·502·503·504·그 밖 5xx | 불명 (`UNKNOWN`) + 일시 회로 |
+| 연결 수립 전 실패 (`ConnectException`·`NoRouteToHostException`·`UnknownHostException`·`SSLHandshakeException`) | 송신 전 실패 (`NOT_SENT`) |
+| 그 밖 입출력 오류·시간 초과 | 불명 (`UNKNOWN`) |
+- 정산표 밖 종료 (호출 행 없음, 전체 반환): 확정 때 예약 없음 `RESERVATION_MISSING`, 입력 준비 실패 (`INPUT_*`), 허가 거부 (`CONSENT_WITHDRAWN`·`PRINCIPAL_INACTIVE`·`REPRESENTATIVE_DELETED`·`DEVICE_BUDGET_EXHAUSTED`·`ATTEMPTS_EXHAUSTED`)
+- 결과 저장 충돌 (`uk_analysis_result_photo`, 불변 조건 위반) = 완료 TX 롤백 → 정상 응답 사용량으로 정산 + 소진, `FAILED(RESULT_CONFLICT)` + 전체 반환 + 경보 (행 이름 `RESULT_CONFLICT`)
+- 늦은 응답 (호출이 이미 `UNKNOWN`) = 사용량이 있으면 비용만 1회 `ADJUSTED` (원래 `budget_day` 행, 행이 없으면 no-op). `responded_at`·`http_status` 유지 → 400 비율 창에 들어가지 않음. 위험 송신·결과·체험·작업·관문 변경 없음
+- 설정 오류 회로 (401·403·404·402, 또는 `CLOSED`일 때 400 비율이 임계 초과): 설정 지문 (`claude.key-version` + 실행 가능 manifest 목록 해시)이 바뀌면 감시 배치가 `HALF_OPEN`. 반개방이면 전역 claim 잠금 아래 probe (작업, `run_token`) 1개만 claim, 허가도 일치하는 probe만 통과, probe 2xx만 복구 (`CLOSED`, `reset_at = now`), probe 400·401·403·404·402 = 다시 `OPEN`. 400 비율 표본 = 현재 지문으로 허가한 호출 중 `reset_at` 이후 응답만. 모든 상태 전이 = `generation` CAS (오래된 응답·관측은 새 세대를 바꾸지 못함). probe를 송신 없이 잃은 작업은 10분 probe 후보 제외, 반개방 30분 초과 = 경보. 이미 커밋한 허가는 회로가 취소하지 않음. HTTP 상태만으로 원인을 단정하지 않고 경보로 운영자 확인
+- 일시 회로 (429·529·5xx·불명 연속 ≥ 임계): `OPEN` + `blocked_until = GREATEST(기존, now + 지수 백오프·지터, Retry-After)` → 기한이 지나면 claim이 반개방 + probe 1개. probe 2xx·개별 400 = `CLOSED`, 429·529·5xx·불명 = 더 긴 백오프로 `OPEN`
+- 반개방 경보 = `blocked_until`부터 셈 (반개방 시각 열이 없음. 설정 회로는 감시 배치가 반개방 전이 때 `blocked_until = GREATEST(기존, now)`, 일시 회로는 반개방 기한 그대로)
 - 작업이 실패·취소·대상 아님으로 끝나면 체험 사진 예약은 전체 반환. 성공은 사진별 (결과 저장 = consume, 삭제 구성원 = release)
 
 ### 2.6 불명 (사용자 결정 2026-11-01, D-26: 사진마다 1회 자동 재호출)
@@ -209,10 +251,12 @@
 | 전역 동시 실행 | claim 슬롯 | 설정값 | claim 안 함 |
 | 주체 동시 실행 | claim의 주체별 `RUNNING` | 4 | 건너뜀 |
 | 전역 송신 속도 | 인스턴스 버킷 × 최대 인스턴스 (근사) | 설정값 | 대기 |
-- 위험 송신은 허가 때 예약, 정산표대로 소진·해제. 최대 비용 = manifest의 계산값 (캐시 prefix × 캐시 생성 단가 + 나머지 입력 × 입력 단가 + `max_tokens` × 출력 단가, 마이크로달러 올림)
-- 전역 사전 차단 `ai_gate` (원인별 행: `BUDGET`, `CONFIG_CIRCUIT`, `TRANSIENT_CIRCUIT`, 각 `blocked_until`): 허가가 예산 부족을 확인하면 확정만으로 한도 도달 = 다음 KST 자정, 예약 때문이면 +10분. 같은 원인의 활성 기한을 줄이는 갱신 금지 (`GREATEST`), 해제는 원인별 명시 동작만. claim은 잠금 없이 최대값을 읽고 건너뜀 (허가의 원자적 검사는 그대로)
-- 입력 비용 제한 (Claude 비용과 별개, 기존 요청 속도 제한 저장소 사용):
-  - 시도 발급 = **항목 수**와 허용 바이트 합 (`항목 × maxBytes`)을 주체 기준·체험 기기 기준 (`TRIAL`) 각각 시간당 상한
+- 위험 송신은 허가 때 예약, 정산표대로 소진·해제. 횟수 카운터 = 예약 +1·해제 −1 (소진은 그대로, 호출 행 `send_state`가 구분). 최대 비용 = manifest의 계산값 (`promptTokenCap` × 캐시 생성 단가 + `imageTokenCap` × 입력 단가 + `maxTokens` × 출력 단가, 마이크로달러 올림, 2.5)
+- 예산 TX = 순서대로 잠그고 읽기 → 판정 → 변경 (판정 전 카운터 변경 없음). `ai_send_daily`·`photo_ai_budget`·`ai_spend_day`는 잠금 SELECT 전에 0 행을 넣어 잠금이 항상 행에 걸림 (`FOR UPDATE` 금지는 `analysis_job`만)
+- 허가 판정 순서: 일일 송신 < 300 → 기기 송신 < 한도 (`TRIAL`) → `risk_sends < 3` → `settled + reserved + 최대 비용 ≤ limit` → 관문. 종료 판정 (기기·사진 한도, 동의·주체·대표) = 롤백 → 별도 공통 종료 TX가 자기 잠금 아래 사유 재확인 (사라졌으면 롤백 후 `READY`). 연기 판정 (일일 송신·일일 비용·관문) = `READY` + 토큰 폐기 + 관문 갱신만 커밋
+- 전역 사전 차단 `ai_gate` (원인별 행: `BUDGET`, `CONFIG_CIRCUIT`, `TRANSIENT_CIRCUIT`, 각 `blocked_until`): 허가가 예산 부족을 확인하면 확정만으로 한도 도달 = 다음 KST 자정, 예약 때문이면 +10분. 같은 원인의 활성 기한을 줄이는 갱신 금지 (`GREATEST`), 해제는 원인별 명시 동작만. claim은 잠금 없이 원인별 상태를 읽고 사전 판정 (`OPEN` = 건너뜀, 반개방 = probe 1개, 2.4 구현), 허가의 원자적 검사는 그대로
+- 입력 비용 제한 (Claude 비용과 별개). 저장소 = 5-2 신규 표 `analysis_input_rate` (설계 당시 가정한 "기존 요청 속도 제한 저장소"는 없었음, ADR-0035):
+  - 시도 발급 = **항목 수**와 허용 바이트 합 (`항목 × maxBytes`)을 주체 기준·체험 기기 기준 (`TRIAL`) 각각 시간당 상한. 창 = 정시 1시간 (`window_start`), 발급 TX에서 주체 → 체험 기록 순으로 원자적 증가, 초과 = 요청 전체 롤백 + 429 `UPLOAD_RATE_LIMITED` (`Retry-After` = 다음 창, 비저장). 창 행은 2시간 뒤 정리 배치가 삭제
   - 같은 사진의 `INPUT_INVALID` 3회 = 24시간 `NOT_ACCEPTED`/`INPUT_RETRY_LATER` (`retryAfter`), 체험 칸은 소모하지 않음 (`photo_ai_budget.input_invalid_count`·`input_blocked_until`)
   - 디코더 바이트·픽셀 상한, 전역 유입 제한 유지
 - 한계: 같은 파일의 새 `photoId`는 사진 카운터를 따로 센다. 주된 방어 = 기기·주체·전역
@@ -224,8 +268,13 @@
 
 ### 2.9 회수·청소·시험
 - 회수 배치 (5분, ShedLock), 대상 = `AWAITING_UPLOAD` 중 (업로드 기한 + 유예 경과) ∨ (`issued_count = 5` ∧ 현재 시도 URL 만료 + 유예 경과) → 현재 시도 HEAD → 확정 공통 조건이면 확정, 404·`REJECTED`면 종료 (`UPLOAD_EXPIRED` 또는 `UPLOAD_ATTEMPTS_EXHAUSTED`), 403·5xx는 다음 주기
-- 처리 기한 배치 = 비종료 → 취소
-- 청소 우선순위: 종료 작업 = 객체 전부 삭제 (`CONFIRMED` 포함) → 비종료 `READY`·`RUNNING` = 확정 입력만 보호 → `AWAITING_UPLOAD` = 현재 `ISSUED` 시도 객체 보호 → `REJECTED`·`SUPERSEDED`·`ABANDONED` = URL 만료 뒤 삭제
+- 처리 기한 배치 (5분) = 비종료 → `CANCELLED(PROCESSING_EXPIRED)`, `SENDING` 호출은 같은 TX에서 불명 확정 (재호출 없음). 임대 회수 (1분)는 처리 기한이 지난 작업을 건너뜀
+- 객체 최종 삭제 (구현 = ADR-0035):
+  - 삭제 대기열 = 시도 행 (`object_state` `RETAINED`/`PENDING`/`DELETE_SENT`, `delete_after`). 예약: 작업 종료·`SUCCEEDED` = 작업의 모든 시도 `PENDING` (`ISSUED` → `ABANDONED`), 비종료 작업의 `SUPERSEDED`·`REJECTED` = `PENDING`, 비종료 작업의 `CONFIRMED` = `RETAINED` (입력 보호)
+  - 삭제 배치 (1분): `PENDING ∧ delete_after ≤ now` 행을 잠금 없이 읽음 → 삭제 시작 시각 기록 → TX 밖 `DeleteObject` (없는 키 = 성공, 버킷 없음 404 = 실패) → 확인 = 읽은 `version` 조건부 UPDATE 1문 (작업 잠금 없음): 삭제 시작 시각 ≥ `url_expires_at` + 업로드 진행 여유 (30분)면 `DELETE_SENT`, 아니면 `delete_after` = 그 시각으로 재예약 (URL 만료 전 재PUT이 되살린 객체를 다시 지움). 실패 = `PENDING` 유지
+  - `DELETE_SENT` = "URL 만료 + 여유 뒤 시작한 삭제 요청이 성공함"만 뜻한다. 물리적 삭제 확인으로 표시·문서화하지 않는다. 여유보다 늦게 끝난 PUT·누락 객체의 최종 보장 = 버킷 수명 주기 3일 (P08 안내 "업로드 후 4일 안에 삭제 대상"은 수명 주기가 지킴)
+  - 청소 대조 (6시간): 종료 작업의 시도 중 `PENDING`·`DELETE_SENT`가 아닌 행 = 작업 잠금 아래 예약 (`ISSUED` = `ABANDONED`), `PENDING`이 6시간을 넘김 = 경보 (WARN 로그, 건수만. 지표 등록소 없음)
+- 입력 속도 창 정리 (1시간): `window_start < now − 2시간` 행 삭제 (보존 2시간 = 상수)
 - 시험 3층: 단위 대역 / 버전 고정 S3Mock 5.1 (서명·만료 미검증) / 운영 배포 전 실제 S3 계약 시험
 
 ### 2.10 예외 표
@@ -347,9 +396,9 @@
 ### 4.3 모듈 소유·DDL 계약
 | 모듈 | 소유 | 공개 함수·이벤트 |
 |---|---|---|
-| `photo` (5-1 구현, `shared`만 의존) | `photo` (`client_ref`, `observed_version`, `source_change_seq`, `change_seq`), `photo_vector` (불변 벡터 버전) | `PhotoObservations` (`observe`·`issueChangeSeqs`·`findIds`·`keepVectors`), `PhotoSourceChanged`. 변경 세대 공유 조회 = 5-3 |
-| `analysis` (5-1 구현, `shared`·`account`·`consent`·`usage`·`photo` 의존) | 5-1: `analysis_grouping_rule`, `analysis_call_manifest`, `analysis_request`, `analysis_request_item`, `analysis_group`, `analysis_job` (접수 열). 5-2: `analysis_upload_attempt`, `external_call`, `analysis_result`, `photo_ai_budget`, `ai_spend_day`, `ai_send_daily`, `ai_gate`, `analysis_job` 실행 열 | 5-1 공개 API 없음. 5-2: `AnalysisCompleted`, 결과·현재 epoch 조회, 수동 재처리 |
-| `usage` | 체험 할당·예약, `device_trial_mark.send_count` | reserve, 사진별 `settle(principal, job, consumeIds, releaseIds)` (신규), 작업 전체 release (실패·취소), 기기 송신 예약·정산 |
+| `photo` (5-1 구현, `shared`만 의존) | `photo` (`client_ref`, `observed_version`, `source_change_seq`, `change_seq`), `photo_vector` (불변 벡터 버전) | `PhotoObservations` (`observe`·`issueChangeSeqs`·`findIds`·`keepVectors`, 5-2 `holdExisting` = id 순 `FOR SHARE` 존재 확인), `PhotoSourceChanged`. 변경 세대 공유 조회 = 5-3 |
+| `analysis` (5-1·5-2 구현, `shared`·`account`·`consent`·`usage`·`photo` 의존) | 5-1: `analysis_grouping_rule`, `analysis_call_manifest`, `analysis_request`, `analysis_request_item`, `analysis_group`, `analysis_job` (접수 열). 5-2: `analysis_upload_attempt`, `external_call`, `analysis_result`, `photo_ai_budget`, `ai_spend_day`, `ai_send_daily`, `ai_gate`, `analysis_input_rate`, `analysis_job` 실행 열 | 5-1 공개 API 없음. 5-2: `AnalysisCompleted(ownerId, photoId, resultId, epoch)`, `AnalysisResults.find(ownerId, photoId)` (결과 + 현재 epoch), `AnalysisResults.regenerate(ownerId, photoId, expectedEpoch)` (수동 재처리, HTTP 진입점 = 5-3). 내부 포트 `InputStore` (S3)·`AnalysisModel` (Claude)·`SendRateLimiter` |
+| `usage` | 체험 할당·예약, `device_trial_mark.send_count` | reserve, 사진별 `settle(principal, job, consumeIds, releaseIds)`, `holdsReservation(principal, job)`, 작업 전체 release (실패·취소), 기기 송신 `lockDeviceSend(mark, multiplier)`·`reserveDeviceSend`·`releaseDeviceSend`·`deviceSendExhausted(mark, multiplier)` (5-2) |
 | `action` | `photo_action`, `action_generation` | 리스너 2개, 확인 Command, 생성 투영 |
 | `event` | `event`, `event_photo`, `event_generation` | 리스너 2개, 비로그인 판단 Query |
 - FK는 모듈 안에서만. 모듈 밖 참조는 ID 값
@@ -368,10 +417,27 @@
 | `analysis_job` | `request_id`·`group_id` (UNIQUE)·`manifest_id` FK, `photo_id` (대표 photo.id)·`photo_version`, `funding` (`TRIAL`/`PRO`), `status` CHECK = 2.1 전체 상태, `base_priority` 0~2, `queued_at`·`upload_deadline`·`processing_deadline`, `version`. 실행 열·READY 인덱스는 5-2 (V6) |
 | `analysis_request_item` | 1.5. CHECK: `ACCEPTED` ⇒ 작업·묶음·역할 / `IN_PROGRESS` ⇒ 작업 ∧ 묶음 없음 / `NOT_ACCEPTED` ⇒ `code`·`reason` / 역할 ⇔ 묶음 / `vector_id` ⇒ 사유 없음. 인덱스 (`owner_id`, `photo_id`)·(`analysis_job_id`)·(`group_id`) |
 
+- V6 (5-2, `V6__analysis_upload_and_run.sql`): 공통 규칙은 V5와 같음. 금액 = 마이크로달러 `BIGINT`. 송신 카운터 = 예약 +1·해제 −1. 표별 요약은 아래
+
+| 표 | 열·제약 (요약) |
+|---|---|
+| `analysis_job` (열 추가) | `attempt_count`, `run_token`, `locked_until`, `next_attempt_at`, `probe_excluded_until`, `issued_count` (0~5), `input_sha256` (32바이트)·`input_etag` (확정 시도에서 복사, 시도 행 삭제 뒤에도 유지), `representative_client_ref` (NOT NULL, V6가 photo 행 → 원접수 대표 `ACCEPTED` 항목 순으로 채움), `failure_code` (값 = 2.1), `ended_at`. CHECK: `RUNNING` ⇒ 토큰·임대, `READY` ⇒ `next_attempt_at`·`input_sha256`, `AWAITING_UPLOAD` ⇒ `input_sha256` NULL. 부분 인덱스 `ix_analysis_job_ready`·`_running_owner`·`_running_lease`·`_awaiting`·`_open_deadline` |
+| `analysis_upload_attempt` | `job_id` FK, `status` (`ISSUED`/`CONFIRMED`/`REJECTED`/`SUPERSEDED`/`ABANDONED`), `object_key` UNIQUE (`analysis-input/{jobId}/{attemptId}`), `content_length` > 0, `sha256`, `url_expires_at`, `confirmed_at`·`etag`·`last_modified`, `reject_reason` (`SIZE_MISMATCH`/`CHECKSUM_MISMATCH`/`CONTENT_TYPE_MISMATCH`/`LATE_UPLOAD`), `object_state` (`PENDING` ⇔ `delete_after`), `version`. 작업당 `ISSUED`·`CONFIRMED` 각 1개 (부분 유니크), `ix_upload_attempt_delete` (`PENDING`). 작업 → 시도 역참조 없음 |
+| `external_call` | `job_id` FK, `run_token` (UNIQUE (`job_id`, `run_token`)), `manifest_id` FK, `funding`, `photo_id` (대표), `input_sha256`, `budget_day` (KST, 허가 시점), `status` (`SENDING`/`SUCCEEDED`/`RESPONDED_FAILURE`/`UNKNOWN`/`NOT_SENT`), `http_status`·`stop_reason`·`provider_request_id`·`outcome`, `config_fingerprint`, 사용 토큰 4종, `reserved_cost_micros` > 0·`settled_cost_micros`·`cost_state`, `send_state`, `device_mark_id` (`TRIAL`만). CHECK: `SENDING` ⇔ 비용·송신 `RESERVED`, `NOT_SENT` ⇒ 0·`RELEASED`, `ADJUSTED` ⇒ `UNKNOWN`. 인덱스 `ix_external_call_responded` (지문, 응답 시각)·`_sending`. 본문 저장 안 함 |
+| `analysis_result` | 사진당 1행 (`uk_analysis_result_photo`), `job_id` FK (`INHERITED`도 실행한 작업), `verification`, `photo_version`·`basis_change_seq` (자기 항목에서 복사), `manifest_id` FK·`schema_version`·`output_locale`, `search_state` (`AVAILABLE`/`EMPTY`/`DISCARDED`), `content` JSONB, `epoch` ≥ 1, `change_seq`, `version` |
+| `photo_ai_budget` | `photo_id` PK, `owner_id`, `risk_sends`, `unknown_retry_used`, `input_invalid_count`, `input_blocked_until`, `version` |
+| `ai_spend_day` / `ai_send_daily` | `day` PK (KST), `limit_micros`·`reserved_micros`·`settled_micros` ≥ 0 / PK (`owner_id`, `day`), `send_count` ≥ 0 |
+| `ai_gate` | `cause` PK (3행 `CLOSED`로 삽입), `state` (`BUDGET` = `CLOSED`/`OPEN`만), `generation`, `blocked_until`, `probe_job_id`·`probe_run_token` (함께 NULL, FK 없음), `config_version`, `reset_at`, `failure_streak`, `opened_at` |
+| `analysis_input_rate` | PK (`subject_kind` (`PRINCIPAL`/`TRIAL_MARK`), `subject_id`, `window_start`), `items`·`bytes` ≥ 0, 인덱스 (`window_start`) |
+| `analysis_request_item` (열 추가) | `reused_result_id` (FK 없음, 결과·항목 보관 분리)·`reused_photo_version` (`EXISTING_RESULT` ⇔ NOT NULL), `retry_at` (⇒ `NOT_ACCEPTED`) |
+| `device_trial_mark` (usage, 열 추가) / `analysis_call_manifest` (열 추가) | `send_count` ≥ 0 / `max_pixels`·`max_tokens`·`max_cost_micros` (셋 다 NULL = 5-1 행, 실행 불가) |
+
+- V6 FK 부모: 시도·호출·결과를 삽입하는 TX는 작업을 먼저 잠금 → FK `KEY SHARE`가 기다리지 않음. manifest 행은 불변
 - 잠금 순서 예외 (V5 주석, `consistency-rules.md`): 접수·묶음·작업·항목 삽입은 예약 뒤. `uk_analysis_job_photo_active` 충돌은 주체 접수 잠금 아래에서만 생김 (불변 조건: `analysis_job`을 삽입하는 모든 경로는 주체 접수 잠금을 먼저 잡음, 5-2 `SERVER_BATCH` 포함). `IN_PROGRESS` 항목이 참조할 기존 작업은 photo 뒤·예약 앞에 id 순 `FOR SHARE`로 먼저 잠금 (1.2 5c'). `AlreadyReserved` 작업만 늦은 `KEY SHARE` (0.3 `analysis_job` 잠금 규칙). 그 밖의 FK 부모 = 같은 TX의 새 행, 불변 행 (manifest·규칙), 이미 `FOR UPDATE`로 잠근 `photo`
 - 보관:
   - `SUCCEEDED` 작업과 그 접수 = 그 작업을 가리키는 결과가 있는 동안 유지 (ADR-0024 #6-3·#4-2)
   - `FAILED`·`CANCELLED`·`INELIGIBLE` 작업 = 종료 + 90일. 항목·시도 = 접수의 모든 작업 종료·미정산 없음 + 90일. 남은 작업이 없는 접수도 함께
+  - 삭제 순서 (정리 배치 = 보관 단계, 5-2는 스키마만 맞춤): 시도 (`DELETE_SENT` ∧ 접수의 모든 작업 종료 ∧ 미정산 호출 없음 + 90일) → `external_call` (90일) → 종료 작업·항목·접수 (90일, 결과가 가리키는 `SUCCEEDED` 작업과 그 접수 제외). 작업 → 시도 역참조가 없어 순환 없음. `SUCCEEDED` 작업의 시도도 90일 뒤 삭제 가능 (작업이 `input_sha256`·`input_etag` 보유)
   - `external_call` 상세 = 90일 (주체·사진 ID로 다른 데이터와 연결되므로 개인 관련 데이터로 취급)
   - `photo_ai_budget`·`analysis_result` = 사진 메타데이터 수명 (P11 삭제 때 함께). 멱등 7일. 임시 이미지 = 2.2
   - 후속 (보관 단계): `IN_PROGRESS` 항목이 다른 접수의 작업을 FK로 참조 (`fk_analysis_request_item_job`) → 두 접수의 삭제 기한이 묶임. 참조 항목을 먼저 삭제하거나 작업 기한을 마지막 참조 접수 기준으로 둠. 어떤 항목도 참조하지 않는 `photo_vector` 행 정리도 이때 (R19 O2)

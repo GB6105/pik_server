@@ -1,0 +1,18 @@
+# Tests that import S3MockConfiguration replace the endpoint and the bucket with their S3Mock container. The others get
+# a closed local port, so that no test reaches AWS.
+pik:
+  analysis:
+    upload:
+      bucket: pik-analysis-test
+      region: us-east-1
+      endpoint: http://127.0.0.1:1
+    # No test reaches the Anthropic API: the key is blank, and tests that enable the worker set a MockWebServer URL.
+    claude:
+      api-key: ""
+      base-url: http://127.0.0.1:1
+    # Tests that enable the worker claim and run jobs directly; scheduled claim rounds would take their jobs.
+    worker:
+      initial-delay: P3650D
+    # Tests call the upload batches directly; scheduled runs would change the rows of the test that is running.
+    cleanup:
+      initial-delay: P3650D

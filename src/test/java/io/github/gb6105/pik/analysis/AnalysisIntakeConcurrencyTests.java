@@ -494,7 +494,8 @@ class AnalysisIntakeConcurrencyTests {
 		Installed device = fixtures.android();
 		Photo photo = photo("v1");
 		UUID jobId = acceptedJob(device, photo);
-		jdbc.sql("UPDATE analysis_job SET status = 'FAILED' WHERE id = :id").param("id", jobId).update();
+		jdbc.sql("UPDATE analysis_job SET status = 'FAILED', failure_code = 'UPLOAD_EXPIRED', ended_at = now()"
+				+ " WHERE id = :id").param("id", jobId).update();
 		Hold hold = holdFirstReservation(device);
 		AtomicReference<@Nullable Throwable> itemFailure = new AtomicReference<>();
 		doAnswer((invocation) -> {
@@ -537,7 +538,9 @@ class AnalysisIntakeConcurrencyTests {
 	private int endJob(Installed device, UUID jobId) {
 		lockJob(jobId, FOR_NO_KEY_UPDATE);
 		jdbc.sql("""
-				UPDATE analysis_job SET status = 'CANCELLED', updated_at = now(), version = version + 1 WHERE id = :id
+				UPDATE analysis_job SET status = 'CANCELLED', failure_code = 'PROCESSING_EXPIRED', ended_at = now(),
+				                        updated_at = now(), version = version + 1
+				WHERE id = :id
 				""").param("id", jobId).update();
 		return trialUsage.release(device.principalId(), jobId);
 	}

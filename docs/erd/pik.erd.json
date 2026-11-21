@@ -72,7 +72,13 @@
       "03h64la81jhdvsw3yyscpqbvp",
       "03h64la81jhdvsw3yz1gsdcz2",
       "03h64la81jhdvsw3yze3zlz02",
-      "03h64la81jhdvsw3yzv8vh54g"
+      "03h64la81jhdvsw3yzv8vh54g",
+      "03h9rkwhopayfe39xfu6n5q2e",
+      "03h9rl2ot20bd1p2iw7fs8lt7",
+      "03h9rl2ot7hnfolf6uvkgh6rb",
+      "03h9rl2otczfxbu07cafp0a13",
+      "03h9rl9irhz7az3hnsnv73ul7",
+      "03h9rl9irsvy3fou91d523kx9"
     ],
     "relationshipIds": [
       "03h4468geephs5erx72aplmrf",
@@ -121,7 +127,11 @@
       "03h64lgfhfv9s4hkyyznraj8y",
       "03h64loaoux849eezbtq4xq0r",
       "03h64loap0cj2pm8rqiksgl4q",
-      "03h64loap0cj2pm8rqjrjgd8n"
+      "03h64loap0cj2pm8rqjrjgd8n",
+      "03h9rjhubq08jfe2r6ncn6p6w",
+      "03h9rk5cwghv319mnha5vb39w",
+      "03h9rk5cwghv319mnhcap465o",
+      "03h9rkwhp051a86cc22ewprn9"
     ],
     "indexIds": [
       "03h4468geephs5erx8xgay3x3",
@@ -136,7 +146,6 @@
       "03h4468geka6y2ntyeootbswh",
       "03h4468geka6y2ntyetx16mmg",
       "03h4468geka6y2ntyf2g32t0c",
-      "03h4468geka6y2ntyfo8fv95i",
       "03h4468geka6y2ntyfupt7ngc",
       "03h4468geka6y2ntyg0ypykbs",
       "03h4468geka6y2ntyg5gwzgdd",
@@ -146,7 +155,6 @@
       "03h4468geka6y2ntygzrefo0a",
       "03h4468geka6y2ntyh5kum3ch",
       "03h4468geka6y2ntyhczmgsbt",
-      "03h4468geka6y2ntyhqpplspq",
       "03h44damna12iwbwjie74u7at",
       "03h45zpihwpzcki6c94vj1jhe",
       "03h45zpihwpzcki6c9ti00brw",
@@ -170,7 +178,21 @@
       "03h64la81jhdvsw3z11shy8jn",
       "03h64la81jhdvsw3z16f1eqfl",
       "03h64la81jhdvsw3z1c6oo002",
-      "03h64phwvinhsenzz1j5h1ubb"
+      "03h64phwvinhsenzz1j5h1ubb",
+      "03h9rj678hnedvsy6juzk57z4",
+      "03h9rj678hnedvsy6ka7xumuz",
+      "03h9rj678hnedvsy6khdfsbiu",
+      "03h9rj678hnedvsy6kqyid2or",
+      "03h9rj678hnedvsy6ky3hgk0v",
+      "03h9rjhubve8nghzgh60t6iu9",
+      "03h9rkcrly2urtqoeocuayh1o",
+      "03h9rkcrly2urtqoeoo6uyova",
+      "03h9rkcrly2urtqoep09g1rlz",
+      "03h9rkwhp09x0nup8y9p3npx7",
+      "03h9rkwhp09x0nup8yhlsk7q8",
+      "03h9rkwhp09x0nup8ype5g92h",
+      "03h9rkwhp09x0nup8yw5hgmiu",
+      "03h9rl9irycdlq50n6ecur6xm"
     ],
     "memoIds": [
       "03h446hedsmnrwp09ht0scm16",
@@ -611,7 +633,7 @@
       "03h4468ge977zqezlhqerbvdc": {
         "id": "03h4468ge977zqezlhqerbvdc",
         "name": "analysis_job",
-        "comment": "대표 사진 1장의 분석 호출 단위이자 작업 큐 (analysis 모듈). 접수 때 AWAITING_UPLOAD로 만들고 id는 예약 전에 미리 발급. 구성 사진은 group_id의 analysis_group (접수 항목 MEMBER)으로 결과를 이어받음. uk_analysis_job_photo_active는 WHERE status NOT IN (FAILED, CANCELLED, INELIGIBLE) 부분 유니크 (사진당 살아 있는 작업 1개, 버전 무관). 결과가 있는 사진은 버전과 관계없이 재접수에서 빼고, FAILED·CANCELLED·INELIGIBLE만 남은 사진의 재접수는 새 행, 자동 재시도는 같은 행 (ADR-0024 #4-1·#6-1). analysis_job을 삽입하는 모든 경로는 주체 접수 잠금을 먼저 잡음 (V5 잠금 순서 주석). 이용량보다 먼저 작업 행을 잠그는 TX (상태 전이·claim)는 FOR NO KEY UPDATE까지만 사용, FOR UPDATE·DELETE·id·group_id 변경 금지 (주체 접수 잠금을 먼저 잡은 경우 예외, ADR-0034). uploadPolicy는 manifest_id의 analysis_call_manifest에서 조회. 결과 저장 직전 사진 버전·작업 버전·principal 상태·동의 상태 대조. 사진 버전만 다르면 분석한 버전으로 결과를 저장하고 재분석하지 않음 (ADR-0024 #6-1). 동의 철회 시 전송 전 작업은 CANCELLED로 바꾸고 예약을 반환하며, 이미 보낸 요청의 응답은 저장하지 않음. V5 (단계 5-1)는 접수 열만 만든다. 실행 열 (attempt_count·run_token·locked_until·next_attempt_at·issued_count·failure_code·종료 시각)과 claim용 ix_analysis_job_ready (새 정의, READY·RUNNING 인덱스, FOR NO KEY UPDATE SKIP LOCKED)는 단계 5-2 (V6)에서 추가. cause·priority·quota_kind·template_version·model_id·upload_object_key·upload_expires_at과 상태 PENDING·NEEDS_CHECK는 설계 변경으로 삭제 (FR-I-01·03·06, FR-G-01, ADR-0021 #5, ADR-0022, ADR-0031 #10·#14·#18, ADR-0034)",
+        "comment": "대표 사진 1장의 분석 호출 단위이자 작업 큐 (analysis 모듈). 접수 때 AWAITING_UPLOAD로 만들고 id는 예약 전에 미리 발급. 구성 사진은 group_id의 analysis_group (접수 항목 MEMBER)으로 결과를 이어받음. uk_analysis_job_photo_active는 WHERE status NOT IN (FAILED, CANCELLED, INELIGIBLE) 부분 유니크 (사진당 살아 있는 작업 1개, 버전 무관). 결과가 있는 사진은 버전과 관계없이 재접수에서 빼고, FAILED·CANCELLED·INELIGIBLE만 남은 사진의 재접수는 새 행, 자동 재시도는 같은 행 (ADR-0024 #4-1·#6-1). analysis_job을 삽입하는 모든 경로는 주체 접수 잠금을 먼저 잡음 (V5 잠금 순서 주석). 이용량보다 먼저 작업 행을 잠그는 TX (상태 전이·claim)는 FOR NO KEY UPDATE까지만 사용, FOR UPDATE·DELETE·id·group_id 변경 금지 (주체 접수 잠금을 먼저 잡은 경우 예외, ADR-0034). uploadPolicy는 manifest_id의 analysis_call_manifest에서 조회. 결과 저장 직전 사진 버전·작업 버전·principal 상태·동의 상태 대조. 사진 버전만 다르면 분석한 버전으로 결과를 저장하고 재분석하지 않음 (ADR-0024 #6-1). 동의 철회 시 전송 전 작업은 CANCELLED로 바꾸고 예약을 반환하며, 이미 보낸 요청의 응답은 저장하지 않음. V5 (단계 5-1)는 접수 열만 만들고, 실행 열 (attempt_count·run_token·locked_until·next_attempt_at·probe_excluded_until·issued_count·input_sha256·input_etag·representative_client_ref·failure_code·ended_at)과 그 CHECK·부분 인덱스는 단계 5-2 (V6)가 추가. V6 CHECK: RUNNING ⇒ run_token·locked_until NOT NULL / READY ⇒ next_attempt_at·input_sha256 NOT NULL / AWAITING_UPLOAD ⇒ input_sha256 NULL / status IN (FAILED, CANCELLED, INELIGIBLE) ⇔ failure_code NOT NULL (값 목록 CHECK 포함) / 종료 상태 (SUCCEEDED·FAILED·CANCELLED·INELIGIBLE) ⇔ ended_at NOT NULL / attempt_count >= 0 / issued_count 0~5 / input_sha256 32바이트. V6 부분 인덱스 (술어는 ERD 인덱스에 표현 불가, 여기 기록): ix_analysis_job_ready WHERE status = 'READY' (claim 후보, 설계 4.3. claim = FOR NO KEY UPDATE SKIP LOCKED) / ix_analysis_job_running_owner WHERE status = 'RUNNING' (주체별 동시 실행) / ix_analysis_job_running_lease WHERE status = 'RUNNING' (만료 임대 회수) / ix_analysis_job_awaiting WHERE status = 'AWAITING_UPLOAD' (업로드 기한 회수) / ix_analysis_job_open_deadline WHERE status IN ('AWAITING_UPLOAD', 'READY', 'RUNNING') (처리 기한 만료). 확정 시도는 analysis_upload_attempt의 uk_upload_attempt_job_confirmed로 찾고 작업 → 시도 역참조 열은 없음 (보관 삭제 순서에 순환 없음, 계획 §2.1·§2.9). 단계 5-2 잠금 순서: analysis_request → analysis_job → analysis_upload_attempt → analysis_input_rate → external_call → ai_send_daily → 이용량 할당 → device_trial_mark → photo_ai_budget → ai_spend_day → ai_gate → 생성 행 (V6 잠금 순서 주석, 계획 §3.3). cause·priority·quota_kind·template_version·model_id·upload_object_key·upload_expires_at과 상태 PENDING·NEEDS_CHECK는 설계 변경으로 삭제 (FR-I-01·03·06, FR-G-01, ADR-0021 #5, ADR-0022, ADR-0031 #10·#14·#18, ADR-0034)",
         "columnIds": [
           "03h4468ge977zqezlht52p33h",
           "03h4468ge977zqezlhu49kpu8",
@@ -627,45 +649,52 @@
           "03h64loap0cy71010fkt9tkn5",
           "03h64loap0cy71010fpyvh8a6",
           "03h4468ge977zqezli7i5vn9y",
-          "03h4468ge977zqezliak6wzv6",
+          "03h9riybyy3uanml0drgn3hn3",
           "03h4468ge977zqezlibne61mu",
+          "03h4468ge977zqezliak6wzv6",
+          "03h9riybyy3uanml0dtm00ezq",
+          "03h9riybyy3uanml0dxslpwwq",
+          "03h9riybz3hufrllddta5zcxo",
+          "03h9riybz3hufrllddx4fv2ey",
+          "03h9riybz3hufrllde0z3yi74",
           "03h4468ge977zqezlim9j9qu0",
+          "03h9riybz3hufrllde4vqbnpj",
           "03h4468ge977zqezliok7bthx",
           "03h4468ge977zqezliqy45m72",
           "03h4468ge977zqezlis5lqr4c"
         ],
         "groupId": "03h4468geka6y2ntyi62mlft7",
         "ui": {
-          "x": 74,
-          "y": 2364
+          "x": 13300,
+          "y": 1846
         }
       },
       "03h4468ge977zqezliupy3y6i": {
         "id": "03h4468ge977zqezliupy3y6i",
         "name": "analysis_result",
-        "comment": "재분석 시 덮어씀, 이력 테이블 없음 (FR-I-02·03·04, data-retention)",
+        "comment": "사진별 분석 결과 (analysis 모듈), 사진당 1행 (uk_analysis_result_photo, 계획 K-9). 재분석 시 덮어씀, 이력 테이블 없음 (FR-I-02·03·04, data-retention). 대표 사진은 DIRECT, 같은 묶음의 다른 사진은 INHERITED이며 둘 다 실행한 작업을 job_id로 가리킴 (ADR-0024 #6-3). photo_version·basis_change_seq는 자기 사진 접수 항목에서 복사하고, change_seq는 같은 TX의 owner_change_counter가 발급. uk_analysis_result_photo 충돌은 불변 조건 위반 (EXISTING_RESULT 판정과 uk_analysis_job_photo_active가 사진당 살아 있는 작업을 1개로 유지)이라 완료 TX를 롤백하고 FAILED(RESULT_CONFLICT) (계획 K-21). FK는 job_id·manifest_id만. photo_id는 모듈 간 ID 참조 (photo와의 선은 논리 관계). V6 CHECK: verification IN (DIRECT, INHERITED) / search_state IN (AVAILABLE, EMPTY, DISCARDED) / schema_version >= 1 / epoch >= 1 / basis_change_seq >= 0 / change_seq >= 0. 보관 = 사진 메타데이터 수명 (P11 삭제 때 함께). 단계 5-2 (V6)에서 설계판을 V6 기준으로 교체: PK photo_id → id (photo_id는 유니크). source는 verification으로 바뀌고 REUSED 값과 source_photo_id는 설계 변경으로 삭제 (구성 사진도 자기 INHERITED 행을 갖고, 기존 결과 재사용은 접수 항목 EXISTING_RESULT의 reused_result_id로 기록, 계획 §2.4·§8). template_version·model_id는 manifest_id로 대체되어 삭제 (ADR-0031 #14). ocr_text는 설계 변경으로 삭제 (첫 출시 단말은 text.status만 보내고 OCR 본문은 보내지 않음, ADR-0033 #6·D-09). user_info_version·analyzed_at·deleted_at은 V6 기준으로 교체되어 삭제. ix_analysis_result_owner_change_seq는 V6에 없어 삭제 (결과 변경 피드·전체 동기화는 단계 9, 계획 §0.2)",
         "columnIds": [
-          "03h4468ge977zqezliv83sei0",
+          "03h9rjhubkgu6dmy5e1veze60",
           "03h4468ge977zqezliy8hdjvu",
+          "03h4468ge977zqezliv83sei0",
           "03h4468ge977zqezliz6izgwq",
-          "03h4468ge977zqezlj17dmzyt",
           "03h4468ge977zqezlj3tu2is6",
-          "03h4468ge977zqezlj5lo67so",
-          "03h4468ge977zqezlj7ofrv5n",
-          "03h4468ge977zqezljas47k69",
+          "03h4468ge977zqezlj17dmzyt",
+          "03h9rjhubpx6zpbiqc82v99q6",
+          "03h9rjhubpx6zpbiqcdctzef9",
+          "03h9rjhubpx6zpbiqciab7i7i",
+          "03h9rjhubpx6zpbiqcmehaovx",
+          "03h9rjhubpx6zpbiqcqaqizyy",
           "03h4468ge977zqezljcdt7h1e",
-          "03h4468ge977zqezljdgrm5gi",
-          "03h4468ge977zqezljg62mlqx",
-          "03h4468ge977zqezlji9fvj46",
+          "03h9rjhubpx6zpbiqcv71srha",
           "03h4468ge977zqezljk8zzdrp",
           "03h4468ge977zqezljm5evysj",
           "03h4468ge977zqezljnsj6r5d",
-          "03h4468ge977zqezljq3tny61",
-          "03h4468ge977zqezljruq9rcq"
+          "03h4468ge977zqezljq3tny61"
         ],
         "groupId": "03h4468geka6y2ntyi62mlft7",
         "ui": {
-          "x": 2490,
+          "x": 53262,
           "y": 1846
         }
       },
@@ -885,29 +914,41 @@
       "03h4468ge977zqezlqcrd27lf": {
         "id": "03h4468ge977zqezlqcrd27lf",
         "name": "external_call",
-        "comment": "외부 작업 4단계 기록. UNKNOWN은 재대조 배치가 처리 (consistency-rules, FR-I-03)",
+        "comment": "분석 실행 1회에 허가한 Claude 호출 1건의 원장 (analysis 모듈, FR-I-03). (job_id, run_token)당 1행 (uk_external_call_job_run_token = V6 UNIQUE 제약). 허가 TX가 SENDING으로 삽입하고 그 커밋이 송신 시작 경계, HTTP는 1회만 (ADR-0031 #6). 같은 (작업, 토큰)의 재허가는 기존 행을 돌려주고 재송신하지 않음. 정산은 설계 2.5 정산표만 따르고 outcome이 그 행 이름 (ADR-0031 #7). NOT_SENT 호출은 비용 0·위험 송신 해제, UNKNOWN 호출만 늦은 응답으로 조정 (ADJUSTED). FK는 job_id·manifest_id만 (owner_id·photo_id·device_mark_id는 모듈 간 ID 참조). V6 CHECK: funding IN (TRIAL, PRO) / input_sha256 32바이트 / status·cost_state·send_state 값 목록 / reserved_cost_micros > 0 / settled_cost_micros >= 0 / device_mark_id NOT NULL ⇒ funding = TRIAL / status = SENDING ⇔ cost_state = RESERVED ∧ send_state = RESERVED / NOT_SENT ⇒ settled_cost_micros = 0 ∧ send_state = RELEASED / cost_state = ADJUSTED ⇒ status = UNKNOWN. V6 부분 인덱스 (술어는 ERD 인덱스에 표현 불가, 여기 기록): ix_external_call_responded WHERE status <> 'SENDING' (400 비율 감시 창의 분자·분모) / ix_external_call_sending WHERE status = 'SENDING' (아직 정산하지 않은 호출). 보관 90일, 업로드 시도 다음·종료 작업 앞 순서로 삭제 (ADR-0031 #18, 계획 §2.9). 단계 5-2 (V6)에서 설계판 (외부 작업 4단계 범용 기록, consistency-rules)을 V6 기준으로 교체. 설계 변경으로 삭제: purpose·subject_type·subject_id·provider와 ix_external_call_subject (호출 행은 분석 실행 단위, UNIQUE (job_id, run_token), 계획 §2.3), request_key·batch_id (Batches custom_id 매칭용, ADR-0030 #3. 체험 첫 실행도 Messages이고 Batch는 Pro 최초 처리량만, 단계 8, ADR-0031 #11·계획 §0.2), 상태 INTENDED·SENT·CONFIRMED·FAILED와 failure_code·intended_at·confirmed_at (정산표 기준 status·outcome·created_at·responded_at·settled_at로 대체, ADR-0031 #7·#12). input_tokens·output_tokens는 int → bigint. 웹 탐색·번역·장소 호출 기록은 V6 범위 밖",
         "columnIds": [
           "03h4468ge977zqezlqe2goqgz",
           "03h4468ge977zqezlqgzw4air",
-          "03h4468ge977zqezlqhxdswnf",
-          "03h4468ge977zqezlql50ym1j",
-          "03h4468ge977zqezlqlj4hbq0",
-          "03h4468ge977zqezlqov97k8n",
+          "03h9rk5cw5lla4msilamu6egj",
+          "03h9rk5cwb4k13pbsjf1c63vp",
+          "03h9rk5cwb4k13pbsjjbhm2fz",
+          "03h9rk5cwb4k13pbsjn7lt3cc",
+          "03h9rk5cwb4k13pbsjrdcscsd",
+          "03h9rk5cwb4k13pbsjubot5ke",
+          "03h9rk5cwb4k13pbsjyjo50ak",
           "03h4468ge977zqezlqqy34efz",
-          "03h4468ge977zqezlqt5lph08",
+          "03h9rk5cwghxga4vtuavv4tlh",
+          "03h9rk5cwghxga4vtufu3vc6d",
           "03h4468ge977zqezlquo2rb69",
-          "03h4468ge977zqezlqwdxu9ky",
+          "03h9rk5cwghxga4vtuiwcpjpx",
+          "03h9rk5cwghxga4vtunq7i55z",
           "03h4468ge977zqezlqyevlz4q",
           "03h4468ge977zqezlqzrzxurw",
-          "03h4468ge977zqezlr1a93wbl",
-          "03h4468ge977zqezlr4y5vm6c",
+          "03h9rkcrlsmjputznt49zp2fi",
+          "03h9rkcrlsmjputznt97zib6i",
+          "03h9rkcrlsmjputzntcd8g5kb",
+          "03h9rkcrlsmjputzntgi151pv",
+          "03h9rkcrlsmjputzntk6dfk5j",
+          "03h9rkcrlsmjputznto762i98",
+          "03h9rkcrlsmjputzntseb3z3k",
+          "03h9rkcrlsmjputzntvr1u7xm",
           "03h4468ge977zqezlr6kq5tjc",
-          "03h4468ge977zqezlr7t23agw"
+          "03h9rkcrly2urtqoeo451vjbx",
+          "03h9rkcrly2urtqoeo8ok4n39"
         ],
-        "groupId": "03h4468geka6y2ntyiaw7v936",
+        "groupId": "03h4468geka6y2ntyi62mlft7",
         "ui": {
-          "x": 1300,
-          "y": 428
+          "x": 37226,
+          "y": 1846
         }
       },
       "03h4468ge977zqezlrabh72d2": {
@@ -989,7 +1030,7 @@
       "03h46ggkrxnffv4hjizyj1crb": {
         "id": "03h46ggkrxnffv4hjizyj1crb",
         "name": "device_trial_mark",
-        "comment": "재설치 체험 차단용 기기 판별 기록 (ADR-0020). 탈퇴 후에도 남고 원본 식별자 없이 HMAC만 저장. 기기·계정 이용량 중 하나라도 소진하면 체험 없음. Android는 HMAC으로 같은 행을 다시 찾고, iOS는 설치마다 새 행. uk_device_trial_mark_key는 WHERE device_key_hmac IS NOT NULL. reserved + consumed ≤ limit은 CHECK (FR-B-01, P08, ADR-0029)",
+        "comment": "재설치 체험 차단용 기기 판별 기록 (ADR-0020). 탈퇴 후에도 남고 원본 식별자 없이 HMAC만 저장. 기기·계정 이용량 중 하나라도 소진하면 체험 없음. Android는 HMAC으로 같은 행을 다시 찾고, iOS는 설치마다 새 행. uk_device_trial_mark_key는 WHERE device_key_hmac IS NOT NULL. reserved + consumed ≤ limit은 CHECK. send_count와 그 CHECK (>= 0)는 단계 5-2 (V6)에서 추가 (usage 모듈, 설계 4.3). 잠금 순서는 이용량 할당 뒤·photo_ai_budget 앞이고, 같은 TX에서 다시 잠가도 순서를 깨지 않음 (V6 잠금 순서 주석) (FR-B-01, P08, ADR-0029, ADR-0031 #9)",
         "columnIds": [
           "03h46ggkrxnffv4hjj4ssm18h",
           "03h46ggks30n8gsin8mdrlc2f",
@@ -1000,6 +1041,7 @@
           "03h46ggks8ij6t1ezlcypq0jj",
           "03h46ggks8ij6t1ezlf9ls4dl",
           "03h46ggks8ij6t1ezljcwosbp",
+          "03h9rklezlxh79wyepg1fag1m",
           "03h46ggks8ij6t1ezlncrcoju",
           "03h46ggksdze9d44xznn1sg1x",
           "03h46ggksdze9d44xzqcbalwc"
@@ -1044,13 +1086,16 @@
       "03h64la81jhdvsw3yz1gsdcz2": {
         "id": "03h64la81jhdvsw3yz1gsdcz2",
         "name": "analysis_call_manifest",
-        "comment": "호출 manifest (analysis 모듈, ADR-0031 #14). 접수 때 작업에 고정하는 불변 행. 단계 5-1은 최소판 (모델·업로드 정책). 프롬프트·스키마 버전·thinking·effort·가격·최대 비용은 단계 5-2가 내용을 넓히고 (내용 해시가 바뀌어 새 ID) 필요한 열을 V6에서 추가. 업로드 정책만 타입 열 (응답 uploadPolicy·5-2 발급 검사)",
+        "comment": "호출 manifest (analysis 모듈, ADR-0031 #14). 접수 때 작업에 고정하는 불변 행. 단계 5-1은 최소판 (모델·업로드 정책). 프롬프트·스키마 버전·thinking·effort·가격은 단계 5-2가 내용 JSON을 넓힘 (내용 해시가 바뀌어 새 ID, 계획 §6.1). 타입 열 = 업로드 정책 (응답 uploadPolicy·5-2 발급 검사)과 V6가 추가한 호출 상한 max_pixels·max_tokens·max_cost_micros. 세 상한은 모두 NULL이거나 모두 값이 있고 각각 > 0 (CHECK). 단계 5-1 행은 NULL로 남아 실행할 수 없고, 실행하는 manifest는 세 값을 모두 가짐 (계획 K-12)",
         "columnIds": [
           "03h64la81jhdvsw3yz3dy6ozg",
           "03h64la81jhdvsw3yz4yrwyax",
           "03h64la81jhdvsw3yz5nbil9n",
           "03h64la81jhdvsw3yz8djwuzy",
           "03h64la81jhdvsw3yza5krwzy",
+          "03h9rklezlxh79wyepjpt3bv0",
+          "03h9rklezlxh79wyepm3l78h8",
+          "03h9rklezlxh79wyeprgbij2s",
           "03h64la81jhdvsw3yzdedsj22"
         ],
         "groupId": "03h4468geka6y2ntyi62mlft7",
@@ -1082,7 +1127,7 @@
       "03h64la81jhdvsw3yzv8vh54g": {
         "id": "03h64la81jhdvsw3yzv8vh54g",
         "name": "analysis_request_item",
-        "comment": "접수의 사진별 판정 (analysis 모듈, 불변). 상태별 CHECK: ACCEPTED ⇒ analysis_job_id·group_id·group_role NOT NULL / IN_PROGRESS ⇒ analysis_job_id NOT NULL ∧ group_id NULL (다른 접수의 진행 작업을 참조할 수 있고 기존 그룹은 참조하지 않음) / NOT_ACCEPTED ⇒ code·reason NOT NULL / group_role NOT NULL ⇔ group_id NOT NULL / vector_id NOT NULL ⇒ vector_ignored_reason NULL. 참조할 기존 작업은 photo 뒤·예약 앞에 FOR SHARE로 먼저 잠금 (V5 잠금 순서 주석). 예외: 예약 결과 AlreadyReserved가 알려 준 보유 작업은 미리 잠그지 않고 이용량 잠금 뒤 FK 검사 (KEY SHARE)로만 참조. 작업 잠금 FOR NO KEY UPDATE 규칙으로 교착 없음 (ADR-0034, C-8 시험). reused_result_id·reused_photo_version과 EXISTING_RESULT ⇒ reused_result_id NOT NULL CHECK, retry_at은 단계 5-2에서 추가 (FR-I-01·02, ADR-0031 #4)",
+        "comment": "접수의 사진별 판정 (analysis 모듈, 불변). 상태별 CHECK: ACCEPTED ⇒ analysis_job_id·group_id·group_role NOT NULL / IN_PROGRESS ⇒ analysis_job_id NOT NULL ∧ group_id NULL (다른 접수의 진행 작업을 참조할 수 있고 기존 그룹은 참조하지 않음) / NOT_ACCEPTED ⇒ code·reason NOT NULL / group_role NOT NULL ⇔ group_id NOT NULL / vector_id NOT NULL ⇒ vector_ignored_reason NULL. 참조할 기존 작업은 photo 뒤·예약 앞에 FOR SHARE로 먼저 잠금 (V5 잠금 순서 주석). 예외: 예약 결과 AlreadyReserved가 알려 준 보유 작업은 미리 잠그지 않고 이용량 잠금 뒤 FK 검사 (KEY SHARE)로만 참조. 작업 잠금 FOR NO KEY UPDATE 규칙으로 교착 없음 (ADR-0034, C-8 시험). 단계 5-2 (V6)가 reused_result_id·reused_photo_version·retry_at과 CHECK (EXISTING_RESULT ⇔ reused_result_id NOT NULL, reused_result_id·reused_photo_version은 함께 있거나 함께 없음 / retry_at NOT NULL ⇒ NOT_ACCEPTED)를 추가. EXISTING_RESULT 판정은 진행 중 판정보다 먼저 하고 관측 버전이 달라도 재분석하지 않음 (계획 §8). reused_result_id는 FK 없음 (계획 K-10) (FR-I-01·02, ADR-0031 #4)",
         "columnIds": [
           "03h64la81jhdvsw3yzx9er1jo",
           "03h64la81jhdvsw3yzzh1ab5f",
@@ -1102,12 +1147,136 @@
           "03h64la81jhdvsw3z0qwb82w6",
           "03h64la81jhdvsw3z0tmje3zn",
           "03h64la81jhdvsw3z0wiwye1k",
+          "03h9rklezgiptnedoy29rfxam",
+          "03h9rklezgiptnedoy5xkwa72",
+          "03h9rklezgiptnedoy9enj6dn",
           "03h64la81jhdvsw3z0wqsjwbh"
         ],
         "groupId": "03h4468geka6y2ntyi62mlft7",
         "ui": {
-          "x": 3500,
+          "x": 66078,
           "y": 1846
+        }
+      },
+      "03h9rkwhopayfe39xfu6n5q2e": {
+        "id": "03h9rkwhopayfe39xfu6n5q2e",
+        "name": "analysis_upload_attempt",
+        "comment": "작업의 presigned 업로드 시도 (analysis 모듈, FR-I-03, ADR-0031 #5). object_key = analysis-input/{jobId}/{attemptId} (사진·주체 ID를 객체 이름에 넣지 않음, 계획 K-3). url_expires_at은 발급 때 고정. 작업당 ISSUED 1개·CONFIRMED 1개까지. 확정 시도의 sha256·etag는 analysis_job.input_sha256·input_etag로 복사하고, 작업은 시도를 참조하지 않음 (uk_upload_attempt_job_confirmed로 찾음). object_state: RETAINED (보관) / PENDING (delete_after부터 삭제) / DELETE_SENT (URL 만료 뒤 삭제 요청 성공, 객체 부재의 최종 보장은 버킷 수명 주기). FK는 job_id만 (owner_id는 모듈 간 ID 참조). V6 CHECK: status IN (ISSUED, CONFIRMED, REJECTED, SUPERSEDED, ABANDONED) / content_length > 0 / sha256 32바이트 / reject_reason IN (SIZE_MISMATCH, CHECKSUM_MISMATCH, CONTENT_TYPE_MISMATCH, LATE_UPLOAD) / object_state IN (RETAINED, PENDING, DELETE_SENT) / object_state = PENDING ⇔ delete_after NOT NULL. V6 부분 인덱스 (술어는 ERD 인덱스에 표현 불가, 여기 기록): uk_upload_attempt_job_issued UNIQUE WHERE status = 'ISSUED' / uk_upload_attempt_job_confirmed UNIQUE WHERE status = 'CONFIRMED' / ix_upload_attempt_delete WHERE object_state = 'PENDING' (객체 삭제 대기열, 계획 K-13). 보관 삭제 순서 = 시도 (DELETE_SENT ∧ 접수의 모든 작업 종료 ∧ 미정산 호출 없음 + 90일) → external_call (90일) → 종료 작업·항목·접수 (90일, 결과가 가리키는 SUCCEEDED 작업 제외) (계획 §2.9). 단계 5-2 (V6)에서 추가",
+        "columnIds": [
+          "03h9rkwhopayfe39xfxco1xf7",
+          "03h9rkwhopayfe39xg1aeg3o5",
+          "03h9rkwhopayfe39xg628gg2w",
+          "03h9rkwhopayfe39xgahwo517",
+          "03h9rkwhouszob71lco8yzg4r",
+          "03h9rkwhouszob71lcs7gns4c",
+          "03h9rkwhouszob71lcxevxl5r",
+          "03h9rkwhouszob71lczo2pibx",
+          "03h9rkwhouszob71ld585cemv",
+          "03h9rkwhouszob71ld7hw98h5",
+          "03h9rkwhouszob71ldbfjapg0",
+          "03h9rkwhouszob71ldh6nbznj",
+          "03h9rkwhouszob71ldl13qcgv",
+          "03h9rkwhouszob71ldo1r8cn6",
+          "03h9rkwhouszob71ldrd4vsef",
+          "03h9rkwhp09x0nup8y00hgy4l",
+          "03h9rkwhp09x0nup8y48c1hib"
+        ],
+        "groupId": "03h4468geka6y2ntyi62mlft7",
+        "ui": {
+          "x": 53262,
+          "y": 2314
+        }
+      },
+      "03h9rl2ot20bd1p2iw7fs8lt7": {
+        "id": "03h9rl2ot20bd1p2iw7fs8lt7",
+        "name": "photo_ai_budget",
+        "comment": "사진의 평생 AI 송신 예산 (analysis 모듈, ADR-0031 #9). risk_sends = 예약했거나 소진한 위험 송신 수 (허가 +1·해제 −1, 소진은 유지, external_call.send_state가 구분, 계획 K-20). 한도 (사진 평생 위험 송신)는 설정값이고, 닿으면 접수 항목 ATTEMPTS_EXHAUSTED·허가 FAILED(ATTEMPTS_EXHAUSTED). unknown_retry_used = 결과 불명 뒤 자동 재호출 1회를 썼는지 (D-26, ADR-0031 #12). input_invalid_count·input_blocked_until = 입력이 계속 실패하는 사진을 잠시 막음 (접수 항목 INPUT_RETRY_LATER + retryAfter, 한도는 설정값). PK photo_id는 photo.id, 모듈 간 ID 참조 (FK 없음). 잠금 순서 = device_trial_mark 뒤·ai_spend_day 앞 (V6 잠금 순서 주석). V6 CHECK: risk_sends >= 0 / input_invalid_count >= 0. 보관 = 사진 메타데이터 수명 (P11 삭제 때 함께). 단계 5-2 (V6)에서 추가",
+        "columnIds": [
+          "03h9rl2ot7hnfolf6tyhgbti5",
+          "03h9rl2ot7hnfolf6u2781ull",
+          "03h9rl2ot7hnfolf6u794se27",
+          "03h9rl2ot7hnfolf6ubv6kebt",
+          "03h9rl2ot7hnfolf6uexnoy2a",
+          "03h9rl2ot7hnfolf6ujl7kkc0",
+          "03h9rl2ot7hnfolf6umtiq438",
+          "03h9rl2ot7hnfolf6ur3cyqqr"
+        ],
+        "groupId": "03h4468geka6y2ntyi62mlft7",
+        "ui": {
+          "x": 6750,
+          "y": 2290
+        }
+      },
+      "03h9rl2ot7hnfolf6uvkgh6rb": {
+        "id": "03h9rl2ot7hnfolf6uvkgh6rb",
+        "name": "ai_spend_day",
+        "comment": "전역 KST 일일 AI 비용 (analysis 모듈, ADR-0031 #9). limit_micros = 그날의 한도 설정값. 허가가 호출 최대 비용을 reserved_micros에 예약하고, 정산이 그 예약을 호출 비용 (settled_micros)으로 바꿈. settled + reserved + 최대 비용 > limit이면 허가를 미루고 ai_gate BUDGET을 OPEN (계획 §5.4). 금액 = 마이크로달러 BIGINT. 잠금 순서 = photo_ai_budget 뒤·ai_gate 앞 (V6 잠금 순서 주석). V6 CHECK: limit_micros·reserved_micros·settled_micros >= 0. 단계 5-2 (V6)에서 추가",
+        "columnIds": [
+          "03h9rl2ot7hnfolf6uza1l3tt",
+          "03h9rl2ot7hnfolf6v2y3h3qq",
+          "03h9rl2ot7hnfolf6v6b64f5u",
+          "03h9rl2otczfxbu07c2lsgn5g",
+          "03h9rl2otczfxbu07c64qz34x"
+        ],
+        "groupId": "03h4468geka6y2ntyi62mlft7",
+        "ui": {
+          "x": 4600,
+          "y": 1846
+        }
+      },
+      "03h9rl2otczfxbu07cafp0a13": {
+        "id": "03h9rl2otczfxbu07cafp0a13",
+        "name": "ai_send_daily",
+        "comment": "주체별 KST 일일 AI 송신 수 (analysis 모듈, ADR-0031 #9). 허가 +1·해제 −1, 소진은 유지 (external_call.send_state가 구분, 계획 K-20). 한도 (설정값)에 닿으면 허가를 다음 KST 자정으로 미룸 (계획 §5.4). PK (owner_id, day), owner_id는 principal.id 모듈 간 ID 참조. 잠금 순서 = external_call 뒤·이용량 할당 앞 (완료 TX가 할당과 기기 기록을 usage.settle 한 번으로 잠그게 함, V6 잠금 순서 주석). V6 CHECK: send_count >= 0. 단계 5-2 (V6)에서 추가",
+        "columnIds": [
+          "03h9rl2otczfxbu07cdsyqkrq",
+          "03h9rl2otczfxbu07cgus4yts",
+          "03h9rl2otczfxbu07clxcjh7e"
+        ],
+        "groupId": "03h4468geka6y2ntyi62mlft7",
+        "ui": {
+          "x": 4600,
+          "y": 2026
+        }
+      },
+      "03h9rl9irhz7az3hnsnv73ul7": {
+        "id": "03h9rl9irhz7az3hnsnv73ul7",
+        "name": "ai_gate",
+        "comment": "모든 Claude 호출 앞의 관문, 원인당 1행 (analysis 모듈, 계획 §5.10, ADR-0031 #9·#13). V6가 BUDGET·CONFIG_CIRCUIT·TRANSIENT_CIRCUIT 3행을 CLOSED (generation 0, failure_streak 0, reset_at·updated_at = 적용 시각)로 삽입. 모든 상태 전이는 관측한 generation과 비교해 1 올리고 probe를 비움 (세대 CAS, 계획 K-22). probe 지정 (HALF_OPEN 회로를 통과할 수 있는 작업·실행 토큰)은 generation을 올리지 않음. BUDGET은 CLOSED·OPEN만. reset_at = 마지막 CLOSED 전이 시각이자 400 비율 표본의 하한, opened_at은 첫 열림 전까지 NULL. 행 잠금 순서 = BUDGET → CONFIG_CIRCUIT → TRANSIENT_CIRCUIT (cause 텍스트 순서, 필요한 원인만), 표 잠금 순서 = ai_spend_day 뒤·생성 행 앞 (V6 잠금 순서 주석). probe_job_id는 FK 없음 (실행 토큰을 버리는 모든 경로가 그 probe를 비움). V6 CHECK: cause IN (BUDGET, CONFIG_CIRCUIT, TRANSIENT_CIRCUIT) / state IN (CLOSED, OPEN, HALF_OPEN) / cause = BUDGET ⇒ state IN (CLOSED, OPEN) / generation >= 0 / failure_streak >= 0 / probe_job_id IS NULL ⇔ probe_run_token IS NULL. 단계 5-2 (V6)에서 추가",
+        "columnIds": [
+          "03h9rl9irng0b5zxfe8742n12",
+          "03h9rl9irng0b5zxfec2mhjya",
+          "03h9rl9irng0b5zxfeevy2kjx",
+          "03h9rl9irng0b5zxfeiywimxx",
+          "03h9rl9irng0b5zxfem4r1xul",
+          "03h9rl9irng0b5zxferregpx9",
+          "03h9rl9irng0b5zxfev8lmdv8",
+          "03h9rl9irng0b5zxfey2bdpoa",
+          "03h9rl9irng0b5zxff3dyggpa",
+          "03h9rl9irsvy3fou915xn37q7",
+          "03h9rl9irsvy3fou919kf9611"
+        ],
+        "groupId": "03h4468geka6y2ntyi62mlft7",
+        "ui": {
+          "x": 13300,
+          "y": 2554
+        }
+      },
+      "03h9rl9irsvy3fou91d523kx9": {
+        "id": "03h9rl9irsvy3fou91d523kx9",
+        "name": "analysis_input_rate",
+        "comment": "주체 또는 체험 기기의 창별 입력 속도 (analysis 모듈, ADR-0031 #9). 업로드 시도 발급 TX가 발급 항목 수 (items)와 항목 × maxBytes (bytes)를 PRINCIPAL → TRIAL_MARK 순으로 원자적으로 더하고, 넘으면 요청 전체 429 RATE_LIMITED + Retry-After 다음 창 (계획 §4.1). 한도·창 길이는 설정값. subject_id = principal.id 또는 device_trial_mark.id (모듈 간 ID 참조, FK 없음). 행 잠금 순서 = PRINCIPAL → TRIAL_MARK (subject_kind 텍스트 순서), 표 잠금 순서 = analysis_upload_attempt 뒤·external_call 앞 (V6 잠금 순서 주석). 정리 배치가 오래된 창을 window_start로 지움 (ix_analysis_input_rate_window, 계획 §7.5). V6 CHECK: subject_kind IN (PRINCIPAL, TRIAL_MARK) / items·bytes >= 0. 단계 5-2 (V6)에서 추가",
+        "columnIds": [
+          "03h9rl9irsvy3fou91gnhfyfj",
+          "03h9rl9irsvy3fou91lmvtjjl",
+          "03h9rl9irsvy3fou91pa6r4l1",
+          "03h9rl9irsvy3fou91ryy2sao",
+          "03h9rl9irycdlq50n6axp61gr"
+        ],
+        "groupId": "03h4468geka6y2ntyi62mlft7",
+        "ui": {
+          "x": 6750,
+          "y": 2542
         }
       },
       "03hjfcwl6ebn9795fj0udpy4t": {
@@ -2555,15 +2724,16 @@
         "id": "03h4468ge977zqezli7i5vn9y",
         "tableId": "03h4468ge977zqezlhqerbvdc",
         "name": "attempt_count",
-        "comment": "V5에 없음, 단계 5-2 (V6)에서 기본값 열로 추가",
+        "comment": "claim으로 RUNNING이 될 때마다 1 증가하는 실행 횟수 (>= 0, CHECK). V6에서 추가 (DEFAULT 0)",
         "dataType": "int",
+        "default": "0",
         "options": 8
       },
       "03h4468ge977zqezliak6wzv6": {
         "id": "03h4468ge977zqezliak6wzv6",
         "tableId": "03h4468ge977zqezlhqerbvdc",
         "name": "next_attempt_at",
-        "comment": "V5에 없음, 단계 5-2 (V6)에서 추가",
+        "comment": "다음 claim 가능 시각. 업로드 확정 (READY 전이) 때 확정 시각으로 설정하고, 연기 (일일 송신 부족·관문 차단·백오프)마다 갱신. READY ⇒ NOT NULL (CHECK). claim 후보 정렬 첫 열 (ix_analysis_job_ready). V6에서 추가",
         "dataType": "timestamptz",
         "options": 0
       },
@@ -2571,7 +2741,7 @@
         "id": "03h4468ge977zqezlibne61mu",
         "tableId": "03h4468ge977zqezlhqerbvdc",
         "name": "locked_until",
-        "comment": "V5에 없음, 단계 5-2 (V6)에서 추가",
+        "comment": "실행 임대 만료 시각. claim이 설정하고 READY 되돌림·종료 때 NULL. RUNNING ⇒ NOT NULL (CHECK). 만료된 임대는 임대 회수 배치가 처리 (ix_analysis_job_running_lease, 계획 §5.8). V6에서 추가",
         "dataType": "timestamptz",
         "options": 0
       },
@@ -2579,7 +2749,7 @@
         "id": "03h4468ge977zqezlim9j9qu0",
         "tableId": "03h4468ge977zqezlhqerbvdc",
         "name": "failure_code",
-        "comment": "V5에 없음, 단계 5-2 (V6)에서 추가",
+        "comment": "결과 없이 끝난 이유 (응답 reason). status IN (FAILED, CANCELLED, INELIGIBLE) ⇔ NOT NULL (CHECK). FAILED = UPLOAD_ATTEMPTS_EXHAUSTED / RESERVATION_MISSING (반환되지 않은 예약 없음) / INPUT_CHANGED / INPUT_MISSING / INPUT_INVALID / REFUSAL / TRUNCATED / INVALID_OUTPUT / PROVIDER_REJECTED / UNKNOWN_OUTCOME / ATTEMPTS_EXHAUSTED / DEVICE_BUDGET_EXHAUSTED / RESULT_CONFLICT, CANCELLED = UPLOAD_EXPIRED / PROCESSING_EXPIRED / CONSENT_WITHDRAWN, INELIGIBLE = PRINCIPAL_INACTIVE / REPRESENTATIVE_DELETED (값 CHECK ck_analysis_job_failure_code_value). V6에서 추가",
         "dataType": "text",
         "options": 0
       },
@@ -2660,6 +2830,63 @@
         "dataType": "timestamptz",
         "options": 8
       },
+      "03h9riybyy3uanml0drgn3hn3": {
+        "id": "03h9riybyy3uanml0drgn3hn3",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "run_token",
+        "comment": "현재 실행의 토큰. claim이 새로 발급하고 READY 되돌림·종료 때 NULL. RUNNING ⇒ NOT NULL (CHECK). external_call (job_id, run_token)으로 이 실행의 허가를 찾음. V6에서 추가",
+        "dataType": "uuid",
+        "options": 0
+      },
+      "03h9riybyy3uanml0dtm00ezq": {
+        "id": "03h9riybyy3uanml0dtm00ezq",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "probe_excluded_until",
+        "comment": "송신 없이 probe를 잃은 작업이 다시 probe로 뽑히지 않는 기한 (now + probe 제외 시간, 설정값). 같은 작업의 반복 실패가 다른 정상 작업의 probe 지정을 막지 않게 함 (계획 §5.10). V6에서 추가",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h9riybyy3uanml0dxslpwwq": {
+        "id": "03h9riybyy3uanml0dxslpwwq",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "issued_count",
+        "comment": "업로드 시도 신규 발급 수 (0~5, CHECK). 한도 (설정값)에 닿으면 신규 발급은 UPLOAD_ATTEMPT_LIMIT, 기한 회수는 UPLOAD_ATTEMPTS_EXHAUSTED (ADR-0031 #5). V6에서 추가 (DEFAULT 0)",
+        "dataType": "int",
+        "default": "0",
+        "options": 8
+      },
+      "03h9riybz3hufrllddta5zcxo": {
+        "id": "03h9riybz3hufrllddta5zcxo",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "input_sha256",
+        "comment": "확정 시도의 sha256 복사 (32바이트, CHECK). 시도 행 삭제 뒤에도 감사 값으로 유지 (계획 §2.9). READY ⇒ NOT NULL, AWAITING_UPLOAD ⇒ NULL (CHECK). V6에서 추가",
+        "dataType": "bytea",
+        "options": 0
+      },
+      "03h9riybz3hufrllddx4fv2ey": {
+        "id": "03h9riybz3hufrllddx4fv2ey",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "input_etag",
+        "comment": "확정 시도 객체의 ETag 복사. 시도 행 삭제 뒤에도 유지 (계획 §2.9). V6에서 추가",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h9riybz3hufrllde0z3yi74": {
+        "id": "03h9riybz3hufrllde0z3yi74",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "representative_client_ref",
+        "comment": "대표 사진의 API photoId (photo.client_ref). 항목·photo 행이 지워져도 투영이 작업을 식별 (계획 K-23). V6가 기존 행을 photo.client_ref로, 없으면 원접수의 대표 ACCEPTED 항목 client_ref로 채운 뒤 NOT NULL. 이후는 접수가 삽입. V6에서 추가",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h9riybz3hufrllde4vqbnpj": {
+        "id": "03h9riybz3hufrllde4vqbnpj",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "name": "ended_at",
+        "comment": "종료 시각. 종료 상태 (SUCCEEDED·FAILED·CANCELLED·INELIGIBLE) ⇔ NOT NULL (CHECK). V6에서 추가",
+        "dataType": "timestamptz",
+        "options": 0
+      },
       "03huodysqek1979lnd2mmzh5q": {
         "id": "03huodysqek1979lnd2mmzh5q",
         "tableId": "03h4468ge977zqezlhqerbvdc",
@@ -2672,9 +2899,9 @@
         "id": "03h4468ge977zqezliv83sei0",
         "tableId": "03h4468ge977zqezliupy3y6i",
         "name": "photo_id",
-        "comment": "사진당 현재 결과 1건. photo.id, 모듈 간 ID 참조",
+        "comment": "사진당 결과 1건 (uk_analysis_result_photo, 계획 K-9). photo.id, 모듈 간 ID 참조. 충돌 = 불변 조건 위반 → 완료 TX 롤백 후 FAILED(RESULT_CONFLICT) (계획 K-21)",
         "dataType": "uuid",
-        "options": 2
+        "options": 12
       },
       "03h4468ge977zqezliy8hdjvu": {
         "id": "03h4468ge977zqezliy8hdjvu",
@@ -2687,7 +2914,7 @@
         "id": "03h4468ge977zqezliz6izgwq",
         "tableId": "03h4468ge977zqezliupy3y6i",
         "name": "job_id",
-        "comment": "결과를 만든 analysis_job.id. INHERITED면 원래 작업. 결과가 있는 동안 이 작업 행은 지우지 않음 (ADR-0024 #6-3)",
+        "comment": "결과를 만든 analysis_job.id. INHERITED도 실행한 원래 작업. 결과가 있는 동안 이 작업 행은 지우지 않음 (ADR-0024 #6-3, ADR-0031 #18). ix_analysis_result_job",
         "dataType": "uuid",
         "options": 8
       },
@@ -2695,74 +2922,31 @@
         "id": "03h4468ge977zqezlj17dmzyt",
         "tableId": "03h4468ge977zqezliupy3y6i",
         "name": "photo_version",
+        "comment": "자기 사진 접수 항목의 photo_version 복사 (분석 기준 버전, 계획 §2.4)",
         "dataType": "text",
         "options": 8
       },
       "03h4468ge977zqezlj3tu2is6": {
         "id": "03h4468ge977zqezlj3tu2is6",
         "tableId": "03h4468ge977zqezliupy3y6i",
-        "name": "source",
-        "comment": "DIRECT / REUSED / INHERITED. INHERITED = 대표 삭제 뒤 새 대표가 이어받은 결과이며 job_id는 원래 작업 (ADR-0024 #6-3)",
+        "name": "verification",
+        "comment": "DIRECT = 대표 사진 (작업이 분석한 사진) / INHERITED = 같은 묶음의 다른 사진. 둘 다 job_id는 실행한 작업 (ADR-0024 #6-3). V6에서 source를 대체 (REUSED 값 삭제)",
         "dataType": "text",
         "options": 8
-      },
-      "03h4468ge977zqezlj5lo67so": {
-        "id": "03h4468ge977zqezlj5lo67so",
-        "tableId": "03h4468ge977zqezliupy3y6i",
-        "name": "source_photo_id",
-        "comment": "REUSED일 때 현재 대표 사진. 대표가 바뀌면 새 대표로 갱신. photo.id, 모듈 간 ID 참조",
-        "dataType": "uuid",
-        "options": 0
-      },
-      "03h4468ge977zqezlj7ofrv5n": {
-        "id": "03h4468ge977zqezlj7ofrv5n",
-        "tableId": "03h4468ge977zqezliupy3y6i",
-        "name": "template_version",
-        "dataType": "text",
-        "options": 0
-      },
-      "03h4468ge977zqezljas47k69": {
-        "id": "03h4468ge977zqezljas47k69",
-        "tableId": "03h4468ge977zqezliupy3y6i",
-        "name": "model_id",
-        "dataType": "text",
-        "options": 0
       },
       "03h4468ge977zqezljcdt7h1e": {
         "id": "03h4468ge977zqezljcdt7h1e",
         "tableId": "03h4468ge977zqezliupy3y6i",
         "name": "content",
-        "comment": "요소·관계·의도·시간/장소. 값마다 READ / ESTIMATED / ABSENT",
+        "comment": "정규화한 결과 v1 (요소·관계·의도·시간/장소·search 블록) + 항목별 extraction·validation·truncatedFields (계획 §2.4). 값마다 READ / ESTIMATED / ABSENT",
         "dataType": "jsonb",
-        "options": 8
-      },
-      "03h4468ge977zqezljdgrm5gi": {
-        "id": "03h4468ge977zqezljdgrm5gi",
-        "tableId": "03h4468ge977zqezliupy3y6i",
-        "name": "ocr_text",
-        "comment": "현재 값만 보관, 이력 없음",
-        "dataType": "text",
-        "options": 0
-      },
-      "03h4468ge977zqezljg62mlqx": {
-        "id": "03h4468ge977zqezljg62mlqx",
-        "tableId": "03h4468ge977zqezliupy3y6i",
-        "name": "user_info_version",
-        "comment": "반영한 photo.version",
-        "dataType": "bigint",
-        "options": 0
-      },
-      "03h4468ge977zqezlji9fvj46": {
-        "id": "03h4468ge977zqezlji9fvj46",
-        "tableId": "03h4468ge977zqezliupy3y6i",
-        "name": "analyzed_at",
-        "dataType": "timestamptz",
         "options": 8
       },
       "03h4468ge977zqezljk8zzdrp": {
         "id": "03h4468ge977zqezljk8zzdrp",
         "tableId": "03h4468ge977zqezliupy3y6i",
         "name": "change_seq",
+        "comment": "결과 저장 TX에서 owner_change_counter가 발급 (>= 0, CHECK). 결과 변경 피드는 단계 9 (계획 §0.2)",
         "dataType": "bigint",
         "options": 8
       },
@@ -2787,12 +2971,62 @@
         "dataType": "bigint",
         "options": 8
       },
-      "03h4468ge977zqezljruq9rcq": {
-        "id": "03h4468ge977zqezljruq9rcq",
+      "03h9rjhubkgu6dmy5e1veze60": {
+        "id": "03h9rjhubkgu6dmy5e1veze60",
         "tableId": "03h4468ge977zqezliupy3y6i",
-        "name": "deleted_at",
-        "dataType": "timestamptz",
-        "options": 0
+        "name": "id",
+        "comment": "UUIDv7. V6에서 PK (설계판 PK는 photo_id). AnalysisCompleted의 resultId·접수 항목 reused_result_id가 가리킴",
+        "dataType": "uuid",
+        "options": 10
+      },
+      "03h9rjhubpx6zpbiqc82v99q6": {
+        "id": "03h9rjhubpx6zpbiqc82v99q6",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "basis_change_seq",
+        "comment": "자기 사진 접수 항목의 basis_change_seq 복사 (>= 0, CHECK). 원본 버전 관측 기준 (ADR-0031 #4)",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h9rjhubpx6zpbiqcdctzef9": {
+        "id": "03h9rjhubpx6zpbiqcdctzef9",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "manifest_id",
+        "comment": "analysis_call_manifest.id. 결과를 만든 호출 manifest (ADR-0031 #14)",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h9rjhubpx6zpbiqciab7i7i": {
+        "id": "03h9rjhubpx6zpbiqciab7i7i",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "schema_version",
+        "comment": "결과 스키마 버전 (>= 1, CHECK). 현재 v1 (ADR-0031 #15)",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h9rjhubpx6zpbiqcmehaovx": {
+        "id": "03h9rjhubpx6zpbiqcmehaovx",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "output_locale",
+        "comment": "생성 라벨 언어 (manifest outputLocale). 읽은 문구는 원문. locale 변경으로 기존 결과를 재분석하지 않음",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h9rjhubpx6zpbiqcqaqizyy": {
+        "id": "03h9rjhubpx6zpbiqcqaqizyy",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "search_state",
+        "comment": "AVAILABLE / EMPTY / DISCARDED. search 블록 상태 (서버 계산). 블록 오류는 블록만 폐기하고 분석은 실패시키지 않음 (ADR-0031 #20)",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h9rjhubpx6zpbiqcv71srha": {
+        "id": "03h9rjhubpx6zpbiqcv71srha",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "name": "epoch",
+        "comment": "결과 세대 (>= 1, CHECK). 수동 재처리가 1 올리고 AnalysisCompleted를 새 epoch로 재발행 (계획 K-14). DEFAULT 1",
+        "dataType": "int",
+        "default": "1",
+        "options": 8
       },
       "03h4468ge977zqezljvkdhdo8": {
         "id": "03h4468ge977zqezljvkdhdo8",
@@ -3573,7 +3807,7 @@
         "tableId": "03h4468ge977zqezlqcrd27lf",
         "name": "id",
         "dataType": "uuid",
-        "options": 2
+        "options": 10
       },
       "03h4468ge977zqezlqgzw4air": {
         "id": "03h4468ge977zqezlqgzw4air",
@@ -3582,49 +3816,11 @@
         "dataType": "uuid",
         "options": 8
       },
-      "03h4468ge977zqezlqhxdswnf": {
-        "id": "03h4468ge977zqezlqhxdswnf",
-        "tableId": "03h4468ge977zqezlqcrd27lf",
-        "name": "purpose",
-        "comment": "ANALYSIS / WEB_SEARCH / TRANSLATION / PLACE",
-        "dataType": "text",
-        "options": 8
-      },
-      "03h4468ge977zqezlql50ym1j": {
-        "id": "03h4468ge977zqezlql50ym1j",
-        "tableId": "03h4468ge977zqezlqcrd27lf",
-        "name": "subject_type",
-        "comment": "ANALYSIS_JOB / PHOTO_ACTION / TRANSLATION / EVENT (장소 조회, ADR-0024 #13-5). 저장 없는 실시간 장소 조회는 기록하지 않음",
-        "dataType": "text",
-        "options": 8
-      },
-      "03h4468ge977zqezlqlj4hbq0": {
-        "id": "03h4468ge977zqezlqlj4hbq0",
-        "tableId": "03h4468ge977zqezlqcrd27lf",
-        "name": "subject_id",
-        "dataType": "uuid",
-        "options": 8
-      },
-      "03h4468ge977zqezlqov97k8n": {
-        "id": "03h4468ge977zqezlqov97k8n",
-        "tableId": "03h4468ge977zqezlqcrd27lf",
-        "name": "request_key",
-        "comment": "서버 안 호출 의도 식별·Batches custom_id 결과 매칭. 제공자 쪽 중복 과금 차단·응답 재조회를 보장하지 않음 (ADR-0030)",
-        "dataType": "text",
-        "options": 12
-      },
       "03h4468ge977zqezlqqy34efz": {
         "id": "03h4468ge977zqezlqqy34efz",
         "tableId": "03h4468ge977zqezlqcrd27lf",
         "name": "status",
-        "comment": "INTENDED / SENT / CONFIRMED / UNKNOWN / FAILED",
-        "dataType": "text",
-        "options": 8
-      },
-      "03h4468ge977zqezlqt5lph08": {
-        "id": "03h4468ge977zqezlqt5lph08",
-        "tableId": "03h4468ge977zqezlqcrd27lf",
-        "name": "provider",
+        "comment": "SENDING / SUCCEEDED / RESPONDED_FAILURE / UNKNOWN / NOT_SENT (CHECK). 허가 TX가 SENDING으로 삽입하고 정산 TX가 1회 바꿈. NOT_SENT = 연결 수립 전 실패 (계획 K-6), UNKNOWN = 결과를 알 수 없는 호출 (최대 비용·위험 송신 소진, ADR-0031 #12)",
         "dataType": "text",
         "options": 8
       },
@@ -3632,13 +3828,7 @@
         "id": "03h4468ge977zqezlquo2rb69",
         "tableId": "03h4468ge977zqezlqcrd27lf",
         "name": "provider_request_id",
-        "dataType": "text",
-        "options": 0
-      },
-      "03h4468ge977zqezlqwdxu9ky": {
-        "id": "03h4468ge977zqezlqwdxu9ky",
-        "tableId": "03h4468ge977zqezlqcrd27lf",
-        "name": "batch_id",
+        "comment": "응답 request-id 헤더",
         "dataType": "text",
         "options": 0
       },
@@ -3646,41 +3836,191 @@
         "id": "03h4468ge977zqezlqyevlz4q",
         "tableId": "03h4468ge977zqezlqcrd27lf",
         "name": "input_tokens",
-        "dataType": "int",
+        "comment": "응답 usage 입력 토큰. V6에서 int → bigint",
+        "dataType": "bigint",
         "options": 0
       },
       "03h4468ge977zqezlqzrzxurw": {
         "id": "03h4468ge977zqezlqzrzxurw",
         "tableId": "03h4468ge977zqezlqcrd27lf",
         "name": "output_tokens",
-        "dataType": "int",
+        "comment": "응답 usage 출력 토큰. V6에서 int → bigint",
+        "dataType": "bigint",
         "options": 0
-      },
-      "03h4468ge977zqezlr1a93wbl": {
-        "id": "03h4468ge977zqezlr1a93wbl",
-        "tableId": "03h4468ge977zqezlqcrd27lf",
-        "name": "failure_code",
-        "dataType": "text",
-        "options": 0
-      },
-      "03h4468ge977zqezlr4y5vm6c": {
-        "id": "03h4468ge977zqezlr4y5vm6c",
-        "tableId": "03h4468ge977zqezlqcrd27lf",
-        "name": "intended_at",
-        "dataType": "timestamptz",
-        "options": 8
       },
       "03h4468ge977zqezlr6kq5tjc": {
         "id": "03h4468ge977zqezlr6kq5tjc",
         "tableId": "03h4468ge977zqezlqcrd27lf",
         "name": "sent_at",
+        "comment": "HTTP 송신 시각. 정산 TX가 기록, 송신하지 않았으면 NULL",
         "dataType": "timestamptz",
         "options": 0
       },
-      "03h4468ge977zqezlr7t23agw": {
-        "id": "03h4468ge977zqezlr7t23agw",
+      "03h9rk5cw5lla4msilamu6egj": {
+        "id": "03h9rk5cw5lla4msilamu6egj",
         "tableId": "03h4468ge977zqezlqcrd27lf",
-        "name": "confirmed_at",
+        "name": "job_id",
+        "comment": "analysis_job.id. 허가한 작업. ix_external_call_sending",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h9rk5cwb4k13pbsjf1c63vp": {
+        "id": "03h9rk5cwb4k13pbsjf1c63vp",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "run_token",
+        "comment": "허가한 실행의 토큰 (analysis_job.run_token). (job_id, run_token) 유니크 = 실행당 허가 1건. 같은 토큰의 재허가는 기존 행 반환, 재송신 없음 (uk_external_call_job_run_token)",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h9rk5cwb4k13pbsjjbhm2fz": {
+        "id": "03h9rk5cwb4k13pbsjjbhm2fz",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "manifest_id",
+        "comment": "analysis_call_manifest.id. 작업에 고정된 manifest (ADR-0031 #14)",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h9rk5cwb4k13pbsjn7lt3cc": {
+        "id": "03h9rk5cwb4k13pbsjn7lt3cc",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "funding",
+        "comment": "TRIAL / PRO (CHECK). 작업의 funding",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h9rk5cwb4k13pbsjrdcscsd": {
+        "id": "03h9rk5cwb4k13pbsjrdcscsd",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "photo_id",
+        "comment": "대표 photo.id, 모듈 간 ID 참조",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h9rk5cwb4k13pbsjubot5ke": {
+        "id": "03h9rk5cwb4k13pbsjubot5ke",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "input_sha256",
+        "comment": "보낸 입력의 sha256 (32바이트, CHECK). 작업 input_sha256",
+        "dataType": "bytea",
+        "options": 8
+      },
+      "03h9rk5cwb4k13pbsjyjo50ak": {
+        "id": "03h9rk5cwb4k13pbsjyjo50ak",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "budget_day",
+        "comment": "허가 시점의 KST 일자. 비용을 기록할 ai_spend_day 행",
+        "dataType": "date",
+        "options": 8
+      },
+      "03h9rk5cwghxga4vtuavv4tlh": {
+        "id": "03h9rk5cwghxga4vtuavv4tlh",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "http_status",
+        "comment": "응답 HTTP 상태. 응답이 없으면 NULL",
+        "dataType": "int",
+        "options": 0
+      },
+      "03h9rk5cwghxga4vtufu3vc6d": {
+        "id": "03h9rk5cwghxga4vtufu3vc6d",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "stop_reason",
+        "comment": "응답 stop_reason",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h9rk5cwghxga4vtuiwcpjpx": {
+        "id": "03h9rk5cwghxga4vtuiwcpjpx",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "outcome",
+        "comment": "정산표 (설계 2.5) 행 이름. 정산 TX가 기록 (ADR-0031 #7)",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h9rk5cwghxga4vtunq7i55z": {
+        "id": "03h9rk5cwghxga4vtunq7i55z",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "config_fingerprint",
+        "comment": "허가 시점 설정 지문 = claude.key-version + 실행 가능 manifest 목록 해시. 400 비율 표본을 같은 설정의 호출로 한정 (ix_external_call_responded, 계획 §2.3)",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h9rkcrlsmjputznt49zp2fi": {
+        "id": "03h9rkcrlsmjputznt49zp2fi",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "cache_creation_tokens",
+        "comment": "응답 usage 캐시 생성 토큰",
+        "dataType": "bigint",
+        "options": 0
+      },
+      "03h9rkcrlsmjputznt97zib6i": {
+        "id": "03h9rkcrlsmjputznt97zib6i",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "cache_read_tokens",
+        "comment": "응답 usage 캐시 읽기 토큰",
+        "dataType": "bigint",
+        "options": 0
+      },
+      "03h9rkcrlsmjputzntcd8g5kb": {
+        "id": "03h9rkcrlsmjputzntcd8g5kb",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "reserved_cost_micros",
+        "comment": "허가 때 예약한 최대 비용 (마이크로달러, > 0, CHECK). ai_spend_day.reserved_micros에 더함",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h9rkcrlsmjputzntgi151pv": {
+        "id": "03h9rkcrlsmjputzntgi151pv",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "settled_cost_micros",
+        "comment": "정산 비용 (마이크로달러, >= 0, CHECK). NOT_SENT = 0. 사용량 없는 응답은 최대 비용으로 정산 (ADR-0031 #7)",
+        "dataType": "bigint",
+        "options": 0
+      },
+      "03h9rkcrlsmjputzntk6dfk5j": {
+        "id": "03h9rkcrlsmjputzntk6dfk5j",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "cost_state",
+        "comment": "RESERVED / SETTLED / ADJUSTED (CHECK). ADJUSTED = UNKNOWN 호출을 늦게 온 응답으로 조정 (ADJUSTED ⇒ status = UNKNOWN)",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h9rkcrlsmjputznto762i98": {
+        "id": "03h9rkcrlsmjputznto762i98",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "send_state",
+        "comment": "위험 송신 RESERVED / SPENT / RELEASED (CHECK). 송신 카운터 (ai_send_daily.send_count·device_trial_mark.send_count·photo_ai_budget.risk_sends)는 예약 +1·해제 −1이고 소진은 그대로 두며 이 열이 둘을 구분 (계획 K-20). 해제 = NOT_SENT와 401·403·404 응답 (ADR-0031 #7)",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h9rkcrlsmjputzntseb3z3k": {
+        "id": "03h9rkcrlsmjputzntseb3z3k",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "device_mark_id",
+        "comment": "device_trial_mark.id (usage 모듈), 모듈 간 ID 참조. TRIAL 호출만 (CHECK)",
+        "dataType": "uuid",
+        "options": 0
+      },
+      "03h9rkcrlsmjputzntvr1u7xm": {
+        "id": "03h9rkcrlsmjputzntvr1u7xm",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "created_at",
+        "comment": "허가 시각. 허가 TX 커밋 = 송신 시작 경계 (ADR-0031 #6)",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h9rkcrly2urtqoeo451vjbx": {
+        "id": "03h9rkcrly2urtqoeo451vjbx",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "responded_at",
+        "comment": "응답 시각. 400 비율 감시 창의 기준 (ix_external_call_responded)",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h9rkcrly2urtqoeo8ok4n39": {
+        "id": "03h9rkcrly2urtqoeo8ok4n39",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "name": "settled_at",
+        "comment": "정산 시각",
         "dataType": "timestamptz",
         "options": 0
       },
@@ -3975,6 +4315,15 @@
         "dataType": "bigint",
         "options": 8
       },
+      "03h9rklezlxh79wyepg1fag1m": {
+        "id": "03h9rklezlxh79wyepg1fag1m",
+        "tableId": "03h46ggkrxnffv4hjizyj1crb",
+        "name": "send_count",
+        "comment": "체험 기기의 평생 AI 송신 수 (>= 0, CHECK). 허가 때 +1·해제 때 −1, 소진은 유지 (external_call.send_state, 계획 K-20). 한도 = 체험 한도 × 배수 (설정값, ADR-0031 #9). V6에서 추가 (DEFAULT 0)",
+        "dataType": "int",
+        "default": "0",
+        "options": 8
+      },
       "03hf02v88ewn127imw1oboyby": {
         "id": "03hf02v88ewn127imw1oboyby",
         "tableId": "03h46ggkrxnffv4hjizyj1crb",
@@ -4083,6 +4432,30 @@
         "name": "created_at",
         "dataType": "timestamptz",
         "options": 8
+      },
+      "03h9rklezlxh79wyepjpt3bv0": {
+        "id": "03h9rklezlxh79wyepjpt3bv0",
+        "tableId": "03h64la81jhdvsw3yz1gsdcz2",
+        "name": "max_pixels",
+        "comment": "입력 이미지 최대 픽셀 수 (> 0, CHECK). 단계 5-1 행은 NULL. V6에서 추가",
+        "dataType": "bigint",
+        "options": 0
+      },
+      "03h9rklezlxh79wyepm3l78h8": {
+        "id": "03h9rklezlxh79wyepm3l78h8",
+        "tableId": "03h64la81jhdvsw3yz1gsdcz2",
+        "name": "max_tokens",
+        "comment": "요청 max_tokens (> 0, CHECK). 단계 5-1 행은 NULL. V6에서 추가",
+        "dataType": "int",
+        "options": 0
+      },
+      "03h9rklezlxh79wyeprgbij2s": {
+        "id": "03h9rklezlxh79wyeprgbij2s",
+        "tableId": "03h64la81jhdvsw3yz1gsdcz2",
+        "name": "max_cost_micros",
+        "comment": "호출 1건 최대 비용 (마이크로달러, > 0, CHECK). 허가 때 ai_spend_day·external_call.reserved_cost_micros로 예약. 단계 5-1 행은 NULL. V6에서 추가",
+        "dataType": "bigint",
+        "options": 0
       },
       "03h64la81jhdvsw3yzgs6ih4o": {
         "id": "03h64la81jhdvsw3yzgs6ih4o",
@@ -4293,6 +4666,413 @@
         "tableId": "03h64la81jhdvsw3yzv8vh54g",
         "name": "created_at",
         "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h9rklezgiptnedoy29rfxam": {
+        "id": "03h9rklezgiptnedoy29rfxam",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "reused_result_id",
+        "comment": "EXISTING_RESULT 항목이 재사용한 analysis_result.id. EXISTING_RESULT ⇔ NOT NULL (CHECK). FK 없음 (결과 삭제 P11과 항목 보관 90일이 달라서, 계획 K-10). V6에서 추가",
+        "dataType": "uuid",
+        "options": 0
+      },
+      "03h9rklezgiptnedoy5xkwa72": {
+        "id": "03h9rklezgiptnedoy5xkwa72",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "reused_photo_version",
+        "comment": "재사용한 결과의 photo_version. reused_result_id와 함께 있거나 함께 없음 (CHECK). V6에서 추가",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h9rklezgiptnedoy9enj6dn": {
+        "id": "03h9rklezgiptnedoy9enj6dn",
+        "tableId": "03h64la81jhdvsw3yzv8vh54g",
+        "name": "retry_at",
+        "comment": "NOT_ACCEPTED 항목 (INPUT_RETRY_LATER)의 응답 retryAfter (photo_ai_budget.input_blocked_until). NOT NULL ⇒ admission_result = NOT_ACCEPTED (CHECK). V6에서 추가",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h9rkwhopayfe39xfxco1xf7": {
+        "id": "03h9rkwhopayfe39xfxco1xf7",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "name": "id",
+        "comment": "UUIDv7. 응답 attemptId",
+        "dataType": "uuid",
+        "options": 10
+      },
+      "03h9rkwhopayfe39xg1aeg3o5": {
+        "id": "03h9rkwhopayfe39xg1aeg3o5",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h9rkwhopayfe39xg628gg2w": {
+        "id": "03h9rkwhopayfe39xg628gg2w",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "name": "job_id",
+        "comment": "analysis_job.id. ix_upload_attempt_job (종료 때 작업의 모든 시도)",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h9rkwhopayfe39xgahwo517": {
+        "id": "03h9rkwhopayfe39xgahwo517",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "name": "status",
+        "comment": "ISSUED / CONFIRMED / REJECTED / SUPERSEDED / ABANDONED (CHECK). 새 발급은 이전 ISSUED를 SUPERSEDED로 바꾸고 삭제 예약 (계획 §4.1)",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h9rkwhouszob71lco8yzg4r": {
+        "id": "03h9rkwhouszob71lco8yzg4r",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "name": "object_key",
+        "comment": "analysis-input/{jobId}/{attemptId} (uk_upload_attempt_object_key, 계획 K-3)",
+        "dataType": "text",
+        "options": 12
+      },
+      "03h9rkwhouszob71lcs7gns4c": {
+        "id": "03h9rkwhouszob71lcs7gns4c",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "name": "content_length",
+        "comment": "발급 요청 contentLength (> 0, CHECK). 작업 manifest max_bytes 이하",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h9rkwhouszob71lcxevxl5r": {
+        "id": "03h9rkwhouszob71lcxevxl5r",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "name": "sha256",
+        "comment": "발급 요청 sha256 (32바이트, CHECK). presigned PUT의 x-amz-checksum-sha256",
+        "dataType": "bytea",
+        "options": 8
+      },
+      "03h9rkwhouszob71lczo2pibx": {
+        "id": "03h9rkwhouszob71lczo2pibx",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "name": "url_expires_at",
+        "comment": "발급 때 고정한 URL 만료 = min(발급 + 15분, 업로드 기한) (계획 §2.2). 같은 멱등 키 재생은 같은 만료로 재서명 (ADR-0031 #5)",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h9rkwhouszob71ld585cemv": {
+        "id": "03h9rkwhouszob71ld585cemv",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "name": "confirmed_at",
+        "comment": "확정 시각",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h9rkwhouszob71ld7hw98h5": {
+        "id": "03h9rkwhouszob71ld7hw98h5",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "name": "etag",
+        "comment": "확정 때 확인한 객체 ETag",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h9rkwhouszob71ldbfjapg0": {
+        "id": "03h9rkwhouszob71ldbfjapg0",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "name": "last_modified",
+        "comment": "확정 때 확인한 객체 Last-Modified",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h9rkwhouszob71ldh6nbznj": {
+        "id": "03h9rkwhouszob71ldh6nbznj",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "name": "reject_reason",
+        "comment": "SIZE_MISMATCH / CHECKSUM_MISMATCH / CONTENT_TYPE_MISMATCH / LATE_UPLOAD (CHECK). 확정에서 거절한 이유",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h9rkwhouszob71ldl13qcgv": {
+        "id": "03h9rkwhouszob71ldl13qcgv",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "name": "object_state",
+        "comment": "RETAINED / PENDING / DELETE_SENT (CHECK). 객체 삭제 = 업무 표 대기열, DB 단계와 S3 단계 분리 (계획 K-13)",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h9rkwhouszob71ldo1r8cn6": {
+        "id": "03h9rkwhouszob71ldo1r8cn6",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "name": "delete_after",
+        "comment": "객체 삭제 가능 시각. object_state = PENDING ⇔ NOT NULL (CHECK). ix_upload_attempt_delete",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h9rkwhouszob71ldrd4vsef": {
+        "id": "03h9rkwhouszob71ldrd4vsef",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "name": "created_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h9rkwhp09x0nup8y00hgy4l": {
+        "id": "03h9rkwhp09x0nup8y00hgy4l",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h9rkwhp09x0nup8y48c1hib": {
+        "id": "03h9rkwhp09x0nup8y48c1hib",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h9rl2ot7hnfolf6tyhgbti5": {
+        "id": "03h9rl2ot7hnfolf6tyhgbti5",
+        "tableId": "03h9rl2ot20bd1p2iw7fs8lt7",
+        "name": "photo_id",
+        "comment": "photo.id, 모듈 간 ID 참조",
+        "dataType": "uuid",
+        "options": 10
+      },
+      "03h9rl2ot7hnfolf6u2781ull": {
+        "id": "03h9rl2ot7hnfolf6u2781ull",
+        "tableId": "03h9rl2ot20bd1p2iw7fs8lt7",
+        "name": "owner_id",
+        "dataType": "uuid",
+        "options": 8
+      },
+      "03h9rl2ot7hnfolf6u794se27": {
+        "id": "03h9rl2ot7hnfolf6u794se27",
+        "tableId": "03h9rl2ot20bd1p2iw7fs8lt7",
+        "name": "risk_sends",
+        "comment": "위험 송신 수 (>= 0, CHECK). 허가 +1·해제 −1, 소진은 유지",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h9rl2ot7hnfolf6ubv6kebt": {
+        "id": "03h9rl2ot7hnfolf6ubv6kebt",
+        "tableId": "03h9rl2ot20bd1p2iw7fs8lt7",
+        "name": "unknown_retry_used",
+        "comment": "결과 불명 뒤 사진 수명 1회 자동 재호출을 썼는지 (D-26, ADR-0031 #12)",
+        "dataType": "boolean",
+        "options": 8
+      },
+      "03h9rl2ot7hnfolf6uexnoy2a": {
+        "id": "03h9rl2ot7hnfolf6uexnoy2a",
+        "tableId": "03h9rl2ot20bd1p2iw7fs8lt7",
+        "name": "input_invalid_count",
+        "comment": "입력 실패 누적 수 (>= 0, CHECK). 한도 (설정값)에 닿으면 input_blocked_until 설정",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h9rl2ot7hnfolf6ujl7kkc0": {
+        "id": "03h9rl2ot7hnfolf6ujl7kkc0",
+        "tableId": "03h9rl2ot20bd1p2iw7fs8lt7",
+        "name": "input_blocked_until",
+        "comment": "이 시각까지 접수 항목 = NOT_ACCEPTED/INPUT_RETRY_LATER (항목 retry_at·응답 retryAfter)",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h9rl2ot7hnfolf6umtiq438": {
+        "id": "03h9rl2ot7hnfolf6umtiq438",
+        "tableId": "03h9rl2ot20bd1p2iw7fs8lt7",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h9rl2ot7hnfolf6ur3cyqqr": {
+        "id": "03h9rl2ot7hnfolf6ur3cyqqr",
+        "tableId": "03h9rl2ot20bd1p2iw7fs8lt7",
+        "name": "version",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h9rl2ot7hnfolf6uza1l3tt": {
+        "id": "03h9rl2ot7hnfolf6uza1l3tt",
+        "tableId": "03h9rl2ot7hnfolf6uvkgh6rb",
+        "name": "day",
+        "comment": "KST 일자 (external_call.budget_day)",
+        "dataType": "date",
+        "options": 10
+      },
+      "03h9rl2ot7hnfolf6v2y3h3qq": {
+        "id": "03h9rl2ot7hnfolf6v2y3h3qq",
+        "tableId": "03h9rl2ot7hnfolf6uvkgh6rb",
+        "name": "limit_micros",
+        "comment": "그날 한도 (설정값, >= 0)",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h9rl2ot7hnfolf6v6b64f5u": {
+        "id": "03h9rl2ot7hnfolf6v6b64f5u",
+        "tableId": "03h9rl2ot7hnfolf6uvkgh6rb",
+        "name": "reserved_micros",
+        "comment": "정산 전 호출의 예약 최대 비용 합 (>= 0)",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h9rl2otczfxbu07c2lsgn5g": {
+        "id": "03h9rl2otczfxbu07c2lsgn5g",
+        "tableId": "03h9rl2ot7hnfolf6uvkgh6rb",
+        "name": "settled_micros",
+        "comment": "정산한 호출 비용 합 (>= 0)",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h9rl2otczfxbu07c64qz34x": {
+        "id": "03h9rl2otczfxbu07c64qz34x",
+        "tableId": "03h9rl2ot7hnfolf6uvkgh6rb",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h9rl2otczfxbu07cdsyqkrq": {
+        "id": "03h9rl2otczfxbu07cdsyqkrq",
+        "tableId": "03h9rl2otczfxbu07cafp0a13",
+        "name": "owner_id",
+        "comment": "principal.id, 모듈 간 ID 참조",
+        "dataType": "uuid",
+        "options": 10
+      },
+      "03h9rl2otczfxbu07cgus4yts": {
+        "id": "03h9rl2otczfxbu07cgus4yts",
+        "tableId": "03h9rl2otczfxbu07cafp0a13",
+        "name": "day",
+        "comment": "KST 일자",
+        "dataType": "date",
+        "options": 10
+      },
+      "03h9rl2otczfxbu07clxcjh7e": {
+        "id": "03h9rl2otczfxbu07clxcjh7e",
+        "tableId": "03h9rl2otczfxbu07cafp0a13",
+        "name": "send_count",
+        "comment": "송신 수 (>= 0, CHECK)",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h9rl9irng0b5zxfe8742n12": {
+        "id": "03h9rl9irng0b5zxfe8742n12",
+        "tableId": "03h9rl9irhz7az3hnsnv73ul7",
+        "name": "cause",
+        "comment": "BUDGET / CONFIG_CIRCUIT / TRANSIENT_CIRCUIT (CHECK)",
+        "dataType": "text",
+        "options": 10
+      },
+      "03h9rl9irng0b5zxfec2mhjya": {
+        "id": "03h9rl9irng0b5zxfec2mhjya",
+        "tableId": "03h9rl9irhz7az3hnsnv73ul7",
+        "name": "state",
+        "comment": "CLOSED / OPEN / HALF_OPEN (CHECK). BUDGET은 CLOSED·OPEN만",
+        "dataType": "text",
+        "options": 8
+      },
+      "03h9rl9irng0b5zxfeevy2kjx": {
+        "id": "03h9rl9irng0b5zxfeevy2kjx",
+        "tableId": "03h9rl9irhz7az3hnsnv73ul7",
+        "name": "generation",
+        "comment": "상태 전이마다 +1 (>= 0, CHECK). 오래된 응답·배치 관측이 새 세대를 열거나 닫지 못하게 함",
+        "dataType": "bigint",
+        "options": 8
+      },
+      "03h9rl9irng0b5zxfeiywimxx": {
+        "id": "03h9rl9irng0b5zxfeiywimxx",
+        "tableId": "03h9rl9irhz7az3hnsnv73ul7",
+        "name": "blocked_until",
+        "comment": "이 시각까지 차단 (TRANSIENT = 지수 백오프·지터·Retry-After, BUDGET = 다음 KST 자정 또는 짧은 대기). GREATEST로만 늘림",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h9rl9irng0b5zxfem4r1xul": {
+        "id": "03h9rl9irng0b5zxfem4r1xul",
+        "tableId": "03h9rl9irhz7az3hnsnv73ul7",
+        "name": "probe_job_id",
+        "comment": "HALF_OPEN 회로를 통과할 probe 작업 (analysis_job.id, FK 없음). 반개방 원인 행마다 같은 (작업, 토큰)",
+        "dataType": "uuid",
+        "options": 0
+      },
+      "03h9rl9irng0b5zxferregpx9": {
+        "id": "03h9rl9irng0b5zxferregpx9",
+        "tableId": "03h9rl9irhz7az3hnsnv73ul7",
+        "name": "probe_run_token",
+        "comment": "probe 작업의 실행 토큰. probe_job_id와 함께 NULL 또는 함께 NOT NULL (CHECK)",
+        "dataType": "uuid",
+        "options": 0
+      },
+      "03h9rl9irng0b5zxfev8lmdv8": {
+        "id": "03h9rl9irng0b5zxfev8lmdv8",
+        "tableId": "03h9rl9irhz7az3hnsnv73ul7",
+        "name": "config_version",
+        "comment": "CONFIG_CIRCUIT이 열릴 때·반개방할 때의 설정 지문 (claude.key-version + 실행 가능 manifest 목록 해시). 감시 배치가 현재 지문과 다르면 HALF_OPEN",
+        "dataType": "text",
+        "options": 0
+      },
+      "03h9rl9irng0b5zxfey2bdpoa": {
+        "id": "03h9rl9irng0b5zxfey2bdpoa",
+        "tableId": "03h9rl9irhz7az3hnsnv73ul7",
+        "name": "reset_at",
+        "comment": "마지막 CLOSED 전이 시각. 400 비율 표본의 하한",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h9rl9irng0b5zxff3dyggpa": {
+        "id": "03h9rl9irng0b5zxff3dyggpa",
+        "tableId": "03h9rl9irhz7az3hnsnv73ul7",
+        "name": "failure_streak",
+        "comment": "TRANSIENT 연속 실패 수 (429·529·5xx·불명, >= 0, CHECK). 임계 (설정값) 이상이면 OPEN, 2xx·개별 400이면 0",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h9rl9irsvy3fou915xn37q7": {
+        "id": "03h9rl9irsvy3fou915xn37q7",
+        "tableId": "03h9rl9irhz7az3hnsnv73ul7",
+        "name": "opened_at",
+        "comment": "열린 시각. 첫 열림 전까지 NULL",
+        "dataType": "timestamptz",
+        "options": 0
+      },
+      "03h9rl9irsvy3fou919kf9611": {
+        "id": "03h9rl9irsvy3fou919kf9611",
+        "tableId": "03h9rl9irhz7az3hnsnv73ul7",
+        "name": "updated_at",
+        "dataType": "timestamptz",
+        "options": 8
+      },
+      "03h9rl9irsvy3fou91gnhfyfj": {
+        "id": "03h9rl9irsvy3fou91gnhfyfj",
+        "tableId": "03h9rl9irsvy3fou91d523kx9",
+        "name": "subject_kind",
+        "comment": "PRINCIPAL / TRIAL_MARK (CHECK)",
+        "dataType": "text",
+        "options": 10
+      },
+      "03h9rl9irsvy3fou91lmvtjjl": {
+        "id": "03h9rl9irsvy3fou91lmvtjjl",
+        "tableId": "03h9rl9irsvy3fou91d523kx9",
+        "name": "subject_id",
+        "comment": "principal.id 또는 device_trial_mark.id, 모듈 간 ID 참조",
+        "dataType": "uuid",
+        "options": 10
+      },
+      "03h9rl9irsvy3fou91pa6r4l1": {
+        "id": "03h9rl9irsvy3fou91pa6r4l1",
+        "tableId": "03h9rl9irsvy3fou91d523kx9",
+        "name": "window_start",
+        "comment": "창 시작 시각",
+        "dataType": "timestamptz",
+        "options": 10
+      },
+      "03h9rl9irsvy3fou91ryy2sao": {
+        "id": "03h9rl9irsvy3fou91ryy2sao",
+        "tableId": "03h9rl9irsvy3fou91d523kx9",
+        "name": "items",
+        "comment": "창 안 발급 항목 수 (>= 0, CHECK)",
+        "dataType": "int",
+        "options": 8
+      },
+      "03h9rl9irycdlq50n6axp61gr": {
+        "id": "03h9rl9irycdlq50n6axp61gr",
+        "tableId": "03h9rl9irsvy3fou91d523kx9",
+        "name": "bytes",
+        "comment": "창 안 발급 바이트 = 항목 × maxBytes (>= 0, CHECK)",
+        "dataType": "bigint",
         "options": 8
       },
       "03h64kzwmsfmys9ngrnckkdmw": {
@@ -5380,6 +6160,78 @@
           ]
         }
       },
+      "03h9rjhubq08jfe2r6ncn6p6w": {
+        "id": "03h9rjhubq08jfe2r6ncn6p6w",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h64la81jhdvsw3yz1gsdcz2",
+          "columnIds": [
+            "03h64la81jhdvsw3yz3dy6ozg"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge977zqezliupy3y6i",
+          "columnIds": [
+            "03h9rjhubpx6zpbiqcdctzef9"
+          ]
+        }
+      },
+      "03h9rk5cwghv319mnha5vb39w": {
+        "id": "03h9rk5cwghv319mnha5vb39w",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge977zqezlhqerbvdc",
+          "columnIds": [
+            "03h4468ge977zqezlht52p33h"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge977zqezlqcrd27lf",
+          "columnIds": [
+            "03h9rk5cw5lla4msilamu6egj"
+          ]
+        }
+      },
+      "03h9rk5cwghv319mnhcap465o": {
+        "id": "03h9rk5cwghv319mnhcap465o",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h64la81jhdvsw3yz1gsdcz2",
+          "columnIds": [
+            "03h64la81jhdvsw3yz3dy6ozg"
+          ]
+        },
+        "end": {
+          "tableId": "03h4468ge977zqezlqcrd27lf",
+          "columnIds": [
+            "03h9rk5cwb4k13pbsjjbhm2fz"
+          ]
+        }
+      },
+      "03h9rkwhp051a86cc22ewprn9": {
+        "id": "03h9rkwhp051a86cc22ewprn9",
+        "relationshipType": 4,
+        "onDelete": 1,
+        "onUpdate": 1,
+        "start": {
+          "tableId": "03h4468ge977zqezlhqerbvdc",
+          "columnIds": [
+            "03h4468ge977zqezlht52p33h"
+          ]
+        },
+        "end": {
+          "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+          "columnIds": [
+            "03h9rkwhopayfe39xg628gg2w"
+          ]
+        }
+      },
       "03hq8c76ybsua6rz0f848cb3t": {
         "id": "03hq8c76ybsua6rz0f848cb3t",
         "relationshipType": 16,
@@ -5539,16 +6391,6 @@
         ],
         "unique": false
       },
-      "03h4468geka6y2ntyfo8fv95i": {
-        "id": "03h4468geka6y2ntyfo8fv95i",
-        "name": "ix_analysis_result_owner_change_seq",
-        "tableId": "03h4468ge977zqezliupy3y6i",
-        "indexColumnIds": [
-          "03h4468geka6y2ntyfqggd3eq",
-          "03h4468geka6y2ntyfsjnk78w"
-        ],
-        "unique": false
-      },
       "03h4468geka6y2ntyfupt7ngc": {
         "id": "03h4468geka6y2ntyfupt7ngc",
         "name": "ix_photo_group_owner_change_seq",
@@ -5640,17 +6482,6 @@
         "indexColumnIds": [
           "03h4468geka6y2ntyhg96ue3k",
           "03h4468geka6y2ntyhhb16edc"
-        ],
-        "unique": false
-      },
-      "03h4468geka6y2ntyhqpplspq": {
-        "id": "03h4468geka6y2ntyhqpplspq",
-        "name": "ix_external_call_subject",
-        "tableId": "03h4468ge977zqezlqcrd27lf",
-        "indexColumnIds": [
-          "03h4468geka6y2ntyhtunu9ls",
-          "03h4468geka6y2ntyhvxwz6yv",
-          "03h4468geka6y2ntyhwy6rcqa"
         ],
         "unique": false
       },
@@ -5792,6 +6623,136 @@
         "tableId": "03h4468ge977zqezlpt9mf2c0",
         "indexColumnIds": [
           "03hcoy5rf264iyb73ghfh34p9"
+        ],
+        "unique": false
+      },
+      "03h9rj678hnedvsy6juzk57z4": {
+        "id": "03h9rj678hnedvsy6juzk57z4",
+        "name": "ix_analysis_job_ready",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "indexColumnIds": [
+          "03h9rj678hnedvsy6jxoq98sx",
+          "03h9rj678hnedvsy6k1t6tcuk",
+          "03h9rj678hnedvsy6k5uaky9h"
+        ],
+        "unique": false
+      },
+      "03h9rj678hnedvsy6ka7xumuz": {
+        "id": "03h9rj678hnedvsy6ka7xumuz",
+        "name": "ix_analysis_job_running_owner",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "indexColumnIds": [
+          "03h9rj678hnedvsy6kf5ldfei"
+        ],
+        "unique": false
+      },
+      "03h9rj678hnedvsy6khdfsbiu": {
+        "id": "03h9rj678hnedvsy6khdfsbiu",
+        "name": "ix_analysis_job_running_lease",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "indexColumnIds": [
+          "03h9rj678hnedvsy6klvox6cl"
+        ],
+        "unique": false
+      },
+      "03h9rj678hnedvsy6kqyid2or": {
+        "id": "03h9rj678hnedvsy6kqyid2or",
+        "name": "ix_analysis_job_awaiting",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "indexColumnIds": [
+          "03h9rj678hnedvsy6kt81n5ta"
+        ],
+        "unique": false
+      },
+      "03h9rj678hnedvsy6ky3hgk0v": {
+        "id": "03h9rj678hnedvsy6ky3hgk0v",
+        "name": "ix_analysis_job_open_deadline",
+        "tableId": "03h4468ge977zqezlhqerbvdc",
+        "indexColumnIds": [
+          "03h9rj678hnedvsy6l1tet741"
+        ],
+        "unique": false
+      },
+      "03h9rjhubve8nghzgh60t6iu9": {
+        "id": "03h9rjhubve8nghzgh60t6iu9",
+        "name": "ix_analysis_result_job",
+        "tableId": "03h4468ge977zqezliupy3y6i",
+        "indexColumnIds": [
+          "03h9rjhubve8nghzgh8mqi1ed"
+        ],
+        "unique": false
+      },
+      "03h9rkcrly2urtqoeocuayh1o": {
+        "id": "03h9rkcrly2urtqoeocuayh1o",
+        "name": "uk_external_call_job_run_token",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "indexColumnIds": [
+          "03h9rkcrly2urtqoeogbnpope",
+          "03h9rkcrly2urtqoeok4tlw9p"
+        ],
+        "unique": true
+      },
+      "03h9rkcrly2urtqoeoo6uyova": {
+        "id": "03h9rkcrly2urtqoeoo6uyova",
+        "name": "ix_external_call_responded",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "indexColumnIds": [
+          "03h9rkcrly2urtqoeormmen07",
+          "03h9rkcrly2urtqoeow1rm7kz"
+        ],
+        "unique": false
+      },
+      "03h9rkcrly2urtqoep09g1rlz": {
+        "id": "03h9rkcrly2urtqoep09g1rlz",
+        "name": "ix_external_call_sending",
+        "tableId": "03h4468ge977zqezlqcrd27lf",
+        "indexColumnIds": [
+          "03h9rkcrly2urtqoep4fpmmrl"
+        ],
+        "unique": false
+      },
+      "03h9rkwhp09x0nup8y9p3npx7": {
+        "id": "03h9rkwhp09x0nup8y9p3npx7",
+        "name": "uk_upload_attempt_job_issued",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "indexColumnIds": [
+          "03h9rkwhp09x0nup8ydmfyd2z"
+        ],
+        "unique": true
+      },
+      "03h9rkwhp09x0nup8yhlsk7q8": {
+        "id": "03h9rkwhp09x0nup8yhlsk7q8",
+        "name": "uk_upload_attempt_job_confirmed",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "indexColumnIds": [
+          "03h9rkwhp09x0nup8ylysdk27"
+        ],
+        "unique": true
+      },
+      "03h9rkwhp09x0nup8ype5g92h": {
+        "id": "03h9rkwhp09x0nup8ype5g92h",
+        "name": "ix_upload_attempt_job",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "indexColumnIds": [
+          "03h9rkwhp09x0nup8yti15c0i"
+        ],
+        "unique": false
+      },
+      "03h9rkwhp09x0nup8yw5hgmiu": {
+        "id": "03h9rkwhp09x0nup8yw5hgmiu",
+        "name": "ix_upload_attempt_delete",
+        "tableId": "03h9rkwhopayfe39xfu6n5q2e",
+        "indexColumnIds": [
+          "03h9rkwhp09x0nup8z0px2nix"
+        ],
+        "unique": false
+      },
+      "03h9rl9irycdlq50n6ecur6xm": {
+        "id": "03h9rl9irycdlq50n6ecur6xm",
+        "name": "ix_analysis_input_rate_window",
+        "tableId": "03h9rl9irsvy3fou91d523kx9",
+        "indexColumnIds": [
+          "03h9rl9irycdlq50n6j84eatm"
         ],
         "unique": false
       },
@@ -6043,18 +7004,6 @@
         "columnId": "03h4468ge3qzlp0kxp79fdsl5",
         "orderType": 1
       },
-      "03h4468geka6y2ntyfqggd3eq": {
-        "id": "03h4468geka6y2ntyfqggd3eq",
-        "indexId": "03h4468geka6y2ntyfo8fv95i",
-        "columnId": "03h4468ge977zqezliy8hdjvu",
-        "orderType": 1
-      },
-      "03h4468geka6y2ntyfsjnk78w": {
-        "id": "03h4468geka6y2ntyfsjnk78w",
-        "indexId": "03h4468geka6y2ntyfo8fv95i",
-        "columnId": "03h4468ge977zqezljk8zzdrp",
-        "orderType": 1
-      },
       "03h4468geka6y2ntyfwvzs68u": {
         "id": "03h4468geka6y2ntyfwvzs68u",
         "indexId": "03h4468geka6y2ntyfupt7ngc",
@@ -6185,24 +7134,6 @@
         "id": "03h4468geka6y2ntyhhb16edc",
         "indexId": "03h4468geka6y2ntyhczmgsbt",
         "columnId": "03h4468ge977zqezlo1fk83nl",
-        "orderType": 1
-      },
-      "03h4468geka6y2ntyhtunu9ls": {
-        "id": "03h4468geka6y2ntyhtunu9ls",
-        "indexId": "03h4468geka6y2ntyhqpplspq",
-        "columnId": "03h4468ge977zqezlqgzw4air",
-        "orderType": 1
-      },
-      "03h4468geka6y2ntyhvxwz6yv": {
-        "id": "03h4468geka6y2ntyhvxwz6yv",
-        "indexId": "03h4468geka6y2ntyhqpplspq",
-        "columnId": "03h4468ge977zqezlql50ym1j",
-        "orderType": 1
-      },
-      "03h4468geka6y2ntyhwy6rcqa": {
-        "id": "03h4468geka6y2ntyhwy6rcqa",
-        "indexId": "03h4468geka6y2ntyhqpplspq",
-        "columnId": "03h4468ge977zqezlqlj4hbq0",
         "orderType": 1
       },
       "03h44damna12iwbwjihct486i": {
@@ -6379,6 +7310,114 @@
         "columnId": "03h4468ge977zqezlqaixpvhr",
         "orderType": 1
       },
+      "03h9rj678hnedvsy6jxoq98sx": {
+        "id": "03h9rj678hnedvsy6jxoq98sx",
+        "indexId": "03h9rj678hnedvsy6juzk57z4",
+        "columnId": "03h4468ge977zqezliak6wzv6",
+        "orderType": 1
+      },
+      "03h9rj678hnedvsy6k1t6tcuk": {
+        "id": "03h9rj678hnedvsy6k1t6tcuk",
+        "indexId": "03h9rj678hnedvsy6juzk57z4",
+        "columnId": "03h64loap0cy71010fea5tgbf",
+        "orderType": 1
+      },
+      "03h9rj678hnedvsy6k5uaky9h": {
+        "id": "03h9rj678hnedvsy6k5uaky9h",
+        "indexId": "03h9rj678hnedvsy6juzk57z4",
+        "columnId": "03h64loap0cy71010fidwe5ho",
+        "orderType": 1
+      },
+      "03h9rj678hnedvsy6kf5ldfei": {
+        "id": "03h9rj678hnedvsy6kf5ldfei",
+        "indexId": "03h9rj678hnedvsy6ka7xumuz",
+        "columnId": "03h4468ge977zqezlhu49kpu8",
+        "orderType": 1
+      },
+      "03h9rj678hnedvsy6klvox6cl": {
+        "id": "03h9rj678hnedvsy6klvox6cl",
+        "indexId": "03h9rj678hnedvsy6khdfsbiu",
+        "columnId": "03h4468ge977zqezlibne61mu",
+        "orderType": 1
+      },
+      "03h9rj678hnedvsy6kt81n5ta": {
+        "id": "03h9rj678hnedvsy6kt81n5ta",
+        "indexId": "03h9rj678hnedvsy6kqyid2or",
+        "columnId": "03h64loap0cy71010fkt9tkn5",
+        "orderType": 1
+      },
+      "03h9rj678hnedvsy6l1tet741": {
+        "id": "03h9rj678hnedvsy6l1tet741",
+        "indexId": "03h9rj678hnedvsy6ky3hgk0v",
+        "columnId": "03h64loap0cy71010fpyvh8a6",
+        "orderType": 1
+      },
+      "03h9rjhubve8nghzgh8mqi1ed": {
+        "id": "03h9rjhubve8nghzgh8mqi1ed",
+        "indexId": "03h9rjhubve8nghzgh60t6iu9",
+        "columnId": "03h4468ge977zqezliz6izgwq",
+        "orderType": 1
+      },
+      "03h9rkcrly2urtqoeogbnpope": {
+        "id": "03h9rkcrly2urtqoeogbnpope",
+        "indexId": "03h9rkcrly2urtqoeocuayh1o",
+        "columnId": "03h9rk5cw5lla4msilamu6egj",
+        "orderType": 1
+      },
+      "03h9rkcrly2urtqoeok4tlw9p": {
+        "id": "03h9rkcrly2urtqoeok4tlw9p",
+        "indexId": "03h9rkcrly2urtqoeocuayh1o",
+        "columnId": "03h9rk5cwb4k13pbsjf1c63vp",
+        "orderType": 1
+      },
+      "03h9rkcrly2urtqoeormmen07": {
+        "id": "03h9rkcrly2urtqoeormmen07",
+        "indexId": "03h9rkcrly2urtqoeoo6uyova",
+        "columnId": "03h9rk5cwghxga4vtunq7i55z",
+        "orderType": 1
+      },
+      "03h9rkcrly2urtqoeow1rm7kz": {
+        "id": "03h9rkcrly2urtqoeow1rm7kz",
+        "indexId": "03h9rkcrly2urtqoeoo6uyova",
+        "columnId": "03h9rkcrly2urtqoeo451vjbx",
+        "orderType": 1
+      },
+      "03h9rkcrly2urtqoep4fpmmrl": {
+        "id": "03h9rkcrly2urtqoep4fpmmrl",
+        "indexId": "03h9rkcrly2urtqoep09g1rlz",
+        "columnId": "03h9rk5cw5lla4msilamu6egj",
+        "orderType": 1
+      },
+      "03h9rkwhp09x0nup8ydmfyd2z": {
+        "id": "03h9rkwhp09x0nup8ydmfyd2z",
+        "indexId": "03h9rkwhp09x0nup8y9p3npx7",
+        "columnId": "03h9rkwhopayfe39xg628gg2w",
+        "orderType": 1
+      },
+      "03h9rkwhp09x0nup8ylysdk27": {
+        "id": "03h9rkwhp09x0nup8ylysdk27",
+        "indexId": "03h9rkwhp09x0nup8yhlsk7q8",
+        "columnId": "03h9rkwhopayfe39xg628gg2w",
+        "orderType": 1
+      },
+      "03h9rkwhp09x0nup8yti15c0i": {
+        "id": "03h9rkwhp09x0nup8yti15c0i",
+        "indexId": "03h9rkwhp09x0nup8ype5g92h",
+        "columnId": "03h9rkwhopayfe39xg628gg2w",
+        "orderType": 1
+      },
+      "03h9rkwhp09x0nup8z0px2nix": {
+        "id": "03h9rkwhp09x0nup8z0px2nix",
+        "indexId": "03h9rkwhp09x0nup8yw5hgmiu",
+        "columnId": "03h9rkwhouszob71ldo1r8cn6",
+        "orderType": 1
+      },
+      "03h9rl9irycdlq50n6j84eatm": {
+        "id": "03h9rl9irycdlq50n6j84eatm",
+        "indexId": "03h9rl9irycdlq50n6ecur6xm",
+        "columnId": "03h9rl9irsvy3fou91pa6r4l1",
+        "orderType": 1
+      },
       "03hj59bnrqpg1crqubacf1zxu": {
         "id": "03hj59bnrqpg1crqubacf1zxu",
         "indexId": "03hhqhiojqago3zp0mp9fe1ud",
@@ -6490,7 +7529,7 @@
       },
       "03h446hedsmnrwp09hy0cj3i8": {
         "id": "03h446hedsmnrwp09hy0cj3i8",
-        "value": "[미결 결정에 따라 바뀌는 테이블]\n\n확정: RevenueCat 구독 연동 (ADR-0018) → subscription_entitlement, revenuecat_event. 플랫폼 거래 테이블은 두지 않음\n확정: Haiku 5.5로 시작 (ADR-0016) → analysis_job.model_id, analysis_result.model_id (설정값)\n확정: 검색은 서버가 해석만 하고 단말이 실행 (ADR-0017, D-02 해소) → 서버 검색 색인 없음. Jev 결과는 메모리 캐시에만 두고 DB에 저장하지 않음\n확정: 로그인 계정의 알림은 서버가 FCM으로 발송, silent push 없음 (ADR-0019) → notification_schedule, notification_device\n- 리마인드(FR-N-01)와 비로그인 사용자의 알림은 단말 로컬 예약이라 서버 테이블 없음\n확정: 계정·비로그인 주체 정책 (ADR-0020) → device_trial_mark, provider_identity_mark\n- 사용자 결정 (2026-10-26): 제공자 ID 해시는 가입할 때 저장, 탈퇴 후 revenuecat_event에 type도 남김. ADR-0020에 반영\n확정: 스키마 공통 판단·분석 접수 단위·기기 간 사진 식별 범위 (ADR-0022) → analysis_request, photo.cloud_ref, photo_device_link 기기별 상태\n확정: 데이터 모델 기반 (ADR-0021) → ai_consent.purpose, photo.original_deleted_at, usage_reservation.photo_version, 동의 철회 시 작업 취소·응답 폐기\n확정: 구현 전 미결 결정 (ADR-0024) → action 모듈, analysis_request.origin, analysis_job 부분 유니크, photo_vector, trial_click 대상별 유니크·usage_quota.guided_at, notification_delivery, event 장소 좌표(Google, 30일)·장소 해석 상태, api_rate_counter, organize_state.source_album_ref 의미\n\n남은 판단\n- D-20: 두 번째 기기가 만든 photoId를 같은 cloud_ref의 서버 photoId로 바꾸는 절차, 재설치 때 이전 설치의 photo_device_link와 organize_state DEVICE 키 이관\n- D-14: 검색 구현 세부(Jev 질문 방식, 상대 날짜 토큰, 캐시 단위)는 D-08 이후\n- photo_vector 저장 형식(pgvector / bytea)·양자화는 단계 5\n- event 자동 숨김과 사용자 숨김을 구분하는 열(hidden_reason) 여부는 단계 9\n\nD-01 미정 정책\n- P01·P03: usage_quota.limit_count는 설정값에서 기록 (P01 체험 반환·교체 없음, 3회 클릭 집계는 ADR-0024)\n- P05: photo_group.rule_version, 묶음 임계값·대표 선정·재편성 기준 (벡터 보관·수정 사진·대표 삭제는 ADR-0024)\n- P07: PHCloudIdentifier 신뢰성, 같은 기기 재설치 때 이전 연결을 찾는 방법 (FR-A-04 기술 검증)\n- P08: 비로그인 데이터 보관 기한, 보관 기간 값(탈퇴 최소 기록, device_trial_mark·provider_identity_mark, 해결된 revenuecat_event.payload, 발송을 끝낸 notification_schedule·notification_delivery, 지난 api_rate_counter 창)\n- P09: notification_schedule의 선행 시간·독려 단계, geofence 반경 (발송 대상 = 이벤트는 모든 기기, 정리 독려는 대상이 남은 기기, ADR-0024)\n- P10: tag.normalized_name 규칙, 메모 길이\n- P11: '원본 없음' 보관 기간 값 (이벤트의 사진이 모두 빠지면 숨김, ADR-0024)",
+        "value": "[미결 결정에 따라 바뀌는 테이블]\n\n확정: RevenueCat 구독 연동 (ADR-0018) → subscription_entitlement, revenuecat_event. 플랫폼 거래 테이블은 두지 않음\n확정: Haiku 5.5로 시작 (ADR-0016) → analysis_call_manifest의 manifest 내용 (model, 설정값). analysis_job·analysis_result·external_call은 manifest_id로 참조 (ADR-0031 #14, ADR-0035)\n확정: 검색은 서버가 해석만 하고 단말이 실행 (ADR-0017, D-02 해소) → 서버 검색 색인 없음. Jev 결과는 메모리 캐시에만 두고 DB에 저장하지 않음\n확정: 로그인 계정의 알림은 서버가 FCM으로 발송, silent push 없음 (ADR-0019) → notification_schedule, notification_device\n- 리마인드(FR-N-01)와 비로그인 사용자의 알림은 단말 로컬 예약이라 서버 테이블 없음\n확정: 계정·비로그인 주체 정책 (ADR-0020) → device_trial_mark, provider_identity_mark\n- 사용자 결정 (2026-10-26): 제공자 ID 해시는 가입할 때 저장, 탈퇴 후 revenuecat_event에 type도 남김. ADR-0020에 반영\n확정: 스키마 공통 판단·분석 접수 단위·기기 간 사진 식별 범위 (ADR-0022) → analysis_request, photo.cloud_ref, photo_device_link 기기별 상태\n확정: 데이터 모델 기반 (ADR-0021) → ai_consent.purpose, photo.original_deleted_at, usage_reservation.photo_version, 동의 철회 시 작업 취소·응답 폐기\n확정: 구현 전 미결 결정 (ADR-0024) → action 모듈, analysis_request.origin, analysis_job 부분 유니크, photo_vector, trial_click 대상별 유니크·usage_quota.guided_at, notification_delivery, event 장소 좌표(Google, 30일)·장소 해석 상태, api_rate_counter, organize_state.source_album_ref 의미\n\n남은 판단\n- D-20: 두 번째 기기가 만든 photoId를 같은 cloud_ref의 서버 photoId로 바꾸는 절차, 재설치 때 이전 설치의 photo_device_link와 organize_state DEVICE 키 이관\n- D-14: 검색 구현 세부(Jev 질문 방식, 상대 날짜 토큰, 캐시 단위)는 D-08 이후\n- photo_vector 저장 형식(pgvector / bytea)·양자화는 단계 5\n- event 자동 숨김과 사용자 숨김을 구분하는 열(hidden_reason) 여부는 단계 9\n\nD-01 미정 정책\n- P01·P03: usage_quota.limit_count는 설정값에서 기록 (P01 체험 반환·교체 없음, 3회 클릭 집계는 ADR-0024)\n- P05: photo_group.rule_version, 묶음 임계값·대표 선정·재편성 기준 (벡터 보관·수정 사진·대표 삭제는 ADR-0024)\n- P07: PHCloudIdentifier 신뢰성, 같은 기기 재설치 때 이전 연결을 찾는 방법 (FR-A-04 기술 검증)\n- P08: 비로그인 데이터 보관 기한, 보관 기간 값(탈퇴 최소 기록, device_trial_mark·provider_identity_mark, 해결된 revenuecat_event.payload, 발송을 끝낸 notification_schedule·notification_delivery, 지난 api_rate_counter 창)\n- P09: notification_schedule의 선행 시간·독려 단계, geofence 반경 (발송 대상 = 이벤트는 모든 기기, 정리 독려는 대상이 남은 기기, ADR-0024)\n- P10: tag.normalized_name 규칙, 메모 길이\n- P11: '원본 없음' 보관 기간 값 (이벤트의 사진이 모두 빠지면 숨김, ADR-0024)",
         "ui": {
           "x": 3750,
           "y": 760,
@@ -6552,7 +7591,7 @@
         "ui": {
           "x": 50,
           "y": 1794,
-          "width": 11800,
+          "width": 74850,
           "height": 1110
         }
       },

@@ -24,6 +24,22 @@ class ConsentRecords {
 	}
 
 	/**
+	 * Whether a decision other than a grant ({@code DENIED} or {@code WITHDRAWN}) was recorded after the version.
+	 */
+	boolean refusedAfter(UUID principalId, ConsentPurpose purpose, long version) {
+		return entityManager.createQuery("""
+				SELECT count(c) FROM AiConsent c
+				WHERE c.principalId = :principalId AND c.purpose = :purpose AND c.version > :version
+				  AND c.decision <> :granted
+				""", Long.class)
+			.setParameter("principalId", principalId)
+			.setParameter("purpose", purpose)
+			.setParameter("version", version)
+			.setParameter("granted", ConsentDecision.GRANTED)
+			.getSingleResult() > 0;
+	}
+
+	/**
 	 * Flushes right away so that a decision made concurrently on the same version fails here, as a unique violation
 	 * the caller can answer, instead of at commit.
 	 */

@@ -1,0 +1,7 @@
+# Local bootRun: S3Mock from compose.yaml, which creates the bucket and does not check signatures.
+pik:
+  analysis:
+    upload:
+      bucket: pik-analysis-local
+      region: us-east-1
+      endpoint: http://localhost:9090
